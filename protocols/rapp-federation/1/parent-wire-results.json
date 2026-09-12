@@ -1,0 +1,12 @@
+{
+  "scope": "Independent RAPP/1 wire, Ed25519, and sealed-egg compatibility; not live estate acceptance",
+  "conformance_class": "interval-local-receiver",
+  "stream_family": "memory",
+  "checker": "protocols/rapp-hive/1/reference/rapp.py",
+  "checker_sha256": "1a04362b02f14c1e37b70c6b4f72d79e92df1cc9c2b5b394e8e1b141fc0b6050",
+  "fixture_sha256": "4b7645b5316aa0d48c94fabcf5f0c70a757f9132f392c35f92501120f0c8d8b3",
+  "frames_verified": 37,
+  "sealed_eggs_verified": 1,
+  "plaintext_bytes_verified": 73,
+  "result": "PASS"
+}

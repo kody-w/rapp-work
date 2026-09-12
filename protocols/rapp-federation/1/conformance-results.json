@@ -1,0 +1,1040 @@
+{
+  "profile": "rapp-federation/1",
+  "conformance_class": "interval-local-receiver",
+  "activation": "candidate-not-activated",
+  "tests_run": 154,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "verified_fixture_frames": 37,
+  "negative_checks": 251,
+  "selected_tests": [
+    "full-suite"
+  ],
+  "input_tree_stable": true,
+  "changed_inputs": [],
+  "negative_vectors": [
+    {
+      "test": "test_authority_checkpoint_rollback_refused",
+      "refusal": "authority-rollback"
+    },
+    {
+      "test": "test_checkpoint_must_include_known_control_frontier",
+      "refusal": "control-frontier"
+    },
+    {
+      "test": "test_competing_sovereign_heads_are_refused",
+      "refusal": "competing-sovereign-heads"
+    },
+    {
+      "test": "test_foreign_hive_cannot_be_local_head_or_dimension",
+      "refusal": "foreign-dimension"
+    },
+    {
+      "test": "test_missing_mother_head_successors_are_refused",
+      "refusal": "hive-head-lineage"
+    },
+    {
+      "test": "test_nonowner_cannot_manufacture_an_authority_fault_latch",
+      "refusal": "owner-required"
+    },
+    {
+      "test": "test_owner_control_cannot_be_forged_by_registered_worker",
+      "refusal": "owner-required"
+    },
+    {
+      "test": "test_owner_head_equivocation_durably_suspends_new_authorization",
+      "refusal": "competing-sovereign-heads"
+    },
+    {
+      "test": "test_owner_head_equivocation_durably_suspends_new_authorization",
+      "refusal": "authority-equivocation"
+    },
+    {
+      "test": "test_owner_head_equivocation_durably_suspends_new_authorization",
+      "refusal": "authority-equivocation"
+    },
+    {
+      "test": "test_registered_memory_genesis_cannot_be_owned_by_a_different_principal",
+      "refusal": "stream-key-binding"
+    },
+    {
+      "test": "test_registry_allows_other_registered_profiles_without_authorizing_them",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_registry_cannot_replace_known_genesis",
+      "refusal": "registry-genesis-substitution"
+    },
+    {
+      "test": "test_registry_duplicate_genesis_and_unsupported_reanchor_refused",
+      "refusal": "registry-competing-genesis"
+    },
+    {
+      "test": "test_registry_duplicate_genesis_and_unsupported_reanchor_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_registry_key_tail_substitution",
+      "refusal": "registry-key-binding"
+    },
+    {
+      "test": "test_registry_rejects_invalid_spki_even_for_unused_keys",
+      "refusal": "key-invalid"
+    },
+    {
+      "test": "test_registry_requires_exact_spec_hash_and_memory_kind_binding",
+      "refusal": "registry-profile-hash"
+    },
+    {
+      "test": "test_registry_requires_exact_spec_hash_and_memory_kind_binding",
+      "refusal": "registry-kinds"
+    },
+    {
+      "test": "test_registry_rollback_and_same_sequence_equivocation",
+      "refusal": "registry-rollback"
+    },
+    {
+      "test": "test_registry_rollback_and_same_sequence_equivocation",
+      "refusal": "registry-equivocation"
+    },
+    {
+      "test": "test_registry_wrong_out_of_band_owner_signature",
+      "refusal": "signer"
+    },
+    {
+      "test": "test_second_registered_authority_stream_is_refused",
+      "refusal": "competing-authorities"
+    },
+    {
+      "test": "test_signed_authority_stream_forks_are_not_last_writer_wins",
+      "refusal": "sovereign-fork"
+    },
+    {
+      "test": "test_signed_checkpoint_does_not_verify_absent_mother_history",
+      "refusal": "dependency-missing"
+    },
+    {
+      "test": "test_signed_checkpoint_does_not_verify_absent_mother_history",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_signed_private_registry_cannot_be_redacted_and_keep_its_signature",
+      "refusal": "signature-invalid"
+    },
+    {
+      "test": "test_signed_registry_equivocation_suspends_effects_not_only_second_document",
+      "refusal": "registry-equivocation"
+    },
+    {
+      "test": "test_signed_registry_equivocation_suspends_effects_not_only_second_document",
+      "refusal": "authority-equivocation"
+    },
+    {
+      "test": "test_signed_tombstone_is_sticky_and_backdating_does_not_restore_key",
+      "refusal": "actor-inactive"
+    },
+    {
+      "test": "test_signed_tombstone_is_sticky_and_backdating_does_not_restore_key",
+      "refusal": "registry-revocation-rollback"
+    },
+    {
+      "test": "test_stale_registry_checkpoint_cannot_authorize_execution",
+      "refusal": "registry-stale"
+    },
+    {
+      "test": "test_agreement_approval_cannot_be_used_as_request_approval",
+      "refusal": "destination-acceptance-required"
+    },
+    {
+      "test": "test_agreement_is_not_individual_destination_acceptance",
+      "refusal": "destination-acceptance-required"
+    },
+    {
+      "test": "test_approval_must_commit_exact_terms_hash",
+      "refusal": "approval-commitment"
+    },
+    {
+      "test": "test_competing_approval_does_not_replace_destination_decision",
+      "refusal": "approval-conflict"
+    },
+    {
+      "test": "test_completed_receipt_requires_local_opening_and_bounded_units",
+      "refusal": "execution-not-observed"
+    },
+    {
+      "test": "test_completed_receipt_requires_local_opening_and_bounded_units",
+      "refusal": "receipt-budget"
+    },
+    {
+      "test": "test_early_receipts_cannot_claim_charges_or_results",
+      "refusal": "receipt-premature-result"
+    },
+    {
+      "test": "test_grant_cannot_widen_source_policy",
+      "refusal": "grant-widened"
+    },
+    {
+      "test": "test_grant_validity_cannot_be_widened",
+      "refusal": "grant-window-widened"
+    },
+    {
+      "test": "test_grants_are_nondelegable_and_cannot_authorize_dogg_publication",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_grants_are_nondelegable_and_cannot_authorize_dogg_publication",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_offline_receipt_cannot_claim_globally_fresh_online_assurance",
+      "refusal": "receipt-assurance"
+    },
+    {
+      "test": "test_policy_successor_requires_current_policy_parent",
+      "refusal": "policy-rollback"
+    },
+    {
+      "test": "test_receipt_cannot_invent_tighter_clock_bounds_than_the_trusted_host",
+      "refusal": "receipt-clock-basis"
+    },
+    {
+      "test": "test_receipt_cannot_skip_business_phases",
+      "refusal": "receipt-phase"
+    },
+    {
+      "test": "test_rejected_agreement_cannot_authorize_request",
+      "refusal": "one-sided-agreement"
+    },
+    {
+      "test": "test_request_cannot_change_agreed_units_within_grant",
+      "refusal": "request-terms-changed"
+    },
+    {
+      "test": "test_request_cannot_change_sealed_resource",
+      "refusal": "grant-resource"
+    },
+    {
+      "test": "test_request_recipient_cannot_be_substituted",
+      "refusal": "grant-recipient"
+    },
+    {
+      "test": "test_request_to_other_receiver_hive_is_refused",
+      "refusal": "wrong-recipient-hive"
+    },
+    {
+      "test": "test_request_world_cannot_be_substituted",
+      "refusal": "wrong-world"
+    },
+    {
+      "test": "test_source_cannot_supply_destination_agreement_approval",
+      "refusal": "approval-destination"
+    },
+    {
+      "test": "test_unilateral_peer_consent_does_not_form_bilateral_agreement",
+      "refusal": "peer-consent-bilateral"
+    },
+    {
+      "test": "test_bad_dek_cannot_retry_or_claim_completion",
+      "refusal": "egg-aead"
+    },
+    {
+      "test": "test_bad_dek_cannot_retry_or_claim_completion",
+      "refusal": "execution-already-opened"
+    },
+    {
+      "test": "test_bad_dek_cannot_retry_or_claim_completion",
+      "refusal": "execution-not-observed"
+    },
+    {
+      "test": "test_changed_payload_replay_is_durably_rejected",
+      "refusal": "request-id-payload-replay"
+    },
+    {
+      "test": "test_complete_exchange_and_duplicate_survive_restart",
+      "refusal": "execution-not-authorized"
+    },
+    {
+      "test": "test_destination_policy_can_narrow_grant_use_budget",
+      "refusal": "grant-budget-exhausted"
+    },
+    {
+      "test": "test_destination_policy_can_narrow_total_units_budget",
+      "refusal": "grant-budget-exhausted"
+    },
+    {
+      "test": "test_ed25519_signing_material_cannot_substitute_for_artifact_decryption_material",
+      "refusal": "dek"
+    },
+    {
+      "test": "test_ed25519_signing_material_cannot_substitute_for_artifact_decryption_material",
+      "refusal": "egg-aead"
+    },
+    {
+      "test": "test_grant_aggregate_units_cannot_be_double_spent",
+      "refusal": "grant-budget-exhausted"
+    },
+    {
+      "test": "test_grant_use_quota_is_durable_across_distinct_requests",
+      "refusal": "grant-budget-exhausted"
+    },
+    {
+      "test": "test_in_memory_inspection_store_cannot_release_keys",
+      "refusal": "durable-store-required"
+    },
+    {
+      "test": "test_in_memory_inspection_store_cannot_release_keys",
+      "refusal": "durable-store-required"
+    },
+    {
+      "test": "test_key_service_failure_persists_in_doubt_without_retry",
+      "refusal": "execution-already-opened"
+    },
+    {
+      "test": "test_loss_of_consumption_receipts_or_execution_markers_requires_recovery_quarantine",
+      "refusal": "recovery-quarantine"
+    },
+    {
+      "test": "test_loss_of_consumption_receipts_or_execution_markers_requires_recovery_quarantine",
+      "refusal": "recovery-quarantine"
+    },
+    {
+      "test": "test_loss_of_consumption_receipts_or_execution_markers_requires_recovery_quarantine",
+      "refusal": "recovery-quarantine"
+    },
+    {
+      "test": "test_loss_of_consumption_receipts_or_execution_markers_requires_recovery_quarantine",
+      "refusal": "recovery-quarantine"
+    },
+    {
+      "test": "test_loss_of_consumption_receipts_or_execution_markers_requires_recovery_quarantine",
+      "refusal": "recovery-quarantine"
+    },
+    {
+      "test": "test_native_wrapped_release_json_cannot_bypass_the_missing_key_transport_adapter",
+      "refusal": "dek"
+    },
+    {
+      "test": "test_rejection_does_not_silently_refund_grant_reservation",
+      "refusal": "grant-budget-exhausted"
+    },
+    {
+      "test": "test_same_payload_new_envelope_never_becomes_new_execution_root",
+      "refusal": "request-original-required"
+    },
+    {
+      "test": "test_advancing_authority_invalidates_old_online_checkpoint_for_new_effect",
+      "refusal": "online-checkpoint-stale"
+    },
+    {
+      "test": "test_bundle_binds_exact_octets_in_addition_to_native_object_identity",
+      "refusal": "bundle-octets"
+    },
+    {
+      "test": "test_bundle_byte_substitution_is_refused",
+      "refusal": "bundle-bytes"
+    },
+    {
+      "test": "test_bundle_missing_inventory_and_unrelated_records_are_refused",
+      "refusal": "bundle-inventory"
+    },
+    {
+      "test": "test_bundle_missing_inventory_and_unrelated_records_are_refused",
+      "refusal": "bundle-unrelated-content"
+    },
+    {
+      "test": "test_bundle_requires_original_request_and_sealed_resource",
+      "refusal": "bundle-essential"
+    },
+    {
+      "test": "test_bundle_wrong_destination_is_refused",
+      "refusal": "bundle-destination"
+    },
+    {
+      "test": "test_clock_interval_straddling_expiry_is_not_guessed_valid",
+      "refusal": "clock-uncertain"
+    },
+    {
+      "test": "test_clock_rollback_below_durable_floor_is_refused",
+      "refusal": "clock-rollback"
+    },
+    {
+      "test": "test_clock_uncertainty_over_policy_limit_refuses_execution",
+      "refusal": "clock-uncertain"
+    },
+    {
+      "test": "test_clock_upper_endpoint_at_expiry_is_uncertain_not_valid",
+      "refusal": "clock-uncertain"
+    },
+    {
+      "test": "test_custody_hop_limits_are_not_advisory",
+      "refusal": "custody-hop-limit"
+    },
+    {
+      "test": "test_custody_successor_requires_previous_named_custodian",
+      "refusal": "custody-transition"
+    },
+    {
+      "test": "test_deferred_mode_never_reserves_or_executes",
+      "refusal": "deferred-no-execution"
+    },
+    {
+      "test": "test_destination_owner_can_cancel_inbound_request",
+      "refusal": "revoked"
+    },
+    {
+      "test": "test_either_peer_can_block_new_work",
+      "refusal": "peer-blocked"
+    },
+    {
+      "test": "test_either_peer_can_block_new_work",
+      "refusal": "peer-blocked"
+    },
+    {
+      "test": "test_exact_expiry_is_exclusive_not_an_extra_authorization_instant",
+      "refusal": "expired"
+    },
+    {
+      "test": "test_expired_partition_lease_does_not_authorize_reconnection",
+      "refusal": "expired"
+    },
+    {
+      "test": "test_foreign_owner_cannot_revoke_source_grant",
+      "refusal": "revocation-authority"
+    },
+    {
+      "test": "test_global_owner_head_and_database_fields_do_not_exist",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_global_owner_head_and_database_fields_do_not_exist",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_global_owner_head_and_database_fields_do_not_exist",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_global_owner_head_and_database_fields_do_not_exist",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_global_owner_head_and_database_fields_do_not_exist",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_irreversible_offline_effects_are_refused_even_if_owner_policy_allows",
+      "refusal": "offline-irreversible"
+    },
+    {
+      "test": "test_known_revocation_overrides_valid_offline_lease",
+      "refusal": "revoked"
+    },
+    {
+      "test": "test_missing_dependency_is_not_assumed_authorized",
+      "refusal": "dependency-missing"
+    },
+    {
+      "test": "test_offline_authority_horizon_can_be_shorter_than_artifact_expiry",
+      "refusal": "offline-authority-stale"
+    },
+    {
+      "test": "test_offline_mode_requires_explicit_revocation_risk_acknowledgement",
+      "refusal": "offline-risk-unacknowledged"
+    },
+    {
+      "test": "test_online_challenge_expiry_is_not_extended_by_delivery",
+      "refusal": "online-challenge-expired"
+    },
+    {
+      "test": "test_online_challenge_is_bound_to_exact_terms",
+      "refusal": "online-unconfirmed"
+    },
+    {
+      "test": "test_online_challenge_is_durable_single_request_scoped",
+      "refusal": "challenge-replay"
+    },
+    {
+      "test": "test_online_mode_refuses_one_sided_confirmation",
+      "refusal": "online-unconfirmed"
+    },
+    {
+      "test": "test_relay_cannot_substitute_its_own_signed_business_receipt",
+      "refusal": "relay-not-authority"
+    },
+    {
+      "test": "test_revocation_between_acceptance_and_release_blocks_new_release",
+      "refusal": "revoked"
+    },
+    {
+      "test": "test_signed_echo_is_not_freshness_without_local_challenge",
+      "refusal": "online-unconfirmed"
+    },
+    {
+      "test": "test_undeclared_capability_dependency_is_refused_even_if_cached",
+      "refusal": "dependency-undeclared"
+    },
+    {
+      "test": "test_unknown_clock_allows_retention_but_not_execution",
+      "refusal": "clock-uncertain"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_all_eleven_keys_are_required",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_boolean_is_not_a_sequence_or_quota",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_boolean_is_not_a_sequence_or_quota",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_calendar_validation_does_not_require_optional_jsonschema_format_packages",
+      "refusal": "utc"
+    },
+    {
+      "test": "test_calendar_validation_does_not_require_optional_jsonschema_format_packages",
+      "refusal": "utc"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_private_fields_and_credential_urls_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_discovery_requires_full_frame_dogg_review",
+      "refusal": "dogg-unapproved"
+    },
+    {
+      "test": "test_dogg_approval_cannot_be_reused_for_changed_public_bytes",
+      "refusal": "dogg-unapproved"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-duplicate-key"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-number"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-number"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-number"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-number"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-integer"
+    },
+    {
+      "test": "test_duplicate_json_members_and_numeric_repairs_refused",
+      "refusal": "json-bom"
+    },
+    {
+      "test": "test_federation_uses_registered_memory_streams_owned_by_exact_signer",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_federation_uses_registered_memory_streams_owned_by_exact_signer",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_https_validation_does_not_require_optional_jsonschema_format_packages",
+      "refusal": "endpoint"
+    },
+    {
+      "test": "test_https_validation_does_not_require_optional_jsonschema_format_packages",
+      "refusal": "registry-locator"
+    },
+    {
+      "test": "test_jws_algorithm_and_detachment_are_not_negotiated",
+      "refusal": "signature-header"
+    },
+    {
+      "test": "test_jws_algorithm_and_detachment_are_not_negotiated",
+      "refusal": "signature-format"
+    },
+    {
+      "test": "test_kind_payload_mismatch_is_closed",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_maximum_parent_rappid_lengths_agree",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_maximum_parent_rappid_lengths_agree",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_nfc_surrogates_depth_and_size_are_bounded",
+      "refusal": "json-nfc"
+    },
+    {
+      "test": "test_nfc_surrogates_depth_and_size_are_bounded",
+      "refusal": "json-surrogate"
+    },
+    {
+      "test": "test_nfc_surrogates_depth_and_size_are_bounded",
+      "refusal": "json-depth"
+    },
+    {
+      "test": "test_nfc_surrogates_depth_and_size_are_bounded",
+      "refusal": "json-size"
+    },
+    {
+      "test": "test_noncanonical_envelope_bytes_are_refused_not_rewritten",
+      "refusal": "frame-noncanonical"
+    },
+    {
+      "test": "test_noncanonical_envelope_bytes_are_refused_not_rewritten",
+      "refusal": "frame-noncanonical"
+    },
+    {
+      "test": "test_payload_tampering_is_cryptographically_refused",
+      "refusal": "payload-hash"
+    },
+    {
+      "test": "test_plaintext_is_not_a_sealed_egg",
+      "refusal": "egg-container"
+    },
+    {
+      "test": "test_registered_owner_cannot_impersonate_another_actor_stream",
+      "refusal": "issuer-signature"
+    },
+    {
+      "test": "test_sealed_tag_and_keyed_commitment_are_checked",
+      "refusal": "egg-aead"
+    },
+    {
+      "test": "test_sealed_tag_and_keyed_commitment_are_checked",
+      "refusal": "egg-commitment"
+    },
+    {
+      "test": "test_sealed_zip_trailing_bytes_and_wrong_address_refused",
+      "refusal": "egg-noncanonical"
+    },
+    {
+      "test": "test_sealed_zip_trailing_bytes_and_wrong_address_refused",
+      "refusal": "egg-address"
+    },
+    {
+      "test": "test_signature_byte_tampering_is_refused",
+      "refusal": "signature-invalid"
+    },
+    {
+      "test": "test_transport_identity_cannot_replace_foreign_signature",
+      "refusal": "unknown-key"
+    },
+    {
+      "test": "test_transport_identity_cannot_replace_foreign_signature",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_unknown_frame_and_nested_members_are_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_unknown_frame_and_nested_members_are_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_unknown_frame_and_nested_members_are_refused",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_unsigned_frames_are_not_accepted",
+      "refusal": "schema"
+    },
+    {
+      "test": "test_wave_tampering_is_cryptographically_refused",
+      "refusal": "frame-hash"
+    },
+    {
+      "test": "test_committed_fault_is_visible_to_an_already_open_receiver_connection",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_committed_fault_is_visible_to_an_already_open_receiver_connection",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_corrupt_fork_proof_requires_recovery_quarantine",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_corrupt_fork_proof_requires_recovery_quarantine",
+      "refusal": "recovery-quarantine"
+    },
+    {
+      "test": "test_earlier_fork_moves_frontier_back_without_losing_prior_evidence",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_earlier_fork_moves_frontier_back_without_losing_prior_evidence",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_earlier_fork_moves_frontier_back_without_losing_prior_evidence",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_forged_or_wrong_stream_owner_forks_cannot_latch",
+      "refusal": "signature-invalid"
+    },
+    {
+      "test": "test_forged_or_wrong_stream_owner_forks_cannot_latch",
+      "refusal": "issuer-signature"
+    },
+    {
+      "test": "test_forged_or_wrong_stream_owner_forks_cannot_latch",
+      "refusal": "stream-issuer"
+    },
+    {
+      "test": "test_forged_or_wrong_stream_owner_forks_cannot_latch",
+      "refusal": "stream-issuer"
+    },
+    {
+      "test": "test_inflight_outcome_can_be_recorded_without_reauthorizing_faulted_policy",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_new_receipt_authorization_and_key_release_stop_after_policy_fork",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_new_receipt_authorization_and_key_release_stop_after_policy_fork",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_new_receipt_authorization_and_key_release_stop_after_policy_fork",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_new_receipt_authorization_and_key_release_stop_after_policy_fork",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_new_receipt_authorization_and_key_release_stop_after_policy_fork",
+      "refusal": "authority-equivocation"
+    },
+    {
+      "test": "test_new_receipt_authorization_and_key_release_stop_after_policy_fork",
+      "refusal": "authority-equivocation"
+    },
+    {
+      "test": "test_nonowner_fork_does_not_suspend_unaffected_prefix_authorization",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_fork_does_not_suspend_unaffected_prefix_authorization",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "unknown-key"
+    },
+    {
+      "test": "test_nonowner_fork_proof_survives_revocation_and_index_recovery",
+      "refusal": "unknown-key"
+    },
+    {
+      "test": "test_nonowner_request_or_receipt_fork_blocks_pending_key_release",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_request_or_receipt_fork_blocks_pending_key_release",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_request_or_receipt_fork_blocks_pending_key_release",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_request_or_receipt_fork_blocks_pending_key_release",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_request_or_receipt_fork_blocks_pending_key_release",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_request_or_receipt_fork_blocks_pending_key_release",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_nonowner_stream_fork_latches_only_its_stream_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_original_successors_and_cross_stream_dependents_fail_across_restart",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_owner_policy_fork_retains_exact_evidence_and_refuses_both_branches",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_owner_policy_fork_retains_exact_evidence_and_refuses_both_branches",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_owner_policy_fork_retains_exact_evidence_and_refuses_both_branches",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_registry_refresh_cannot_clear_owner_stream_fault",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_registry_refresh_cannot_clear_owner_stream_fault",
+      "refusal": "stream-equivocation"
+    },
+    {
+      "test": "test_retained_fork_evidence_rebuilds_a_missing_stream_fault_index",
+      "refusal": "stream-fork"
+    },
+    {
+      "test": "test_retained_fork_evidence_rebuilds_a_missing_stream_fault_index",
+      "refusal": "stream-equivocation"
+    }
+  ],
+  "environment": {
+    "python": "3.14.4",
+    "sqlite": "3.53.4",
+    "cryptography": "49.0.0",
+    "jsonschema": "4.26.0"
+  },
+  "source_sha256": {
+    "SPEC.md": "ec5560a639a2283213c71ded658920008024d2e705b010c0c4b8fdd74736bcd3",
+    "schema.json": "d5ae3a3af3030632171db9cbb139d05e589116fb0e6a3a585e86d0c83e4f155a",
+    "requirements.txt": "f2661695af26aedec09b6f1ac907c2cc6aa821ca04483396fed0cc2bfc83dd3f",
+    "reference/README.md": "dc6ff7c6c09ea9c1faefa86e13b7e4d941544e3ad176d4562fc2f153810eb6d6",
+    "fixtures/ed25519-bilateral.json": "4b7645b5316aa0d48c94fabcf5f0c70a757f9132f392c35f92501120f0c8d8b3",
+    "reference/conformance.py": "776ef1a8f4a5344567a721d27250d4bfc81d8bf6b2bedb365757a8fd6962dfb3",
+    "reference/rapp_federation.py": "4c262b401b0328522ffeb023d79bc5a4d219b9c65ab87339395f38c9d978cf81",
+    "reference/schema_source.py": "4f5f6e6e591d7620f393cf8402c93d063330b53016c43974108b96635d8e5388",
+    "reference/vectors.py": "180d2a5b8b307c09fe4556225a04f426b37cc32586d3b9c6435f8b27b4473c92",
+    "reference/wire.py": "04683689bfd6bd6007fe41f85bdda516087b48f4f87816f86ebda0cc324a6271"
+  }
+}

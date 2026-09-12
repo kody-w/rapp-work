@@ -1,0 +1,149 @@
+{
+  "schema": "rapp-skill-lock/1",
+  "name": "rapp-private-hive",
+  "version": "3.1.1",
+  "protocol": {
+    "name": "rapp-hive/1",
+    "repository": "https://github.com/kody-w/RAPP",
+    "path": "protocols/rapp-hive/1/SPEC.md",
+    "spec_sha256": "79aeef7bc5000f4a7b09483844b035c66adf817475540e583138f2e6b432c822"
+  },
+  "files": [
+    {
+      "path": "DEPLOYMENT.md",
+      "sha256": "bd08dfe6267f514426496b020c9a2ce8604ed1b9098fc09456f07b04e4198bee"
+    },
+    {
+      "path": "SKILL.md",
+      "sha256": "be66b7c13ef916c4ca3f698b051ac7fd2b1239ed78372cff521105e382a55124"
+    },
+    {
+      "path": "lib/private_hive/__init__.py",
+      "sha256": "91793884a61c6dcb56652017aed84616c8d667975812615174464b6cec3eb025"
+    },
+    {
+      "path": "lib/private_hive/adapters/__init__.py",
+      "sha256": "91b9bd538deee327fd1f044ad8cd9f6cf93bb8745c60f35e6c0cf09f44418d45"
+    },
+    {
+      "path": "lib/private_hive/adapters/filesystem.py",
+      "sha256": "7b66fd588ec6b502f8dfcdcd7a155fab4a93df16849f756aab21189eb93d5054"
+    },
+    {
+      "path": "lib/private_hive/adapters/github_git.py",
+      "sha256": "ee68d3a00e18c1829d045c4b81b7f60ad93b700ef51cff048be3dc047d2cdee6"
+    },
+    {
+      "path": "lib/private_hive/authority.py",
+      "sha256": "177f222a696a8c48202cc5e875f8b131269292a61dc107678e8beececb38b780"
+    },
+    {
+      "path": "lib/private_hive/bundle.py",
+      "sha256": "42c48c3ff37a455358fccc60981ed7ef0f98de0dbceb95f922545514d7652bbd"
+    },
+    {
+      "path": "lib/private_hive/client.py",
+      "sha256": "d5845769b82c97964c42e89964a6ae5d0e610c0874a611aa2c85eb573bd27004"
+    },
+    {
+      "path": "lib/private_hive/common.py",
+      "sha256": "87cc471a525a0a47c2c323e46e885329f19558b108cc7d3a442d1146df958e05"
+    },
+    {
+      "path": "lib/private_hive/keys.py",
+      "sha256": "8cb4fdd22aced0ca704f341eb546f883f1e8530946b7ae4731c55c9064c276e9"
+    },
+    {
+      "path": "lib/private_hive/release.py",
+      "sha256": "9aeb71336e7aca4e72eb76dd38c53fca599131035b575b1645513f4d3dec1aa5"
+    },
+    {
+      "path": "lib/private_hive/state.py",
+      "sha256": "e64a357f332fa3126c3cae3e161a4e7454416c94e6abb63e22ef0409cc45b217"
+    },
+    {
+      "path": "requirements-test.txt",
+      "sha256": "e1773772cf6191eca67af644e053517ff46e4ff44717fa3bb2c73ecf317e2965"
+    },
+    {
+      "path": "requirements.txt",
+      "sha256": "9acec702bfaf66f1a3a28f873a6123d3bb796f9a8fc7cced7be7f81647070517"
+    },
+    {
+      "path": "schemas/deployment.schema.json",
+      "sha256": "97308d0eb3cc200b260a4ef6eb5b21e8535851bdd7075e7173cbb787818109a5"
+    },
+    {
+      "path": "scripts/deploy_hive.py",
+      "sha256": "3e4bba44cfa2a5c3f08d1e0235ccdc3d5ae411863aedd1d17c96d6250ee46ffb"
+    },
+    {
+      "path": "scripts/prepare_workspace.py",
+      "sha256": "07f8a34c8853a5e7a6335d0433d7a0052d4195abb8e245e5fbbfa51e63849e9d"
+    },
+    {
+      "path": "tests/_deployment_fixtures.py",
+      "sha256": "9102405e9d261391ef00899ccb1772944ff6ece6c199a77336135e1f26b7568d"
+    },
+    {
+      "path": "tests/test_deployment_cli.py",
+      "sha256": "3bc2072c91b5041544b79f82ccaf29c07bba807f943b24b8e0d55393f73690dc"
+    },
+    {
+      "path": "tests/test_deployment_client.py",
+      "sha256": "b765cb5cc75681911a54516713e67aa24d1809565026c59335563dad04814e44"
+    },
+    {
+      "path": "tests/test_deployment_filesystem.py",
+      "sha256": "c9a120f51298ec9e533f85c3d78d788b5d2a5a33c3564f319aee84a54eb7d866"
+    },
+    {
+      "path": "tests/test_deployment_git.py",
+      "sha256": "39d0679567d96f0f4bac5a30687f783a782fe91b1f2929344dc14417fcc52c86"
+    },
+    {
+      "path": "tests/test_deployment_keys_authority.py",
+      "sha256": "6db7a15d8367ae5bd3b0df66cf019ac6a3f492cb76e81a03f3943be7ce5ebd86"
+    },
+    {
+      "path": "tests/test_deployment_schema.py",
+      "sha256": "dfc4f682ea1e2dfdc11957182aff9c62ec801e165ccbb4919d25036c709ac5b1"
+    },
+    {
+      "path": "tests/test_prepare_workspace.py",
+      "sha256": "458ede96b4c6b98bab29f2c6a5827e89b4bf3a3b06a7920b26943ac421ecc74c"
+    },
+    {
+      "path": "vendor/hive/SPEC.md",
+      "sha256": "79aeef7bc5000f4a7b09483844b035c66adf817475540e583138f2e6b432c822"
+    },
+    {
+      "path": "vendor/hive/reference/authenticated_conformance.py",
+      "sha256": "216051f24ac7dd419770ac474ca568da9a5b31de47945cc0b33287507f3da4c8"
+    },
+    {
+      "path": "vendor/hive/reference/hive_acceptance.py",
+      "sha256": "88184a7e74f475b87dfe55069942f55b82efb1ac36469ca47ea7507fa78119f7"
+    },
+    {
+      "path": "vendor/hive/reference/rapp.py",
+      "sha256": "1a04362b02f14c1e37b70c6b4f72d79e92df1cc9c2b5b394e8e1b141fc0b6050"
+    },
+    {
+      "path": "vendor/hive/reference/rapp_hive.py",
+      "sha256": "96309ef78656b46559089e5eff987a9069ee8da350222003396ad611f0f02a3a"
+    },
+    {
+      "path": "vendor/hive/reference/rapp_profile.py",
+      "sha256": "fb1c974373d81c4689d0d3226da68528a318fcee4a29ce12ffda4305bcfbbe24"
+    },
+    {
+      "path": "vendor/hive/schema.json",
+      "sha256": "9b383535d6a2ad379e8c70b1a1cb3ab6ed3f9ca71114c37695e24fd8560415e0"
+    },
+    {
+      "path": "vendor/rapp.py",
+      "sha256": "1a04362b02f14c1e37b70c6b4f72d79e92df1cc9c2b5b394e8e1b141fc0b6050"
+    }
+  ]
+}

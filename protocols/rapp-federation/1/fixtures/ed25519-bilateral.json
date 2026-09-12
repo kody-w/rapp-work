@@ -1,0 +1,2024 @@
+{
+  "schema": "rapp-federation/1-conformance-fixture",
+  "warning": "All identities, signing seeds, AES keys, and business data are PUBLIC SYNTHETIC TEST VECTORS.",
+  "anchors": [
+    {
+      "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+      "world_id": "source-world",
+      "owner_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+      "owner_spki_der_b64": "MCowBQYDK2VwAyEAo93xYwLNC7LM164Y1uL88ZiGIXDpCvEKPtu+pV1/Iyo=",
+      "authority_stream": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-authority"
+    },
+    {
+      "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+      "world_id": "destination-world",
+      "owner_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+      "owner_spki_der_b64": "MCowBQYDK2VwAyEAayjSfAzK568PoDoHAe9Ek1iFLq7ixcq7w2FC480tD3A=",
+      "authority_stream": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-authority"
+    },
+    {
+      "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+      "world_id": "relay-world",
+      "owner_rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+      "owner_spki_der_b64": "MCowBQYDK2VwAyEAg7KT4VVJkNrUtr/uxuCYp1DPugsN9e/jT5peiDMrR6g=",
+      "authority_stream": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-authority"
+    }
+  ],
+  "registries": {
+    "source": {
+      "schema": "rapp/1-registry",
+      "registry_seq": 7,
+      "canonical_source": "https://source.example.invalid/registry",
+      "entries": [
+        {
+          "type": "estate_owner",
+          "rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+        },
+        {
+          "type": "protocol",
+          "name": "rapp-federation/1",
+          "spec_repo": "example/rapp",
+          "spec_path": "protocols/rapp-federation/1/SPEC.md",
+          "spec_hash": "ec5560a639a2283213c71ded658920008024d2e705b010c0c4b8fdd74736bcd3",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.discovery",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.peer",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.policy",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.grant",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.agreement",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.approval",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.request",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.receipt",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.control",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.checkpoint",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.bundle",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.custody",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.observation",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-a/artifact:ad81b998d4722c71deb85a7ded28e3cee46978d0bcbc7e3497a1f96980a9b3dc",
+          "spki_der_b64": "MCowBQYDK2VwAyEAaLDNCo5uuNYwsELAsuoRraDcs5WFa/vrwyhvtTXQftg=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-a/key-service:37bec8c2e249e6a1091b3066c9b83e8a918503b3c2e1cba0165646752b22c2a1",
+          "spki_der_b64": "MCowBQYDK2VwAyEAvvyOMObT4lPXiwchzyatCT/6MRbZAsKGVj/PbPtA4g0=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "spki_der_b64": "MCowBQYDK2VwAyEAo93xYwLNC7LM164Y1uL88ZiGIXDpCvEKPtu+pV1/Iyo=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc",
+          "spki_der_b64": "MCowBQYDK2VwAyEAXZN95xX+MrQrJkqQUghDqBcg+VrV/378eXurogHGOak=",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "frame_hash": "0ae43c29eef9fa807c35e1aa280f44c4cb8e60481d51ac107d8ca707bf8a5228",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-authority",
+          "frame_hash": "75c1046e8b580868371e3958a287b25a1698e4eaf49a4806eeb1d6df8de4eb1c",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-discovery",
+          "frame_hash": "59314775957aa672853d7fe5018b9ec4ac9815b7b8da0e7dfe6c394a01247ca3",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-governance",
+          "frame_hash": "149134640e1bc845dd913593a79c8470198055515e107a19cd67c974f35400aa",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc:federation-work",
+          "frame_hash": "c3325fbf34a5dc3c3b07af33b35a6123e810eddd18b175bd9109c8fe6011f4f0",
+          "deprecated": false
+        }
+      ],
+      "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..Oo0Mj83L0EuZOQInNqEh5Qb4jjzKoh8piKe5JdFdBUYKmVVd6c7OnE4NRbmMDqPu_xU7pA_v-hAKKR9qFdQeAQ"
+    },
+    "destination": {
+      "schema": "rapp/1-registry",
+      "registry_seq": 7,
+      "canonical_source": "https://destination.example.invalid/registry",
+      "entries": [
+        {
+          "type": "estate_owner",
+          "rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298"
+        },
+        {
+          "type": "protocol",
+          "name": "rapp-federation/1",
+          "spec_repo": "example/rapp",
+          "spec_path": "protocols/rapp-federation/1/SPEC.md",
+          "spec_hash": "ec5560a639a2283213c71ded658920008024d2e705b010c0c4b8fdd74736bcd3",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.discovery",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.peer",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.policy",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.grant",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.agreement",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.approval",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.request",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.receipt",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.control",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.checkpoint",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.bundle",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.custody",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.observation",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-b/ai:85906dd4bae7150af0e26c52fa3d7613b3453cd40e01f82cec18cfb01a3398d3",
+          "spki_der_b64": "MCowBQYDK2VwAyEAF4VOhppq4munDD5NOQLq2Bhe5R6sMB3eyXWTetT2XAw=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135",
+          "spki_der_b64": "MCowBQYDK2VwAyEAQZ/g4xPu8lsmxU65a320VRuXWGCzO3SZAEMJBDQADHE=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "spki_der_b64": "MCowBQYDK2VwAyEAayjSfAzK568PoDoHAe9Ek1iFLq7ixcq7w2FC480tD3A=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-b/service:e050f83c0a00b12d3084fba530a1131c4f9d4c16b9bc522f909425813452b913",
+          "spki_der_b64": "MCowBQYDK2VwAyEAC+RHrPvte70xpWtkf5vRFHGiWHv1jMXeqXaGuZgLey4=",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/ai:85906dd4bae7150af0e26c52fa3d7613b3453cd40e01f82cec18cfb01a3398d3:federation-inbox",
+          "frame_hash": "25fbe27cc8ae1746ae65895157c0a4791e2466816c583ba0a42d712e6ad9ce57",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "frame_hash": "56aadd589b3a00a08dc31515668c2210ac8754d569d00c737f5a39865a7197e3",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+          "frame_hash": "4df37d9e6b2d5b49432f9ca74e19be5ef90c153163c31b581cbd0d321ef5e326",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-authority",
+          "frame_hash": "55008f30e7f8518d6a7a43b06d8dcdd2d5c20934a28d2fc8be351122986b416e",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-discovery",
+          "frame_hash": "43aa91d3923d1cf6675701aba7ca6fcd930f30da684be7a36eff525a8a6356f7",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-governance",
+          "frame_hash": "6878fda87b1c48e0dbf3e10bfe45f6d2df487bc19c750f5e73233a8ded47bc47",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-b/service:e050f83c0a00b12d3084fba530a1131c4f9d4c16b9bc522f909425813452b913:federation-inbox",
+          "frame_hash": "3bebbe13d462436cdad57672f694aa7bb4e58da44f868af1a9babbe5bf44ff6a",
+          "deprecated": false
+        }
+      ],
+      "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..eGhwHFC2t_ThLuf3nbs9CtmH-0HddHgbkq_aOC2nJ-WS7BoCWDFSk3Jlld2ZOWSo_zg_UvY-aUAyu--BUGwDCw"
+    },
+    "relay": {
+      "schema": "rapp/1-registry",
+      "registry_seq": 7,
+      "canonical_source": "https://relay.example.invalid/registry",
+      "entries": [
+        {
+          "type": "estate_owner",
+          "rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3"
+        },
+        {
+          "type": "protocol",
+          "name": "rapp-federation/1",
+          "spec_repo": "example/rapp",
+          "spec_path": "protocols/rapp-federation/1/SPEC.md",
+          "spec_hash": "ec5560a639a2283213c71ded658920008024d2e705b010c0c4b8fdd74736bcd3",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.discovery",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.peer",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.policy",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.grant",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.agreement",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.approval",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.request",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.receipt",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.control",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.checkpoint",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.bundle",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.custody",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "kind",
+          "kind": "federation.observation",
+          "family": "memory",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6",
+          "spki_der_b64": "MCowBQYDK2VwAyEAaMoGG0eh6rC29wAacmzQisIKUWMsXYE1qJ5JgbAuuKw=",
+          "deprecated": false
+        },
+        {
+          "type": "spki",
+          "rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "spki_der_b64": "MCowBQYDK2VwAyEAg7KT4VVJkNrUtr/uxuCYp1DPugsN9e/jT5peiDMrR6g=",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6:federation-carrier",
+          "frame_hash": "9c092049db47215bb611395ab44988056149d6512d0fba425d49813a962fe2e1",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "frame_hash": "9f0adf18d1aca1bf3b705a2d4c048784c9a05cab6b008e706fe4dd0885c31638",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-authority",
+          "frame_hash": "39889e95d7fa6ca0e0f77c67e30525fcbef97ecf2ed78d86b440af1a655b357e",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-discovery",
+          "frame_hash": "40ef4916f1f2390ee596e67b5f11718f276f79e863c364f803cf068f776e5b31",
+          "deprecated": false
+        },
+        {
+          "type": "genesis",
+          "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-governance",
+          "frame_hash": "3be7b6e3484d5fd0587460931f880b9226edb4bc70375845bc864ac97576bc40",
+          "deprecated": false
+        }
+      ],
+      "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL293bmVyOjJmZDY5MWMxYzU1MzFjNjU5NjVhMGZiMTYyYmZlYjY3MjBmN2Y5OTVmNTEyNGIxZmI4Nzk3ZmZhYTkzMTk1YTMifQ..u_azUOPBSmeaqQx06nH9sRkrYg8JgYq1fWgWDhsvGEsPGEFlCTQdmA6XpXDCXINRNR2iBdVvzYz85rGPyUMvAg"
+    }
+  },
+  "mother_genesis_frames": {
+    "source": {
+      "spec": "rapp/1",
+      "kind": "hive.declaration",
+      "stream_id": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+      "seq": 0,
+      "utc": "2026-01-01T00:00:00.000Z",
+      "payload": {
+        "schema": "rapp-hive/1-declaration",
+        "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+        "world_id": "source-world",
+        "created_utc": "2026-01-01T00:00:00.000Z",
+        "authority_channel_id": "local",
+        "members": [
+          {
+            "rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "role": "owner",
+            "area": "members/owner"
+          }
+        ],
+        "rooms": [
+          {
+            "id": "general",
+            "area": "rooms/general",
+            "members": [
+              "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+            ],
+            "access": "repository"
+          }
+        ],
+        "channels": [
+          {
+            "id": "local",
+            "kind": "local",
+            "role": "authority",
+            "locator": "fixture/hive",
+            "writeback": true
+          }
+        ],
+        "policy": {
+          "godd_sharing": "explicit",
+          "default_godd_scope": "local-only",
+          "external_publication": "disabled",
+          "conflict_mode": "explicit",
+          "default_transfer": "copy"
+        }
+      },
+      "payload_hash": "71b46902b3633ac785c0f9e710ea6e57202befe4b3f5335facab309876e93ff5",
+      "prev": null,
+      "prev_wave": null,
+      "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..IE_oSQODkceKPOS-ZnIA9c1WKgZp971LzdhtFn51b1tdMbY9CSiOoLBplIB_mp3VBifMh0l5oyja5UeEaeUoAA",
+      "frame_hash": "0ae43c29eef9fa807c35e1aa280f44c4cb8e60481d51ac107d8ca707bf8a5228"
+    },
+    "destination": {
+      "spec": "rapp/1",
+      "kind": "hive.declaration",
+      "stream_id": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+      "seq": 0,
+      "utc": "2026-01-01T00:00:00.000Z",
+      "payload": {
+        "schema": "rapp-hive/1-declaration",
+        "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+        "world_id": "destination-world",
+        "created_utc": "2026-01-01T00:00:00.000Z",
+        "authority_channel_id": "local",
+        "members": [
+          {
+            "rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "role": "owner",
+            "area": "members/owner"
+          }
+        ],
+        "rooms": [
+          {
+            "id": "general",
+            "area": "rooms/general",
+            "members": [
+              "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298"
+            ],
+            "access": "repository"
+          }
+        ],
+        "channels": [
+          {
+            "id": "local",
+            "kind": "local",
+            "role": "authority",
+            "locator": "fixture/hive",
+            "writeback": true
+          }
+        ],
+        "policy": {
+          "godd_sharing": "explicit",
+          "default_godd_scope": "local-only",
+          "external_publication": "disabled",
+          "conflict_mode": "explicit",
+          "default_transfer": "copy"
+        }
+      },
+      "payload_hash": "c41df829a18d1446f546891ad07208088ac87db3636b6692d380c7933e48ea16",
+      "prev": null,
+      "prev_wave": null,
+      "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..RPJ7xwpjg-D3NznivTXgQzLKhc-N54h1uyRC0Kj4qglKph_dF8Rz7oEl-kBVVIfU-9RkULAwewx4BgUoSQVrAA",
+      "frame_hash": "56aadd589b3a00a08dc31515668c2210ac8754d569d00c737f5a39865a7197e3"
+    },
+    "relay": {
+      "spec": "rapp/1",
+      "kind": "hive.declaration",
+      "stream_id": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+      "seq": 0,
+      "utc": "2026-01-01T00:00:00.000Z",
+      "payload": {
+        "schema": "rapp-hive/1-declaration",
+        "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+        "world_id": "relay-world",
+        "created_utc": "2026-01-01T00:00:00.000Z",
+        "authority_channel_id": "local",
+        "members": [
+          {
+            "rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+            "role": "owner",
+            "area": "members/owner"
+          }
+        ],
+        "rooms": [
+          {
+            "id": "general",
+            "area": "rooms/general",
+            "members": [
+              "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3"
+            ],
+            "access": "repository"
+          }
+        ],
+        "channels": [
+          {
+            "id": "local",
+            "kind": "local",
+            "role": "authority",
+            "locator": "fixture/hive",
+            "writeback": true
+          }
+        ],
+        "policy": {
+          "godd_sharing": "explicit",
+          "default_godd_scope": "local-only",
+          "external_publication": "disabled",
+          "conflict_mode": "explicit",
+          "default_transfer": "copy"
+        }
+      },
+      "payload_hash": "0a8faa9a6b89110b4ec507fb0c7dfff3997c075c4708028ab008b1fe34a91fa3",
+      "prev": null,
+      "prev_wave": null,
+      "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL293bmVyOjJmZDY5MWMxYzU1MzFjNjU5NjVhMGZiMTYyYmZlYjY3MjBmN2Y5OTVmNTEyNGIxZmI4Nzk3ZmZhYTkzMTk1YTMifQ..yGf-g8qSQbk0-nBfTwfbypn_SxCJW8acJ4KVMyUoVWPngZLJWHMVBF51IyaomQHFBMomMJ-0gh9QUmKzrjATDw",
+      "frame_hash": "9f0adf18d1aca1bf3b705a2d4c048784c9a05cab6b008e706fe4dd0885c31638"
+    }
+  },
+  "frames": [
+    {
+      "name": "source-authority-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-authority",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "stream_role": "authority",
+          "depends_on": []
+        },
+        "payload_hash": "89bc4a5f5a1a53e85f8e5d2b9bf9f4f51d031b1e0ffc981b9cff2d2e05fb75ba",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..ONUA12TIl4vzb21_Ag73MF9N0rQjXf9nriR9hYWLiNhwlOORLGrVXwiZZZe470HoA3cpuVunR1i12UYah3noCg",
+        "frame_hash": "75c1046e8b580868371e3958a287b25a1698e4eaf49a4806eeb1d6df8de4eb1c"
+      }
+    },
+    {
+      "name": "source-governance-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-governance",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "13a1685fccaa1454bec5876de606dd0445809e3eef0ff4d3f11fe786e8d037d5",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..0hFd9Qvh4hja8DVapmxV4NAZYkN8EW9UikBIe-jhupaLUc_ggQIETvY3Pa5M7xyJlbLC4iy8eYzfCca8A04_CQ",
+        "frame_hash": "149134640e1bc845dd913593a79c8470198055515e107a19cd67c974f35400aa"
+      }
+    },
+    {
+      "name": "source-discovery-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-discovery",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "stream_role": "discovery",
+          "depends_on": []
+        },
+        "payload_hash": "504082d44cb9599ceef44c69a3986a643ce21b0c4fe6d40467d6e1b6e60872b4",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..pw2Lyb95wOLlHQBgNgL7ZpaDRxAA8b3Bo_acjteJaR05Ntj51mAroPO_bRgx1tfG3RYuhAXdkunzmMlRoVT9Cg",
+        "frame_hash": "59314775957aa672853d7fe5018b9ec4ac9815b7b8da0e7dfe6c394a01247ca3"
+      }
+    },
+    {
+      "name": "destination-authority-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-authority",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "actor_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "stream_role": "authority",
+          "depends_on": []
+        },
+        "payload_hash": "79c441c9fd6e770bda41afbbc37286825cb9fec5494705f3a296d9365bca0186",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..eF_kJN9zMi-ZMd0MNAbS3C-xJyJZdkJDfMH953OLPUreWRweelkyf9xL4i-w3COVDud7mULlx3b8rHqSk9xoDw",
+        "frame_hash": "55008f30e7f8518d6a7a43b06d8dcdd2d5c20934a28d2fc8be351122986b416e"
+      }
+    },
+    {
+      "name": "destination-governance-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-governance",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "actor_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "3b488ff6a6be298d9f30ae1d97d691bca9300a9960f877c22fdd3df73ef8c392",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..T09ga6ES-ENuG2BfZP4gyOYEiBNd0uz9yiE47sBlLm69YIstKo1ca2CiL0qNXnYAbLKmiSiKc0ylR8_7XoptCQ",
+        "frame_hash": "6878fda87b1c48e0dbf3e10bfe45f6d2df487bc19c750f5e73233a8ded47bc47"
+      }
+    },
+    {
+      "name": "destination-discovery-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-discovery",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "actor_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "stream_role": "discovery",
+          "depends_on": []
+        },
+        "payload_hash": "fd525a20853619f4218dac2e99e61758d7e4337c3a9768fc1c3025f3cccf59f5",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..wKEdcrpx_piH3gCYvfHDRZ0doy5_Cj-9b1dYVPcbwOFK9Kwcs86smJUzX_g8PqY1dWl3XXCYk9G0ABO272l9Dg",
+        "frame_hash": "43aa91d3923d1cf6675701aba7ca6fcd930f30da684be7a36eff525a8a6356f7"
+      }
+    },
+    {
+      "name": "relay-authority-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-authority",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "actor_rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "stream_role": "authority",
+          "depends_on": []
+        },
+        "payload_hash": "fc4b2fe3f9252c82c0599265d15f1c3535242d080a72748d1a0c5a832a11107c",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL293bmVyOjJmZDY5MWMxYzU1MzFjNjU5NjVhMGZiMTYyYmZlYjY3MjBmN2Y5OTVmNTEyNGIxZmI4Nzk3ZmZhYTkzMTk1YTMifQ..rQpOa5WrSsFluNUFZpXayrvLKXzkYe7DkUy95LW3uHu5jbCflvsuLjaNqEPvfab5s2zAhGWANWppZjFFGFsZDw",
+        "frame_hash": "39889e95d7fa6ca0e0f77c67e30525fcbef97ecf2ed78d86b440af1a655b357e"
+      }
+    },
+    {
+      "name": "relay-governance-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-governance",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "actor_rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "394401c4ce731b5f52e58e3482dc9512d2dabfe36b6c45e7268fbb5b04a070b4",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL293bmVyOjJmZDY5MWMxYzU1MzFjNjU5NjVhMGZiMTYyYmZlYjY3MjBmN2Y5OTVmNTEyNGIxZmI4Nzk3ZmZhYTkzMTk1YTMifQ..TGDQYAbdk_i0Q7C4p3RH3B3no-AHeGTwgF0tJXJFMEGFum5BPNWz1L8LDlwgt0xQjdKw6F2GK6te1J9Rfvy1Dw",
+        "frame_hash": "3be7b6e3484d5fd0587460931f880b9226edb4bc70375845bc864ac97576bc40"
+      }
+    },
+    {
+      "name": "relay-discovery-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-discovery",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "actor_rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "stream_role": "discovery",
+          "depends_on": []
+        },
+        "payload_hash": "82111420a28edc8cefe635cc29257f59d63b1fbd13c8396003482b3a77c8a6a9",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL293bmVyOjJmZDY5MWMxYzU1MzFjNjU5NjVhMGZiMTYyYmZlYjY3MjBmN2Y5OTVmNTEyNGIxZmI4Nzk3ZmZhYTkzMTk1YTMifQ.._5MczrTeY5ZEX-fkc3Pw-Dpwx4MY9tOF6dRiFw2fpyMKVmiaxIaY5NK8LiHtJCCDuj3WQDOdHpA1JFq_QJlBAg",
+        "frame_hash": "40ef4916f1f2390ee596e67b5f11718f276f79e863c364f803cf068f776e5b31"
+      }
+    },
+    {
+      "name": "source-work-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc:federation-work",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "actor_rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "c1db51acd01d5a3e5b20c6f2acc3e0b4dd894e9abae7ca6d69b5f106d1bfb3f3",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL3JlcXVlc3RlcjoyNTdlNGI4MGI5MmYzMDI2NTQ4NjYyZGI2MzNiMjQ3MGQ5YjQyYjk3MGM1MTU3ZGE0ZDZiNjc4MjNhMmU4M2ZjIn0..0cLFlU9EcNFOWmsTjqus-vxKzq3HaTa1KAKvMa_jhvqnrQWU_ACt0cycaSJLi4xksBrFjoi-wsMSFUpPhf8GBw",
+        "frame_hash": "c3325fbf34a5dc3c3b07af33b35a6123e810eddd18b175bd9109c8fe6011f4f0"
+      }
+    },
+    {
+      "name": "destination-human-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "f068d3b40bbef5926138dc499b3fdf11392bff60b1a16665d1e882b9ffecc961",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..gvtx4zGSlF9zALFAZHHE1I9D82SjEgwCii2DVPn50AeocCGPjGlWR5Pt8-4kQ9zJqdBJ4ZYsgYrhbnoHE-XUAQ",
+        "frame_hash": "4df37d9e6b2d5b49432f9ca74e19be5ef90c153163c31b581cbd0d321ef5e326"
+      }
+    },
+    {
+      "name": "destination-ai-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/ai:85906dd4bae7150af0e26c52fa3d7613b3453cd40e01f82cec18cfb01a3398d3:federation-inbox",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "actor_rappid": "rappid:@cell-b/ai:85906dd4bae7150af0e26c52fa3d7613b3453cd40e01f82cec18cfb01a3398d3",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "7f6e9c8ad28ca1243ad6727f785728ae5f824dfc6215fd91099b9ae2dcd8aa35",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2FpOjg1OTA2ZGQ0YmFlNzE1MGFmMGUyNmM1MmZhM2Q3NjEzYjM0NTNjZDQwZTAxZjgyY2VjMThjZmIwMWEzMzk4ZDMifQ..AiT3UTp9lxK5SE8WMaS3I8dWSTyEz6w1_fhriKo54EQ5Kqyt6g04kGcUqZ0CDSCdlS67TXJPLIjp7wyaMS-VBA",
+        "frame_hash": "25fbe27cc8ae1746ae65895157c0a4791e2466816c583ba0a42d712e6ad9ce57"
+      }
+    },
+    {
+      "name": "destination-service-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/service:e050f83c0a00b12d3084fba530a1131c4f9d4c16b9bc522f909425813452b913:federation-inbox",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+          "actor_rappid": "rappid:@cell-b/service:e050f83c0a00b12d3084fba530a1131c4f9d4c16b9bc522f909425813452b913",
+          "stream_role": "actor",
+          "depends_on": []
+        },
+        "payload_hash": "edc65da3ab94527cafbed19bf2fc09264fbbb2fbe655bf2c8c727e0cbdc10c64",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL3NlcnZpY2U6ZTA1MGY4M2MwYTAwYjEyZDMwODRmYmE1MzBhMTEzMWM0ZjlkNGMxNmI5YmM1MjJmOTA5NDI1ODEzNDUyYjkxMyJ9..N79g20SElrz6VWiiL9rhpxXFF8CXxolZtjcK-KJxhmN3uBq2Ktdjk3wx4zHuMfiqsIh2ld8D1rOEPXC85JVdAQ",
+        "frame_hash": "3bebbe13d462436cdad57672f694aa7bb4e58da44f868af1a9babbe5bf44ff6a"
+      }
+    },
+    {
+      "name": "relay-carrier-genesis",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6:federation-carrier",
+        "seq": 0,
+        "utc": "2026-01-01T00:00:00.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "genesis",
+          "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+          "actor_rappid": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6",
+          "stream_role": "relay",
+          "depends_on": []
+        },
+        "payload_hash": "b74f09f300e951611d2b12b0d20e27eb4c2ebf1c99a802eb87c5c0472f78e2f5",
+        "prev": null,
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL2NhcnJpZXI6ZDFmODIzZGJiZWZlYTUzMzEwNjk0Y2JmNmU5NGRjYzc0NjIyZjgzYWJiODBmMjNhYTczYjZlYTEyMjc4MjRlNiJ9..oqnRzOBx42TPiRjulXLN4wXP9jqspCpNIx_Ul53qKvD-Qa_MEQ6FpOj206ATIvQMjVCq76O5GowSPP2IoBXKBw",
+        "frame_hash": "9c092049db47215bb611395ab44988056149d6512d0fba425d49813a962fe2e1"
+      }
+    },
+    {
+      "name": "source-checkpoint",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-authority",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:01.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "authority",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          },
+          "depends_on": [],
+          "authority_seq": 1,
+          "previous_checkpoint": null,
+          "registry_seq": 7,
+          "registry_hash": "6eacacb70cf2451431bbf95952824fb8941d4ec23dc739afc3f145516ef696d5",
+          "hive_head": {
+            "stream_id": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "seq": 0,
+            "utc": "2026-01-01T00:00:00.000Z",
+            "payload_hash": "71b46902b3633ac785c0f9e710ea6e57202befe4b3f5335facab309876e93ff5",
+            "frame_hash": "0ae43c29eef9fa807c35e1aa280f44c4cb8e60481d51ac107d8ca707bf8a5228",
+            "prev": null
+          },
+          "hive_head_assurance": "owner-attested-not-locally-verified",
+          "issued_utc": "2026-01-01T00:00:01.000Z",
+          "valid_until_utc": "2026-06-30T00:00:00.000Z",
+          "max_clock_uncertainty_ms": 1000,
+          "offline_horizon_ms": 15551999000,
+          "controls": [],
+          "challenge": null
+        },
+        "payload_hash": "06cbc03f804b74337f1bbde415b368fc7975308e7cd85cb7cd805e5b4abe551f",
+        "prev": "89bc4a5f5a1a53e85f8e5d2b9bf9f4f51d031b1e0ffc981b9cff2d2e05fb75ba",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..kOvqt7MT97WbVEyDns5IIEFQrdcMCJuTmyc7vcMeO2R8WNtv-4-3HfCcJjYDzOfPUHkmmOdv7c_vfhFKQPUWAg",
+        "frame_hash": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a"
+      }
+    },
+    {
+      "name": "destination-checkpoint",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-authority",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:01.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "authority",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298"
+          },
+          "depends_on": [],
+          "authority_seq": 1,
+          "previous_checkpoint": null,
+          "registry_seq": 7,
+          "registry_hash": "e76b5d6a53b2a5e36e0624559d83069812008ef53851e6ceeea8d2e75fcff406",
+          "hive_head": {
+            "stream_id": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "seq": 0,
+            "utc": "2026-01-01T00:00:00.000Z",
+            "payload_hash": "c41df829a18d1446f546891ad07208088ac87db3636b6692d380c7933e48ea16",
+            "frame_hash": "56aadd589b3a00a08dc31515668c2210ac8754d569d00c737f5a39865a7197e3",
+            "prev": null
+          },
+          "hive_head_assurance": "owner-attested-not-locally-verified",
+          "issued_utc": "2026-01-01T00:00:01.000Z",
+          "valid_until_utc": "2026-06-30T00:00:00.000Z",
+          "max_clock_uncertainty_ms": 1000,
+          "offline_horizon_ms": 15551999000,
+          "controls": [],
+          "challenge": null
+        },
+        "payload_hash": "08d443c475a03aa36cc7a14664552fb0cf57fba43688788bf7bf5ce5133ae86e",
+        "prev": "79c441c9fd6e770bda41afbbc37286825cb9fec5494705f3a296d9365bca0186",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..PuzilMkRrArN7Ub5yaAJpbiZV8Kd5JhjISq_uKj6IN0HzGI3Hsdnrfm47nd4b41EwAJI-811T6O_fQrtu7o4BQ",
+        "frame_hash": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f"
+      }
+    },
+    {
+      "name": "relay-checkpoint",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3:federation-authority",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:01.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "authority",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+            "world_id": "relay-world",
+            "actor_rappid": "rappid:@cell-c/owner:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3"
+          },
+          "depends_on": [],
+          "authority_seq": 1,
+          "previous_checkpoint": null,
+          "registry_seq": 7,
+          "registry_hash": "4b5fd45c9ae27ab8eedd9df2b3459612969c18cc4cacfbb84dfd6e84e56517bb",
+          "hive_head": {
+            "stream_id": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+            "seq": 0,
+            "utc": "2026-01-01T00:00:00.000Z",
+            "payload_hash": "0a8faa9a6b89110b4ec507fb0c7dfff3997c075c4708028ab008b1fe34a91fa3",
+            "frame_hash": "9f0adf18d1aca1bf3b705a2d4c048784c9a05cab6b008e706fe4dd0885c31638",
+            "prev": null
+          },
+          "hive_head_assurance": "owner-attested-not-locally-verified",
+          "issued_utc": "2026-01-01T00:00:01.000Z",
+          "valid_until_utc": "2026-06-30T00:00:00.000Z",
+          "max_clock_uncertainty_ms": 1000,
+          "offline_horizon_ms": 15551999000,
+          "controls": [],
+          "challenge": null
+        },
+        "payload_hash": "80501db31c694354ed3321ff61f6a49aeeb67bcf534da10a4e27a1887723528c",
+        "prev": "fc4b2fe3f9252c82c0599265d15f1c3535242d080a72748d1a0c5a832a11107c",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL293bmVyOjJmZDY5MWMxYzU1MzFjNjU5NjVhMGZiMTYyYmZlYjY3MjBmN2Y5OTVmNTEyNGIxZmI4Nzk3ZmZhYTkzMTk1YTMifQ..t7LQVRvdDYLJ_W9s4t07dO5N1WJmppT88ApyTnBJQmk8TXhKW4xNnyGh3A1dGJOFiale9TTOFPKE9D-7cAkiDA",
+        "frame_hash": "3c1fde1430596b7b5d7ca064fa58630adb3857f37501651d81509afeea150016"
+      }
+    },
+    {
+      "name": "source-policy",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.policy",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-governance",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:02.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-policy",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a"
+          ],
+          "policy_seq": 1,
+          "previous_policy": null,
+          "allowed_peers": [
+            "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298"
+          ],
+          "allowed_actors": [
+            "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc"
+          ],
+          "actions": [
+            "godd.exchange",
+            "proposal.submit",
+            "task.execute"
+          ],
+          "modes": [
+            "deferred",
+            "offline-bounded",
+            "online-confirmed"
+          ],
+          "max_units": 10,
+          "max_total_units": 20,
+          "max_uses": 2,
+          "max_offline_ms": 15552000000,
+          "max_clock_uncertainty_ms": 1000,
+          "allow_irreversible": true,
+          "offline_revocation": "lease-limited"
+        },
+        "payload_hash": "891a3f7a3ed9e1c38249f38c988ac2ca193a004df9f3c51998f4854208c8bc73",
+        "prev": "13a1685fccaa1454bec5876de606dd0445809e3eef0ff4d3f11fe786e8d037d5",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..JiBhyGG7y0slfPq2Fz1l6lTT8KRmGCtpht5fhpjYWvdnZmdJi2oBRAxovDcTFhFoPtsOWqx4g9hXfBxSCjI2CA",
+        "frame_hash": "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f"
+      }
+    },
+    {
+      "name": "source-peer",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.peer",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-governance",
+        "seq": 2,
+        "utc": "2026-01-01T00:00:03.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-peer",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a"
+          ],
+          "peer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world"
+          },
+          "consent": "allow",
+          "not_before": "2026-01-01T00:00:00.000Z",
+          "not_after": "2026-06-30T00:00:00.000Z"
+        },
+        "payload_hash": "46428ba686fdb76bfd34986e40fd0dfe04ebaec3b24b54650c54f80574894ade",
+        "prev": "891a3f7a3ed9e1c38249f38c988ac2ca193a004df9f3c51998f4854208c8bc73",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..JN4mVK2ds4bwH7plVOj_MXPpMZQKf2vobrK0mTVkjOQqS9Olclh4_DT7DvE3h_TvDPpTQpywRtX22HCD4LSIBQ",
+        "frame_hash": "ed96d1184c4147d471df93549ab4312a22f101532fa5e771e701fc291544d68b"
+      }
+    },
+    {
+      "name": "destination-policy",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.policy",
+        "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-governance",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:02.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-policy",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f"
+          ],
+          "policy_seq": 1,
+          "previous_policy": null,
+          "allowed_peers": [
+            "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          ],
+          "allowed_actors": [
+            "rappid:@cell-b/ai:85906dd4bae7150af0e26c52fa3d7613b3453cd40e01f82cec18cfb01a3398d3",
+            "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135",
+            "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "rappid:@cell-b/service:e050f83c0a00b12d3084fba530a1131c4f9d4c16b9bc522f909425813452b913"
+          ],
+          "actions": [
+            "godd.exchange",
+            "proposal.submit",
+            "task.execute"
+          ],
+          "modes": [
+            "deferred",
+            "offline-bounded",
+            "online-confirmed"
+          ],
+          "max_units": 10,
+          "max_total_units": 20,
+          "max_uses": 2,
+          "max_offline_ms": 15552000000,
+          "max_clock_uncertainty_ms": 1000,
+          "allow_irreversible": true,
+          "offline_revocation": "lease-limited"
+        },
+        "payload_hash": "8aee5773b5d2e63137fb58876490446ed0c229f8857867edbfb8a6b72dc0110e",
+        "prev": "3b488ff6a6be298d9f30ae1d97d691bca9300a9960f877c22fdd3df73ef8c392",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..FkKsWRqm-LGFyWcDps_HEIQ44qb9DBetZZwV3wmtmNdJ-_BWNdVFPYJsa_PUHaKGNnOkOtsORAhEASoX1WMZAg",
+        "frame_hash": "45ab7fb026fc428a157a1bd8285f2c769f52b3176b35b86d998992b731ad7713"
+      }
+    },
+    {
+      "name": "destination-peer",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.peer",
+        "stream_id": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298:federation-governance",
+        "seq": 2,
+        "utc": "2026-01-01T00:00:03.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-peer",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/owner:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f"
+          ],
+          "peer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world"
+          },
+          "consent": "allow",
+          "not_before": "2026-01-01T00:00:00.000Z",
+          "not_after": "2026-06-30T00:00:00.000Z"
+        },
+        "payload_hash": "d00048b4b202e0acc3402a125eecfbc394c043ee191e68895d91de51c2c4baa2",
+        "prev": "8aee5773b5d2e63137fb58876490446ed0c229f8857867edbfb8a6b72dc0110e",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL293bmVyOjliMjEwYWIzMzY2ZTZjYzcyNGJiZDY0ZjJmYThlNDgwOTg4MWRhZDQ3MTZjYjY5NTZlMzhlZmY2ZjNjMzAyOTgifQ..H4wN2kRP8X8yksO_Lsn2oZLEwKaOduUA8-IO7CLqEpu09EVxlNtXGWM0afG9N-nh8Q-r5UBFC-9tvRvUAHYlAw",
+        "frame_hash": "3a73bd79af98dcdc920f6042554e3742a3411ba7cdf95f579c4d2f6d2388dc7c"
+      }
+    },
+    {
+      "name": "grant",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.grant",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-governance",
+        "seq": 3,
+        "utc": "2026-01-01T00:00:04.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-grant",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f"
+          ],
+          "grant_id": "8495b7cee5e2b2321070b6c8d44d1926bd8b7cad94032aa09693e2d58b400163",
+          "recipient": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "resource": {
+            "space": "rapp/1:egg-manifest",
+            "hash": "bf8f94695f2a460bc51c3da7173094dba4246d1d7dbde927349de0d8e13f7464",
+            "artifact_rappid": "rappid:@cell-a/artifact:ad81b998d4722c71deb85a7ded28e3cee46978d0bcbc7e3497a1f96980a9b3dc",
+            "key_service_rappid": "rappid:@cell-a/key-service:37bec8c2e249e6a1091b3066c9b83e8a918503b3c2e1cba0165646752b22c2a1"
+          },
+          "policy": "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f",
+          "actions": [
+            "godd.exchange",
+            "proposal.submit",
+            "task.execute"
+          ],
+          "modes": [
+            "deferred",
+            "offline-bounded",
+            "online-confirmed"
+          ],
+          "not_before": "2026-01-01T00:00:00.000Z",
+          "not_after": "2026-06-30T00:00:00.000Z",
+          "max_units": 10,
+          "max_total_units": 20,
+          "max_uses": 2,
+          "max_offline_ms": 15552000000,
+          "offline_revocation": "lease-limited",
+          "delegation": false,
+          "dogg_publication": false
+        },
+        "payload_hash": "6826b83d95a60f658cfccfb8be96b413c4924b4bb009df2054ae6505a1600007",
+        "prev": "46428ba686fdb76bfd34986e40fd0dfe04ebaec3b24b54650c54f80574894ade",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..Rz-1ee4m2MmMurEL10cJyuVSVO_60VWU39QIJvUWuQ1W9QMxX51EiSbY0r2wzezVuV3f5DBlkMKmHNmOPwtPBw",
+        "frame_hash": "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa"
+      }
+    },
+    {
+      "name": "agreement",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.agreement",
+        "stream_id": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc:federation-work",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:05.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-agreement",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f",
+            "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa",
+            "3a73bd79af98dcdc920f6042554e3742a3411ba7cdf95f579c4d2f6d2388dc7c",
+            "45ab7fb026fc428a157a1bd8285f2c769f52b3176b35b86d998992b731ad7713",
+            "ed96d1184c4147d471df93549ab4312a22f101532fa5e771e701fc291544d68b"
+          ],
+          "terms": {
+            "source": {
+              "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+              "world_id": "source-world",
+              "actor_rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc"
+            },
+            "destination": {
+              "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+              "world_id": "destination-world",
+              "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+            },
+            "resource": {
+              "space": "rapp/1:egg-manifest",
+              "hash": "bf8f94695f2a460bc51c3da7173094dba4246d1d7dbde927349de0d8e13f7464",
+              "artifact_rappid": "rappid:@cell-a/artifact:ad81b998d4722c71deb85a7ded28e3cee46978d0bcbc7e3497a1f96980a9b3dc",
+              "key_service_rappid": "rappid:@cell-a/key-service:37bec8c2e249e6a1091b3066c9b83e8a918503b3c2e1cba0165646752b22c2a1"
+            },
+            "grant": "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa",
+            "source_policy": "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f",
+            "destination_policy": "45ab7fb026fc428a157a1bd8285f2c769f52b3176b35b86d998992b731ad7713",
+            "action": "godd.exchange",
+            "mode": "offline-bounded",
+            "units": 5,
+            "not_before": "2026-01-01T00:00:00.000Z",
+            "not_after": "2026-06-30T00:00:00.000Z",
+            "irreversible": false,
+            "offline_risk_ack": true
+          },
+          "terms_hash": "57ff4c27685037f240bda5ca4b969ab01fb6ec45f3d29bc1717ca719864c9ff9",
+          "source_peer": "ed96d1184c4147d471df93549ab4312a22f101532fa5e771e701fc291544d68b",
+          "destination_peer": "3a73bd79af98dcdc920f6042554e3742a3411ba7cdf95f579c4d2f6d2388dc7c"
+        },
+        "payload_hash": "87d1f2fea588b31af8c12d67918a089fa43ce2aea73734054f10e03095176537",
+        "prev": "c1db51acd01d5a3e5b20c6f2acc3e0b4dd894e9abae7ca6d69b5f106d1bfb3f3",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL3JlcXVlc3RlcjoyNTdlNGI4MGI5MmYzMDI2NTQ4NjYyZGI2MzNiMjQ3MGQ5YjQyYjk3MGM1MTU3ZGE0ZDZiNjc4MjNhMmU4M2ZjIn0..BoXEnEDN0SF3_G4gxJQAqX7d9ty9w0fYisgqxAW3pHkarqT9dysipEt87Yim06DUDv7YJamfnM8KEvb8E483AA",
+        "frame_hash": "65c2d603f8131125261e21a72bf6584500560c313dda49462695111567538d31"
+      }
+    },
+    {
+      "name": "agreement-approval",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.approval",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:06.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-approval",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "65c2d603f8131125261e21a72bf6584500560c313dda49462695111567538d31"
+          ],
+          "scope": "agreement",
+          "target": "65c2d603f8131125261e21a72bf6584500560c313dda49462695111567538d31",
+          "commitment": "57ff4c27685037f240bda5ca4b969ab01fb6ec45f3d29bc1717ca719864c9ff9",
+          "decision": "accept"
+        },
+        "payload_hash": "f69ff58da92b35287bc72207725eb0e0ec0e06fa29a52f6e10b2b065f6a237eb",
+        "prev": "f068d3b40bbef5926138dc499b3fdf11392bff60b1a16665d1e882b9ffecc961",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..e1n1S8gcHYAh9p8d1bZX5dSDpezD6xCIGe5LviNuWgjZM7slU0UZT6jvQyfpiThiRvPu9DhwkEaVQsSJM6--CQ",
+        "frame_hash": "8382a81a8dc691f1e06bf5ae43969d14277ea8c9352b29256b39435bb6913e20"
+      }
+    },
+    {
+      "name": "request",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.request",
+        "stream_id": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc:federation-work",
+        "seq": 2,
+        "utc": "2026-01-01T00:00:07.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-request",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f",
+            "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa",
+            "45ab7fb026fc428a157a1bd8285f2c769f52b3176b35b86d998992b731ad7713",
+            "65c2d603f8131125261e21a72bf6584500560c313dda49462695111567538d31",
+            "8382a81a8dc691f1e06bf5ae43969d14277ea8c9352b29256b39435bb6913e20"
+          ],
+          "request_id": "74f937cf161f9c9fd1caef196ed7b561f269e337e340ecdb9ee3d4619cd29a30",
+          "agreement": "65c2d603f8131125261e21a72bf6584500560c313dda49462695111567538d31",
+          "agreement_approval": "8382a81a8dc691f1e06bf5ae43969d14277ea8c9352b29256b39435bb6913e20",
+          "terms": {
+            "source": {
+              "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+              "world_id": "source-world",
+              "actor_rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc"
+            },
+            "destination": {
+              "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+              "world_id": "destination-world",
+              "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+            },
+            "resource": {
+              "space": "rapp/1:egg-manifest",
+              "hash": "bf8f94695f2a460bc51c3da7173094dba4246d1d7dbde927349de0d8e13f7464",
+              "artifact_rappid": "rappid:@cell-a/artifact:ad81b998d4722c71deb85a7ded28e3cee46978d0bcbc7e3497a1f96980a9b3dc",
+              "key_service_rappid": "rappid:@cell-a/key-service:37bec8c2e249e6a1091b3066c9b83e8a918503b3c2e1cba0165646752b22c2a1"
+            },
+            "grant": "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa",
+            "source_policy": "28ed433dd02ae43cc774ca45a11840420626dd6e936ec0d79bd42950173f866f",
+            "destination_policy": "45ab7fb026fc428a157a1bd8285f2c769f52b3176b35b86d998992b731ad7713",
+            "action": "godd.exchange",
+            "mode": "offline-bounded",
+            "units": 5,
+            "not_before": "2026-01-01T00:00:00.000Z",
+            "not_after": "2026-06-30T00:00:00.000Z",
+            "irreversible": false,
+            "offline_risk_ack": true
+          },
+          "destination_checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "challenge": null,
+          "supersedes": null
+        },
+        "payload_hash": "d07036c4d57e67b4db04d47487b76d30f97f31e2b5855185c3a0d4c7ab7f5748",
+        "prev": "87d1f2fea588b31af8c12d67918a089fa43ce2aea73734054f10e03095176537",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL3JlcXVlc3RlcjoyNTdlNGI4MGI5MmYzMDI2NTQ4NjYyZGI2MzNiMjQ3MGQ5YjQyYjk3MGM1MTU3ZGE0ZDZiNjc4MjNhMmU4M2ZjIn0..SweQj_ooDyKmD6pubjORs4FEJ0AGct2ZQ0N3Q8-2-_kYWpzeUlFSqaDf8Z_yvg4K_OnDbJ_gy0IwHhL1XVngDQ",
+        "frame_hash": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9"
+      }
+    },
+    {
+      "name": "request-approval",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.approval",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 2,
+        "utc": "2026-01-01T00:00:08.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-approval",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9"
+          ],
+          "scope": "request",
+          "target": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "commitment": "d07036c4d57e67b4db04d47487b76d30f97f31e2b5855185c3a0d4c7ab7f5748",
+          "decision": "accept"
+        },
+        "payload_hash": "82ecdafba2c403407f807a338aa75e7e44e04c47eb1a9300e8bab1c47199aa9d",
+        "prev": "f69ff58da92b35287bc72207725eb0e0ec0e06fa29a52f6e10b2b065f6a237eb",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ.._G44TfWBNMzivyfLa7V9JimKrPV0HjpSKF-nNmnLZLlk0ls-8QYfjp-V8plAkxW4HHkH4jFJP0UFHm7_HGpQBw",
+        "frame_hash": "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52"
+      }
+    },
+    {
+      "name": "receipt-received",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.receipt",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 3,
+        "utc": "2026-01-01T00:00:09.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-receipt",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9"
+          ],
+          "request": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "request_id": "74f937cf161f9c9fd1caef196ed7b561f269e337e340ecdb9ee3d4619cd29a30",
+          "phase": "received",
+          "prior": null,
+          "approval": null,
+          "source_checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "result": null,
+          "units": 0,
+          "reason": "none",
+          "assurance": "historical-snapshot",
+          "clock_basis": {
+            "lower_utc": "2026-01-01T00:00:20.000Z",
+            "upper_utc": "2026-01-01T00:00:20.000Z"
+          }
+        },
+        "payload_hash": "a18a34b9114c012e9f996ffe6d72a407f184f4c5c7eb7751fb17bf30981db637",
+        "prev": "82ecdafba2c403407f807a338aa75e7e44e04c47eb1a9300e8bab1c47199aa9d",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..J3_eV9YHtRFbz_MDFXxVBtgDwEUUcTdc1SEW7G8g82MSW0_9Letg6D83uByp7tZF9PQk94iAsPKc-iO7Gem7Aw",
+        "frame_hash": "0d511439bdba73ae218504fa965766850fdaf6892cfd1bd32759373cf68f1f42"
+      }
+    },
+    {
+      "name": "receipt-validated",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.receipt",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 4,
+        "utc": "2026-01-01T00:00:10.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-receipt",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "0d511439bdba73ae218504fa965766850fdaf6892cfd1bd32759373cf68f1f42",
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9"
+          ],
+          "request": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "request_id": "74f937cf161f9c9fd1caef196ed7b561f269e337e340ecdb9ee3d4619cd29a30",
+          "phase": "validated",
+          "prior": "0d511439bdba73ae218504fa965766850fdaf6892cfd1bd32759373cf68f1f42",
+          "approval": null,
+          "source_checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "result": null,
+          "units": 0,
+          "reason": "none",
+          "assurance": "historical-snapshot",
+          "clock_basis": {
+            "lower_utc": "2026-01-01T00:00:20.000Z",
+            "upper_utc": "2026-01-01T00:00:20.000Z"
+          }
+        },
+        "payload_hash": "7c78fc9763dd5381f66aefe7d7fff4a0673f576cf4edd8582a57a87592c56698",
+        "prev": "a18a34b9114c012e9f996ffe6d72a407f184f4c5c7eb7751fb17bf30981db637",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..bJ51Uz-dQCEoZPvRKBf9V9strmD6gcVmNApQlNecQ3oLfn8HTO1n82-vEfmIFW5XYCz0X8Kw2Ek1rj6jB97-CQ",
+        "frame_hash": "e82f103df83163b3139f352c4445d54a72b664c6a282e32ea42b074d3a989d8a"
+      }
+    },
+    {
+      "name": "receipt-accepted",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.receipt",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 5,
+        "utc": "2026-01-01T00:00:11.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-receipt",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+            "e82f103df83163b3139f352c4445d54a72b664c6a282e32ea42b074d3a989d8a"
+          ],
+          "request": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "request_id": "74f937cf161f9c9fd1caef196ed7b561f269e337e340ecdb9ee3d4619cd29a30",
+          "phase": "accepted",
+          "prior": "e82f103df83163b3139f352c4445d54a72b664c6a282e32ea42b074d3a989d8a",
+          "approval": "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52",
+          "source_checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "result": null,
+          "units": 0,
+          "reason": "none",
+          "assurance": "offline-authorized",
+          "clock_basis": {
+            "lower_utc": "2026-01-01T00:00:20.000Z",
+            "upper_utc": "2026-01-01T00:00:20.000Z"
+          }
+        },
+        "payload_hash": "3863d68fff872ab0ec4dfd42143ad80caa3380e7fa9929bb0db17d6f0e3179f5",
+        "prev": "7c78fc9763dd5381f66aefe7d7fff4a0673f576cf4edd8582a57a87592c56698",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..CZ5vJMd0fuTJozIWQoVRGeHMk6zaI4wVh3SYOdKDqeKf7Hyzq-YyKEb6apnOVn0ViEBPGhmMi6Zu24woU9MjBg",
+        "frame_hash": "2dd8d13382e75a0f5da9824fafc0863f7e0f971d68e279badd06cfa29358847c"
+      }
+    },
+    {
+      "name": "receipt-executing",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.receipt",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 6,
+        "utc": "2026-01-01T00:00:12.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-receipt",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "2dd8d13382e75a0f5da9824fafc0863f7e0f971d68e279badd06cfa29358847c",
+            "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9"
+          ],
+          "request": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "request_id": "74f937cf161f9c9fd1caef196ed7b561f269e337e340ecdb9ee3d4619cd29a30",
+          "phase": "executing",
+          "prior": "2dd8d13382e75a0f5da9824fafc0863f7e0f971d68e279badd06cfa29358847c",
+          "approval": "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52",
+          "source_checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "result": null,
+          "units": 0,
+          "reason": "none",
+          "assurance": "offline-authorized",
+          "clock_basis": {
+            "lower_utc": "2026-01-01T00:00:20.000Z",
+            "upper_utc": "2026-01-01T00:00:20.000Z"
+          }
+        },
+        "payload_hash": "3d5e6c88b7b4aa1cc433ada1bf8d3640e3663163126696188f89a86212f51954",
+        "prev": "3863d68fff872ab0ec4dfd42143ad80caa3380e7fa9929bb0db17d6f0e3179f5",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..Nqaa4q8JnG9gjRZTIt2eDyjyS6W6znf3ZTI2FXIteZBzUt46BFF-TNnfEqpx57-ufZUT1ahZbyeN3NjEJGUoAA",
+        "frame_hash": "ec695aa0c6967c0060d45a4c1dc19c8934aabf589eaef1ab8c9ff820fbc87eb1"
+      }
+    },
+    {
+      "name": "receipt-completed",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.receipt",
+        "stream_id": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135:federation-inbox",
+        "seq": 7,
+        "utc": "2026-01-01T00:00:13.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-receipt",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "checkpoint": "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "112161c99a23f55fd71121c314cc8197bc359ee30b46151bf45638e1a9072e2f",
+            "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+            "ec695aa0c6967c0060d45a4c1dc19c8934aabf589eaef1ab8c9ff820fbc87eb1"
+          ],
+          "request": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "request_id": "74f937cf161f9c9fd1caef196ed7b561f269e337e340ecdb9ee3d4619cd29a30",
+          "phase": "completed",
+          "prior": "ec695aa0c6967c0060d45a4c1dc19c8934aabf589eaef1ab8c9ff820fbc87eb1",
+          "approval": "2de90e3793b7a480df3033fc6b219e36302dd8f58d8b9094a712a248f3afaf52",
+          "source_checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "result": null,
+          "units": 5,
+          "reason": "none",
+          "assurance": "historical-snapshot",
+          "clock_basis": {
+            "lower_utc": "2026-01-01T00:00:20.000Z",
+            "upper_utc": "2026-01-01T00:00:20.000Z"
+          }
+        },
+        "payload_hash": "712afe1cd6dd90cd146887141171698b75befcdcf335429c0768c6a6fc726838",
+        "prev": "3d5e6c88b7b4aa1cc433ada1bf8d3640e3663163126696188f89a86212f51954",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1iL2h1bWFuOjgwOWM2YWMxZDZmMWJjZjJjM2I0MzllOTliNmY4OTFhMzkwZTE3OWI0MDVmYzFkYTJhNjI0MmJkMWUyZmYxMzUifQ..hStT4wWoeJtPK9jYRIN2yqxT2TI12choJjsaIKghMimf0HaoaK432IiY2MikwMLbhJYSgwoZJqSXnqHHvbmOAw",
+        "frame_hash": "c32117d765be01bfb382c254d1a44648b36816f54cccd816469c675b65e51a7c"
+      }
+    },
+    {
+      "name": "discovery",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.discovery",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-discovery",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:10.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-discovery",
+          "hive_mind": "urn:rapp:hive-mind",
+          "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "advertiser_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+          "capabilities": [
+            "godd.exchange",
+            "proposal.submit",
+            "task.execute"
+          ],
+          "endpoint": "https://cell-a.example.invalid/chat",
+          "expires_utc": "2026-01-01T00:05:00.000Z",
+          "data_class": "dogg",
+          "pii_status": "none",
+          "publication_evidence_hash": "1c8807190b3c9f96e6167c379809e1ffd04f102475ea88166ec77e0aecfc223d"
+        },
+        "payload_hash": "d1e5ed1b8c74365da9c62f378ce306b83ed0faeff9c68b91f3362377c812fd48",
+        "prev": "504082d44cb9599ceef44c69a3986a643ce21b0c4fe6d40467d6e1b6e60872b4",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..VJvXPxbdH_uHOaQU2PxvMplf3b5yDXuWtq_1FVqR99wMtMe_KEzzUlUP_ubW9G38j9ivGINJ54G8ZyFPTisIAg",
+        "frame_hash": "c25a3f1c3f07440525c000ac086b5041ddc4a6d6ae7d7bd6e99e9eb31b82b23e"
+      }
+    },
+    {
+      "name": "bundle",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.bundle",
+        "stream_id": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc:federation-work",
+        "seq": 3,
+        "utc": "2026-01-01T00:00:15.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-bundle",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/requester:257e4b80b92f3026548662db633b2470d9b42b970c5157da4d6b67823a2e83fc"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9"
+          ],
+          "bundle_id": "55e8149285fe06950c5fe8830ab35b2967643e4ff961e9232184d58c459d7ef5",
+          "request": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+          "destination": {
+            "hive_rappid": "rappid:@cell-b/hive:9b210ab3366e6cc724bbd64f2fa8e4809881dad4716cb6956e38eff6f3c30298",
+            "world_id": "destination-world",
+            "actor_rappid": "rappid:@cell-b/human:809c6ac1d6f1bcf2c3b439e99b6f891a390e179b405fc1da2a6242bd1e2ff135"
+          },
+          "items": [
+            {
+              "space": "rapp/1:egg-manifest",
+              "hash": "bf8f94695f2a460bc51c3da7173094dba4246d1d7dbde927349de0d8e13f7464",
+              "bytes": 1484,
+              "octets_sha256": "16c442dcfbc6303af649a7797b65022e71c99159303c3c33c588ce8a688af5a3",
+              "essential": true
+            },
+            {
+              "space": "rapp/1:wave",
+              "hash": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+              "bytes": 3285,
+              "octets_sha256": "ad2a9755b21f68868c0028d50a5429b6c6198719920bc6e0ffd4166b881abc92",
+              "essential": true
+            }
+          ],
+          "expires_utc": "2026-06-30T00:00:00.000Z",
+          "max_hops": 4
+        },
+        "payload_hash": "f8d1c1cc4afb556aead371cba64b6d8e540d511aa7314b38ec37067a69c68751",
+        "prev": "d07036c4d57e67b4db04d47487b76d30f97f31e2b5855185c3a0d4c7ab7f5748",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL3JlcXVlc3RlcjoyNTdlNGI4MGI5MmYzMDI2NTQ4NjYyZGI2MzNiMjQ3MGQ5YjQyYjk3MGM1MTU3ZGE0ZDZiNjc4MjNhMmU4M2ZjIn0..hPt-L1TiBkUmQxOa9OWTUcKt0Bv0BkGjnyTL4gEESgZizhglL_ZLf41-D5QdGWz1nWU3JtIGjuNbTnBxhHNTDw",
+        "frame_hash": "9ffa7eaa39b5434902687db529ee97788d6b2e2c9c030f613db172f6d2f3c6b4"
+      }
+    },
+    {
+      "name": "custody",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.custody",
+        "stream_id": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6:federation-carrier",
+        "seq": 1,
+        "utc": "2026-01-01T00:00:16.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-custody",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+            "world_id": "relay-world",
+            "actor_rappid": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6"
+          },
+          "checkpoint": "3c1fde1430596b7b5d7ca064fa58630adb3857f37501651d81509afeea150016",
+          "depends_on": [
+            "3c1fde1430596b7b5d7ca064fa58630adb3857f37501651d81509afeea150016",
+            "9ffa7eaa39b5434902687db529ee97788d6b2e2c9c030f613db172f6d2f3c6b4"
+          ],
+          "bundle": "9ffa7eaa39b5434902687db529ee97788d6b2e2c9c030f613db172f6d2f3c6b4",
+          "previous_custody": null,
+          "hop": 0,
+          "status": "stored",
+          "next_custodian": null
+        },
+        "payload_hash": "b8240244165304adf89f759ddccaf83321890cfc55854841e983b30a5af8084e",
+        "prev": "b74f09f300e951611d2b12b0d20e27eb4c2ebf1c99a802eb87c5c0472f78e2f5",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL2NhcnJpZXI6ZDFmODIzZGJiZWZlYTUzMzEwNjk0Y2JmNmU5NGRjYzc0NjIyZjgzYWJiODBmMjNhYTczYjZlYTEyMjc4MjRlNiJ9..Rsh_WQ1wpDrYKFIJ2YwY81WQUI0gyZ94duTJ0tcZ2IzhCFKw7EhaUICAgBCO2AQF3Ui0atgj6MwijJN6JpVGAA",
+        "frame_hash": "468d18130f3ce7db7418b45e20635ff014b92b38c04aabb803ff79c13168d7d2"
+      }
+    },
+    {
+      "name": "observation",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.observation",
+        "stream_id": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6:federation-carrier",
+        "seq": 2,
+        "utc": "2026-01-01T00:00:17.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-observation",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-c/hive:2fd691c1c5531c65965a0fb162bfeb6720f7f995f5124b1fb8797ffaa93195a3",
+            "world_id": "relay-world",
+            "actor_rappid": "rappid:@cell-c/carrier:d1f823dbbefea53310694cbf6e94dcc74622f83abb80f23aa73b6ea1227824e6"
+          },
+          "checkpoint": "3c1fde1430596b7b5d7ca064fa58630adb3857f37501651d81509afeea150016",
+          "depends_on": [
+            "3c1fde1430596b7b5d7ca064fa58630adb3857f37501651d81509afeea150016",
+            "9ffa7eaa39b5434902687db529ee97788d6b2e2c9c030f613db172f6d2f3c6b4"
+          ],
+          "subject": "9ffa7eaa39b5434902687db529ee97788d6b2e2c9c030f613db172f6d2f3c6b4",
+          "status": "content-verified",
+          "missing": [],
+          "clock_lower": "2026-01-01T00:00:20.000Z",
+          "clock_upper": "2026-01-01T00:00:20.000Z"
+        },
+        "payload_hash": "90f29a8e5cc0046493a7a7be6508c82dc4f53cf581db6dd252887b99222d16d4",
+        "prev": "b8240244165304adf89f759ddccaf83321890cfc55854841e983b30a5af8084e",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1jL2NhcnJpZXI6ZDFmODIzZGJiZWZlYTUzMzEwNjk0Y2JmNmU5NGRjYzc0NjIyZjgzYWJiODBmMjNhYTczYjZlYTEyMjc4MjRlNiJ9..lmbmWTcJiL8ERX9PVuY8cqRUx2f3ALi3vGuqbm_9UqtjZ-AHDOnGh0WV5fxXKWDp3bBHivaa-pUAcDWsa2_ECw",
+        "frame_hash": "fac1c4ff7b18be75d72e5f51e09eece985e44538723437a8803e7c74f7424fb5"
+      }
+    },
+    {
+      "name": "source-control-1",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.control",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-governance",
+        "seq": 4,
+        "utc": "2026-01-01T00:00:30.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-control",
+          "hive_mind": "urn:rapp:hive-mind",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          },
+          "checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa"
+          ],
+          "control_seq": 1,
+          "action": "revoke",
+          "target_kind": "grant",
+          "target_hash": "30b365bb2679b75646748134b85d00332eb149b50662e7b8bfdbb491dd47bbfa",
+          "peer_hive": null,
+          "reason": "owner-choice"
+        },
+        "payload_hash": "7774f8a7e0e3dc8c73867dc032332b648d738cfb7b806ef5f7be059d826b4e4b",
+        "prev": "6826b83d95a60f658cfccfb8be96b413c4924b4bb009df2054ae6505a1600007",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..CpRQJEz8FOSaLmVR6RM2ApXyqxZjJhR8DT-mgbQpkHu-Uttynu9DmSqiJe7hMaKMO4e1ynZB3Cp4dgmfGEawCg",
+        "frame_hash": "bb37f4b5da0a2a805b862ac507de6971520f18ce2799f58d71d4f4385e03571f"
+      }
+    },
+    {
+      "name": "source-final-checkpoint",
+      "frame": {
+        "spec": "rapp/1",
+        "kind": "federation.checkpoint",
+        "stream_id": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d:federation-authority",
+        "seq": 2,
+        "utc": "2026-01-01T00:00:31.000Z",
+        "payload": {
+          "schema": "rapp-federation/1-checkpoint",
+          "hive_mind": "urn:rapp:hive-mind",
+          "phase": "authority",
+          "issuer": {
+            "hive_rappid": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "world_id": "source-world",
+            "actor_rappid": "rappid:@cell-a/owner:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d"
+          },
+          "depends_on": [
+            "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+            "bb37f4b5da0a2a805b862ac507de6971520f18ce2799f58d71d4f4385e03571f"
+          ],
+          "authority_seq": 2,
+          "previous_checkpoint": "07be04e242534418fa3c218589ac4df655145c6f98c553bc2520979ff49aa39a",
+          "registry_seq": 7,
+          "registry_hash": "6eacacb70cf2451431bbf95952824fb8941d4ec23dc739afc3f145516ef696d5",
+          "hive_head": {
+            "stream_id": "rappid:@cell-a/hive:a958687b95a62eaff6256ff5e22fa3f113f8e364e93d6eaeba73b79395a6703d",
+            "seq": 0,
+            "utc": "2026-01-01T00:00:00.000Z",
+            "payload_hash": "71b46902b3633ac785c0f9e710ea6e57202befe4b3f5335facab309876e93ff5",
+            "frame_hash": "0ae43c29eef9fa807c35e1aa280f44c4cb8e60481d51ac107d8ca707bf8a5228",
+            "prev": null
+          },
+          "hive_head_assurance": "owner-attested-not-locally-verified",
+          "issued_utc": "2026-01-01T00:00:31.000Z",
+          "valid_until_utc": "2026-06-30T00:00:00.000Z",
+          "max_clock_uncertainty_ms": 1000,
+          "offline_horizon_ms": 15551969000,
+          "controls": [
+            "bb37f4b5da0a2a805b862ac507de6971520f18ce2799f58d71d4f4385e03571f"
+          ],
+          "challenge": null
+        },
+        "payload_hash": "fea2e64de9b917b74bd0cfea3bd8b9fea8dfa57a5c648b249e082d56a55ad5fb",
+        "prev": "06cbc03f804b74337f1bbde415b368fc7975308e7cd85cb7cd805e5b4abe551f",
+        "prev_wave": null,
+        "sig": "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il0sImtpZCI6InJhcHBpZDpAY2VsbC1hL293bmVyOmE5NTg2ODdiOTVhNjJlYWZmNjI1NmZmNWUyMmZhM2YxMTNmOGUzNjRlOTNkNmVhZWJhNzNiNzkzOTVhNjcwM2QifQ..305EOvD-W-Vk1G2BNl8IMPsNGa5vrvlQbhs9BNnko7cAImkg1VgLYIUz1PLxf6XfoAcOwBt4rISUqCvNf5pzAg",
+        "frame_hash": "08005e6023c33318e53ac1499ae6e37ee236eeebdce98f2a34ab6cd9eb7deb53"
+      }
+    }
+  ],
+  "sealed_egg_b64": "UEsDBBQAAAgAAAAAIQAItmVdjwQAAI8EAAANAAAAbWFuaWZlc3QuanNvbnsiY29udGVudHMiOlt7Imhhc2giOiIzOTAwZWJhNWUyMzlhZDMzNzk4N2IzZGM1MTFmNWJmNmM2MjRkYTQyMzlmNjk0OWFjZWY5MzJkMTRiYzgyYzA5IiwicGF0aCI6ImNpcGhlcnRleHQuYmluIn1dLCJjcmVhdGVkX3V0YyI6IjIwMjYtMDEtMDFUMDA6MDA6MDAuMDAwWiIsInBheWxvYWQiOnsiYWFkX2hhc2giOiI1ZDVmNmVkNTQ1NGQzMGRjZjUzNDZmMmUyZWNmOTU1ZTg3NDNmZjYwZTM5OTQwOTI4ODE3M2VlZDEyYzlmOGNlIiwiYWNjZXNzIjoic2NvcGVkLWtleS1yZWxlYXNlIiwiY2lwaGVyIjoiQTI1NkdDTSIsImtleV9pZCI6IjBkOGRlMTRjYmEzZDNmYmIzMGJmNzczODg2NzgzYTI1MzhjMmNiMDFlYzM5ODU1Yjg1ODhmZGE1NDgyNDE5YTEiLCJrZXlfc2VydmljZV9yYXBwaWQiOiJyYXBwaWQ6QGNlbGwtYS9rZXktc2VydmljZTozN2JlYzhjMmUyNDllNmExMDkxYjMwNjZjOWI4M2U4YTkxODUwM2IzYzJlMWNiYTAxNjU2NDY3NTJiMjJjMmExIiwia2V5X3NlcnZpY2VfdXJsIjoiaHR0cHM6Ly9rZXlzLmV4YW1wbGUuaW52YWxpZC9jaGF0IiwibWVkaWFfdHlwZSI6ImFwcGxpY2F0aW9uL2pzb24iLCJub25jZSI6IndRd2N6bU5EOFRxSG1Pa3oiLCJwbGFpbnRleHRfYnl0ZXMiOjczLCJwbGFpbnRleHRfY29tbWl0bWVudCI6IjcxMDhlODJiMDA2MzBjNzEyNWQ1Mzc1YjRkNGNiZTVjNzBiMzUzYTA4MmQ2OGE5N2JhYWRhMzNhOTA3ZDhmM2QiLCJzY2hlbWEiOiJyYXBwLXNlYWxlZC1hcnRpZmFjdC8xIn0sInJhcHBpZCI6InJhcHBpZDpAY2VsbC1hL2FydGlmYWN0OmFkODFiOTk4ZDQ3MjJjNzFkZWI4NWE3ZGVkMjhlM2NlZTQ2OTc4ZDBiY2JjN2UzNDk3YTFmOTY5ODBhOWIzZGMiLCJzY2hlbWEiOiJyYXBwLzEtZWdnIiwic2lnIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJbUkyTkNJNlptRnNjMlVzSW1OeWFYUWlPbHNpWWpZMElsMHNJbXRwWkNJNkluSmhjSEJwWkRwQVkyVnNiQzFoTDJGeWRHbG1ZV04wT21Ga09ERmlPVGs0WkRRM01qSmpOekZrWldJNE5XRTNaR1ZrTWpobE0yTmxaVFEyT1RjNFpEQmlZMkpqTjJVek5EazNZVEZtT1RZNU9EQmhPV0l6WkdNaWZRLi5uV1pmeTRVR2ZKbHVNVEZYd3o2VWRYYnQwR0pMalAtb1B2d3BaR3ZDS3VsTGs1ODNDN1RjV1lITWpHRFNMdFJTSDBSeGFBVm9FVE5PaXFYS0NENXBDdyIsInZhcmlhbnQiOiJzZWFsZWQifVBLAwQUAAAIAAAAACEAiWIpzFkAAABZAAAADgAAAGNpcGhlcnRleHQuYmluzfjuKy+Yfc0Akan+erLckPmry2pjpE4/aoT8qdXq+VDrehal6pjPBOrYQrCnrpN7IQcNZVO+KPgf68QFKW0Yrmf3LgCKST1sS+60EMK2D4To4nfivlMr3MBQSwECFAMUAAAIAAAAACEACLZlXY8EAACPBAAADQAAAAAAAAAAAAAAgAEAAAAAbWFuaWZlc3QuanNvblBLAQIUAxQAAAgAAAAAIQCJYinMWQAAAFkAAAAOAAAAAAAAAAAAAACAAboEAABjaXBoZXJ0ZXh0LmJpblBLBQYAAAAAAgACAHcAAAA/BQAAAAA=",
+  "expected_request_hash": "99f2261521a0a369f06009f5af8ccac46652bf0ab70a01279fb1a4e17db1cea9",
+  "expected_resource_hash": "bf8f94695f2a460bc51c3da7173094dba4246d1d7dbde927349de0d8e13f7464",
+  "expected_plaintext": "{\"classification\":\"godd\",\"fixture\":\"synthetic private input\",\"version\":1}"
+}

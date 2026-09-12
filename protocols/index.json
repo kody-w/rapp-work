@@ -1,0 +1,26 @@
+{
+  "schema": "rapp-estate-protocol-index/1",
+  "generated_utc": "2026-09-11T21:08:49.000Z",
+  "profiles": [
+    {
+      "name": "rapp-hive/1",
+      "human_name": "RAPP Private Hive",
+      "parent": "rapp/1",
+      "spec_path": "protocols/rapp-hive/1/SPEC.md",
+      "spec_sha256": "79aeef7bc5000f4a7b09483844b035c66adf817475540e583138f2e6b432c822",
+      "schema_path": "protocols/rapp-hive/1/schema.json",
+      "schema_sha256": "9b383535d6a2ad379e8c70b1a1cb3ab6ed3f9ca71114c37695e24fd8560415e0",
+      "conformance": "protocols/rapp-hive/1/reference/hive_conformance.py"
+    },
+    {
+      "name": "rapp-federation/1",
+      "human_name": "RAPP Federation",
+      "parent": "rapp/1",
+      "spec_path": "protocols/rapp-federation/1/SPEC.md",
+      "spec_sha256": "ec5560a639a2283213c71ded658920008024d2e705b010c0c4b8fdd74736bcd3",
+      "schema_path": "protocols/rapp-federation/1/schema.json",
+      "schema_sha256": "d5ae3a3af3030632171db9cbb139d05e589116fb0e6a3a585e86d0c83e4f155a",
+      "conformance": "protocols/rapp-federation/1/reference/conformance.py"
+    }
+  ]
+}

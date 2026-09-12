@@ -1,0 +1,8 @@
+{
+  "schema": "rapp/1",
+  "rappid": "rappid:@kody-w/rapp-work:ff9049d3eed47a575b653676f39baa41c5c8ec572a381bec873383b9f2a4e6b9",
+  "kind": "protocol-estate",
+  "name": "RAPP Work",
+  "parent_protocol": "rapp/1",
+  "registry": "registry.json"
+}

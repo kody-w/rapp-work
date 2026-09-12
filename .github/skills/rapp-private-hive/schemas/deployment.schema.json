@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rapp:private-hive:deployment:1",
+  "title": "Private Hive single-owner deployment artifacts",
+  "description": "Shape checks only. Canonical bytes, signatures, cross-field bindings, byte budgets and monotonic acceptance are enforced by the deployment verifier.",
+  "oneOf": [
+    {"$ref": "#/$defs/anchor"}, {"$ref": "#/$defs/key"},
+    {"$ref": "#/$defs/file"}, {"$ref": "#/$defs/inventory"},
+    {"$ref": "#/$defs/chain"}, {"$ref": "#/$defs/index"},
+    {"$ref": "#/$defs/current"}, {"$ref": "#/$defs/plan"},
+    {"$ref": "#/$defs/approval"}, {"$ref": "#/$defs/pii"},
+    {"$ref": "#/$defs/channels"}, {"$ref": "#/$defs/githubEvidence"}
+  ],
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nullableHash": {"oneOf": [{"$ref": "#/$defs/hash"}, {"type": "null"}]},
+    "rappid": {"type": "string", "pattern": "^rappid:@[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*:[0-9a-f]{64}$", "maxLength": 213},
+    "label": {"type": "string", "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"},
+    "utc": {"type": "string", "format": "date-time", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"},
+    "signature": {"type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^[A-Za-z0-9_-]+\\.\\.[A-Za-z0-9_-]+$"},
+    "positive": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "nonnegative": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+    "relativePath": {"type": "string", "minLength": 1, "maxLength": 512, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(/|$))(?!.*[\\\\:\\u0000-\\u001f\\u007f]).+$"},
+    "spki": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "key": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "owner_rappid", "spki_der_b64", "spki_sha256"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-key/1"}, "owner_rappid": {"$ref": "#/$defs/rappid"},
+        "spki_der_b64": {"$ref": "#/$defs/spki"}, "spki_sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "anchor": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "owner_rappid", "spki_der_b64", "spki_sha256", "hive_rappid", "world_id", "genesis_frame_hash", "registry_seq", "registry_hash", "sig"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-owner-anchor/1"}, "owner_rappid": {"$ref": "#/$defs/rappid"},
+        "spki_der_b64": {"$ref": "#/$defs/spki"}, "spki_sha256": {"$ref": "#/$defs/hash"},
+        "hive_rappid": {"$ref": "#/$defs/rappid"}, "world_id": {"$ref": "#/$defs/label"},
+        "genesis_frame_hash": {"$ref": "#/$defs/hash"}, "registry_seq": {"const": 1},
+        "registry_hash": {"$ref": "#/$defs/hash"}, "sig": {"$ref": "#/$defs/signature"}
+      }
+    },
+    "pii": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "file_sha256", "result", "scanner_rappid", "scanner_version", "scanned_utc", "spki_der_b64", "sig"],
+      "properties": {
+        "schema": {"const": "rapp-pii-scan/1"}, "file_sha256": {"$ref": "#/$defs/hash"}, "result": {"const": "none"},
+        "scanner_rappid": {"$ref": "#/$defs/rappid"}, "scanner_version": {"type": "string", "minLength": 1, "maxLength": 128},
+        "scanned_utc": {"$ref": "#/$defs/utc"}, "spki_der_b64": {"$ref": "#/$defs/spki"}, "sig": {"$ref": "#/$defs/signature"}
+      }
+    },
+    "file": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "encoding", "bytes", "sha256", "content_base64", "pii_receipt"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-file/1"}, "encoding": {"const": "base64"},
+        "bytes": {"type": "integer", "minimum": 0, "maximum": 716800}, "sha256": {"$ref": "#/$defs/hash"},
+        "content_base64": {"type": "string", "maxLength": 955736, "contentEncoding": "base64", "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"},
+        "pii_receipt": {"$ref": "#/$defs/pii"}
+      }
+    },
+    "inventoryFile": {
+      "type": "object", "additionalProperties": false, "required": ["target_path", "object_frame_hash"],
+      "properties": {"target_path": {"$ref": "#/$defs/relativePath"}, "object_frame_hash": {"$ref": "#/$defs/hash"}}
+    },
+    "inventory": {
+      "type": "object", "additionalProperties": false, "required": ["schema", "files"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-inventory/1"},
+        "files": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/inventoryFile"}}
+      }
+    },
+    "chain": {
+      "type": "object", "additionalProperties": false, "required": ["schema", "stream_id", "frames"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-chain/1"}, "stream_id": {"$ref": "#/$defs/rappid"},
+        "frames": {"type": "array", "minItems": 1, "maxItems": 4096, "uniqueItems": true, "items": {"$ref": "#/$defs/hash"}}
+      }
+    },
+    "artifact": {
+      "type": "object", "additionalProperties": false, "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^(?:objects/(?:particle|wave|egg-manifest)/[0-9a-f]{64}|manifests/(?:releases/)?[0-9a-f]{64}|chains/[0-9a-f]{64}|receipts/[a-z0-9][a-z0-9-]*/[0-9a-f]{64}|registry-history/[1-9][0-9]*-[0-9a-f]{64})\\.json$"},
+        "bytes": {"type": "integer", "minimum": 0, "maximum": 1048576}, "sha256": {"$ref": "#/$defs/hash"}
+      }
+    },
+    "index": {
+      "type": "object", "additionalProperties": false, "required": ["schema", "files"],
+      "properties": {"schema": {"const": "rapp-private-hive-release-index/1"},
+                     "files": {"type": "array", "maxItems": 8192, "items": {"$ref": "#/$defs/artifact"}}}
+    },
+    "registry": {
+      "type": "object", "additionalProperties": false, "required": ["seq", "hash", "artifact_hash"],
+      "properties": {"seq": {"$ref": "#/$defs/positive"}, "hash": {"$ref": "#/$defs/hash"}, "artifact_hash": {"$ref": "#/$defs/hash"}}
+    },
+    "mother": {
+      "type": "object", "additionalProperties": false, "required": ["seq", "frame_hash"],
+      "properties": {"seq": {"$ref": "#/$defs/positive"}, "frame_hash": {"$ref": "#/$defs/hash"}}
+    },
+    "projection": {
+      "type": "object", "additionalProperties": false, "required": ["channel_id", "stream_id", "seq", "frame_hash"],
+      "properties": {"channel_id": {"$ref": "#/$defs/label"}, "stream_id": {"$ref": "#/$defs/rappid"},
+                     "seq": {"$ref": "#/$defs/positive"}, "frame_hash": {"$ref": "#/$defs/hash"}}
+    },
+    "current": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "hive_rappid", "workspace_rappid", "dimension_rappid", "created_utc", "release_seq", "previous", "registry", "mother", "catalog_hash", "manifest_hash", "projections", "index_hash", "sig"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-current/1"}, "hive_rappid": {"$ref": "#/$defs/rappid"},
+        "workspace_rappid": {"$ref": "#/$defs/rappid"}, "dimension_rappid": {"$ref": "#/$defs/rappid"},
+        "created_utc": {"$ref": "#/$defs/utc"}, "release_seq": {"$ref": "#/$defs/positive"},
+        "previous": {"$ref": "#/$defs/nullableHash"}, "registry": {"$ref": "#/$defs/registry"},
+        "mother": {"$ref": "#/$defs/mother"}, "catalog_hash": {"$ref": "#/$defs/hash"},
+        "manifest_hash": {"$ref": "#/$defs/hash"}, "index_hash": {"$ref": "#/$defs/hash"},
+        "projections": {"type": "array", "minItems": 1, "maxItems": 8, "items": {"$ref": "#/$defs/projection"}},
+        "sig": {"$ref": "#/$defs/signature"}
+      }
+    },
+    "approvedFile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["target_path", "data_class", "sha256", "bytes", "particle_hash"],
+      "properties": {"target_path": {"$ref": "#/$defs/relativePath"}, "data_class": {"enum": ["dogg", "neutral"]},
+                     "sha256": {"$ref": "#/$defs/hash"}, "bytes": {"type": "integer", "minimum": 0, "maximum": 716800},
+                     "particle_hash": {"$ref": "#/$defs/hash"}}
+    },
+    "expectedChannel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "config_sha256", "expected_pointer_sha256", "expected_ref"],
+      "properties": {"id": {"$ref": "#/$defs/label"}, "config_sha256": {"$ref": "#/$defs/hash"},
+                     "expected_pointer_sha256": {"$ref": "#/$defs/nullableHash"},
+                     "expected_ref": {"oneOf": [{"type": "null"}, {"const": "absent"}, {"type": "string", "pattern": "^[0-9a-f]{40}$"}]}}
+    },
+    "plan": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema", "hive_rappid", "owner_rappid", "selection_commitment", "created_utc", "base_pointer_sha256", "excluded_pending_count", "approved_files", "channels", "artifacts", "pointer_sha256", "pointer"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-release-plan/1"}, "hive_rappid": {"$ref": "#/$defs/rappid"},
+        "owner_rappid": {"$ref": "#/$defs/rappid"}, "selection_commitment": {"$ref": "#/$defs/hash"},
+        "created_utc": {"$ref": "#/$defs/utc"}, "base_pointer_sha256": {"$ref": "#/$defs/nullableHash"},
+        "excluded_pending_count": {"$ref": "#/$defs/nonnegative"},
+        "approved_files": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/approvedFile"}},
+        "channels": {"type": "array", "minItems": 1, "maxItems": 8, "items": {"$ref": "#/$defs/expectedChannel"}},
+        "artifacts": {"type": "array", "maxItems": 8192, "items": {"$ref": "#/$defs/artifact"}},
+        "pointer_sha256": {"$ref": "#/$defs/hash"}, "pointer": {"$ref": "#/$defs/current"}
+      }
+    },
+    "approval": {
+      "type": "object", "additionalProperties": false, "required": ["schema", "plan_hash", "owner_rappid", "sig"],
+      "properties": {"schema": {"const": "rapp-private-hive-release-approval/1"}, "plan_hash": {"$ref": "#/$defs/hash"},
+                     "owner_rappid": {"$ref": "#/$defs/rappid"}, "sig": {"$ref": "#/$defs/signature"}}
+    },
+    "filesystemChannel": {
+      "type": "object", "additionalProperties": false, "required": ["id", "kind", "role", "path"],
+      "properties": {"id": {"$ref": "#/$defs/label"}, "kind": {"const": "filesystem"},
+                     "role": {"enum": ["authority", "mirror"]}, "path": {"type": "string", "minLength": 1}}
+    },
+    "githubChannel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "kind", "role", "repository", "repository_id", "owner_id", "actor_id", "actor_login", "ref"],
+      "properties": {
+        "id": {"$ref": "#/$defs/label"}, "kind": {"const": "github"}, "role": {"enum": ["authority", "mirror"]},
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}$"},
+        "repository_id": {"$ref": "#/$defs/positive"}, "owner_id": {"$ref": "#/$defs/positive"}, "actor_id": {"$ref": "#/$defs/positive"},
+        "actor_login": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$"},
+        "ref": {"type": "string", "pattern": "^refs/heads/[A-Za-z0-9][A-Za-z0-9_/-]{0,100}$"}
+      }
+    },
+    "channels": {
+      "type": "object", "additionalProperties": false, "required": ["schema", "channels"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-channels/1"},
+        "channels": {"type": "array", "minItems": 1, "maxItems": 8,
+                     "items": {"oneOf": [{"$ref": "#/$defs/filesystemChannel"}, {"$ref": "#/$defs/githubChannel"}]},
+                     "contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "authority"}}},
+                     "minContains": 1, "maxContains": 1}
+      }
+    },
+    "githubEvidence": {
+      "type": "object", "additionalProperties": false, "required": ["schema", "checked_utc", "repository", "actor"],
+      "properties": {
+        "schema": {"const": "rapp-private-hive-github-evidence/1"}, "checked_utc": {"$ref": "#/$defs/utc"},
+        "repository": {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "full_name", "owner_id", "private", "visibility", "fork", "archived", "disabled"],
+          "properties": {"id": {"$ref": "#/$defs/positive"}, "full_name": {"type": "string", "minLength": 3},
+                         "owner_id": {"$ref": "#/$defs/positive"}, "private": {"const": true}, "visibility": {"const": "private"},
+                         "fork": {"const": false}, "archived": {"const": false}, "disabled": {"const": false}}
+        },
+        "actor": {"type": "object", "additionalProperties": false, "required": ["id", "login"],
+                  "properties": {"id": {"$ref": "#/$defs/positive"}, "login": {"type": "string", "minLength": 1}}}
+      }
+    }
+  }
+}

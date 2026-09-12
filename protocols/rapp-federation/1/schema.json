@@ -1,0 +1,1925 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rapp:profile:rapp-federation:1",
+  "title": "RAPP Federation / Work 1 — bounded signed RAPP/1 frames",
+  "$ref": "#/$defs/frame",
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "rappid": {
+      "type": "string",
+      "maxLength": 213,
+      "pattern": "^rappid:@[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*:[0-9a-f]{64}$"
+    },
+    "memoryStream": {
+      "type": "string",
+      "maxLength": 278,
+      "pattern": "^rappid:@[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*:[0-9a-f]{64}:[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "registeredStream": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/rappid"
+        },
+        {
+          "$ref": "#/$defs/memoryStream"
+        }
+      ]
+    },
+    "label": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "signature": {
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^[A-Za-z0-9_-]+\\.\\.[A-Za-z0-9_-]{86}$"
+    },
+    "endpoint": {
+      "type": "string",
+      "format": "uri",
+      "maxLength": 512,
+      "pattern": "^https://[^/?#@\\s]+(?:/[^?#@\\s]*)?/chat$"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/hash"
+      },
+      "minItems": 0,
+      "maxItems": 64,
+      "uniqueItems": true
+    },
+    "party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hive_rappid",
+        "world_id",
+        "actor_rappid"
+      ],
+      "properties": {
+        "hive_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "world_id": {
+          "$ref": "#/$defs/label"
+        },
+        "actor_rappid": {
+          "$ref": "#/$defs/rappid"
+        }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hive_rappid",
+        "world_id"
+      ],
+      "properties": {
+        "hive_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "world_id": {
+          "$ref": "#/$defs/label"
+        }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "space",
+        "hash",
+        "artifact_rappid",
+        "key_service_rappid"
+      ],
+      "properties": {
+        "space": {
+          "const": "rapp/1:egg-manifest"
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "artifact_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "key_service_rappid": {
+          "$ref": "#/$defs/rappid"
+        }
+      }
+    },
+    "hiveHead": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stream_id",
+        "seq",
+        "utc",
+        "payload_hash",
+        "frame_hash",
+        "prev"
+      ],
+      "properties": {
+        "stream_id": {
+          "$ref": "#/$defs/rappid"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "payload_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "frame_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "prev": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "godd.exchange",
+          "task.execute",
+          "proposal.submit"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "modes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "online-confirmed",
+          "offline-bounded",
+          "deferred"
+        ]
+      },
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "horizon": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "uncertainty": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "units": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "totalUnits": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    "uses": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1024
+    },
+    "clockBasis": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lower_utc",
+            "upper_utc"
+          ],
+          "properties": {
+            "lower_utc": {
+              "$ref": "#/$defs/utc"
+            },
+            "upper_utc": {
+              "$ref": "#/$defs/utc"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lower_utc",
+            "upper_utc"
+          ],
+          "properties": {
+            "lower_utc": {
+              "const": null
+            },
+            "upper_utc": {
+              "const": null
+            }
+          }
+        }
+      ]
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "destination",
+        "resource",
+        "grant",
+        "source_policy",
+        "destination_policy",
+        "action",
+        "mode",
+        "units",
+        "not_before",
+        "not_after",
+        "irreversible",
+        "offline_risk_ack"
+      ],
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/party"
+        },
+        "destination": {
+          "$ref": "#/$defs/party"
+        },
+        "resource": {
+          "$ref": "#/$defs/resource"
+        },
+        "grant": {
+          "$ref": "#/$defs/hash"
+        },
+        "source_policy": {
+          "$ref": "#/$defs/hash"
+        },
+        "destination_policy": {
+          "$ref": "#/$defs/hash"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "godd.exchange",
+            "task.execute",
+            "proposal.submit"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "online-confirmed",
+            "offline-bounded",
+            "deferred"
+          ]
+        },
+        "units": {
+          "$ref": "#/$defs/units"
+        },
+        "not_before": {
+          "$ref": "#/$defs/utc"
+        },
+        "not_after": {
+          "$ref": "#/$defs/utc"
+        },
+        "irreversible": {
+          "type": "boolean"
+        },
+        "offline_risk_ack": {
+          "type": "boolean"
+        }
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "hive_rappid",
+        "advertiser_rappid",
+        "capabilities",
+        "endpoint",
+        "expires_utc",
+        "data_class",
+        "pii_status",
+        "publication_evidence_hash"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-discovery"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "hive_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "advertiser_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "godd.exchange",
+              "task.execute",
+              "proposal.submit"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true
+        },
+        "endpoint": {
+          "$ref": "#/$defs/endpoint"
+        },
+        "expires_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "data_class": {
+          "const": "dogg"
+        },
+        "pii_status": {
+          "const": "none"
+        },
+        "publication_evidence_hash": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "peer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "peer",
+        "consent",
+        "not_before",
+        "not_after"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-peer"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "peer": {
+          "$ref": "#/$defs/cell"
+        },
+        "consent": {
+          "const": "allow"
+        },
+        "not_before": {
+          "$ref": "#/$defs/utc"
+        },
+        "not_after": {
+          "$ref": "#/$defs/utc"
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "policy_seq",
+        "previous_policy",
+        "allowed_peers",
+        "allowed_actors",
+        "actions",
+        "modes",
+        "max_units",
+        "max_total_units",
+        "max_uses",
+        "max_offline_ms",
+        "max_clock_uncertainty_ms",
+        "allow_irreversible",
+        "offline_revocation"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-policy"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "policy_seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "previous_policy": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowed_peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rappid"
+          },
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "allowed_actors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rappid"
+          },
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "actions": {
+          "$ref": "#/$defs/actions"
+        },
+        "modes": {
+          "$ref": "#/$defs/modes"
+        },
+        "max_units": {
+          "$ref": "#/$defs/units"
+        },
+        "max_total_units": {
+          "$ref": "#/$defs/totalUnits"
+        },
+        "max_uses": {
+          "$ref": "#/$defs/uses"
+        },
+        "max_offline_ms": {
+          "$ref": "#/$defs/horizon"
+        },
+        "max_clock_uncertainty_ms": {
+          "$ref": "#/$defs/uncertainty"
+        },
+        "allow_irreversible": {
+          "type": "boolean"
+        },
+        "offline_revocation": {
+          "type": "string",
+          "enum": [
+            "deny",
+            "lease-limited"
+          ]
+        }
+      }
+    },
+    "grant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "grant_id",
+        "recipient",
+        "resource",
+        "policy",
+        "actions",
+        "modes",
+        "not_before",
+        "not_after",
+        "max_units",
+        "max_total_units",
+        "max_uses",
+        "max_offline_ms",
+        "offline_revocation",
+        "delegation",
+        "dogg_publication"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-grant"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "grant_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "recipient": {
+          "$ref": "#/$defs/party"
+        },
+        "resource": {
+          "$ref": "#/$defs/resource"
+        },
+        "policy": {
+          "$ref": "#/$defs/hash"
+        },
+        "actions": {
+          "$ref": "#/$defs/actions"
+        },
+        "modes": {
+          "$ref": "#/$defs/modes"
+        },
+        "not_before": {
+          "$ref": "#/$defs/utc"
+        },
+        "not_after": {
+          "$ref": "#/$defs/utc"
+        },
+        "max_units": {
+          "$ref": "#/$defs/units"
+        },
+        "max_total_units": {
+          "$ref": "#/$defs/totalUnits"
+        },
+        "max_uses": {
+          "$ref": "#/$defs/uses"
+        },
+        "max_offline_ms": {
+          "$ref": "#/$defs/horizon"
+        },
+        "offline_revocation": {
+          "type": "string",
+          "enum": [
+            "deny",
+            "lease-limited"
+          ]
+        },
+        "delegation": {
+          "const": false
+        },
+        "dogg_publication": {
+          "const": false
+        }
+      }
+    },
+    "agreement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "terms",
+        "terms_hash",
+        "source_peer",
+        "destination_peer"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-agreement"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "terms": {
+          "$ref": "#/$defs/terms"
+        },
+        "terms_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "source_peer": {
+          "$ref": "#/$defs/hash"
+        },
+        "destination_peer": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "scope",
+        "target",
+        "commitment",
+        "decision"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-approval"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "agreement",
+            "request"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/hash"
+        },
+        "commitment": {
+          "$ref": "#/$defs/hash"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "accept",
+            "reject"
+          ]
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "request_id",
+        "agreement",
+        "agreement_approval",
+        "terms",
+        "destination_checkpoint",
+        "challenge",
+        "supersedes"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-request"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "request_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "agreement": {
+          "$ref": "#/$defs/hash"
+        },
+        "agreement_approval": {
+          "$ref": "#/$defs/hash"
+        },
+        "terms": {
+          "$ref": "#/$defs/terms"
+        },
+        "destination_checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "challenge": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supersedes": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "request",
+        "request_id",
+        "phase",
+        "prior",
+        "approval",
+        "source_checkpoint",
+        "result",
+        "units",
+        "reason",
+        "assurance",
+        "clock_basis"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-receipt"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "request": {
+          "$ref": "#/$defs/hash"
+        },
+        "request_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "received",
+            "validated",
+            "accepted",
+            "executing",
+            "completed",
+            "failed",
+            "rejected"
+          ]
+        },
+        "prior": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "result": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/resource"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "units": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "none",
+            "policy",
+            "revoked",
+            "expired",
+            "conflict",
+            "dependency",
+            "clock",
+            "executor-failure",
+            "duplicate"
+          ]
+        },
+        "assurance": {
+          "type": "string",
+          "enum": [
+            "historical-snapshot",
+            "online-confirmed",
+            "offline-authorized",
+            "authority-unavailable",
+            "known-revoked",
+            "indeterminate"
+          ]
+        },
+        "clock_basis": {
+          "$ref": "#/$defs/clockBasis"
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "control_seq",
+        "action",
+        "target_kind",
+        "target_hash",
+        "peer_hive",
+        "reason"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-control"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "control_seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "revoke",
+            "block",
+            "cancel"
+          ]
+        },
+        "target_kind": {
+          "type": "string",
+          "enum": [
+            "grant",
+            "agreement",
+            "peer",
+            "request"
+          ]
+        },
+        "target_hash": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "peer_hive": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/rappid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "owner-choice",
+            "policy",
+            "key-compromise",
+            "abuse",
+            "superseded"
+          ]
+        }
+      }
+    },
+    "genesis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "phase",
+        "hive_rappid",
+        "actor_rappid",
+        "stream_role",
+        "depends_on"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-checkpoint"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "phase": {
+          "const": "genesis"
+        },
+        "hive_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "actor_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "stream_role": {
+          "type": "string",
+          "enum": [
+            "authority",
+            "actor",
+            "discovery",
+            "relay"
+          ]
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hash"
+          },
+          "minItems": 0,
+          "maxItems": 0,
+          "uniqueItems": true
+        }
+      }
+    },
+    "authorityCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "phase",
+        "issuer",
+        "depends_on",
+        "authority_seq",
+        "previous_checkpoint",
+        "registry_seq",
+        "registry_hash",
+        "hive_head",
+        "hive_head_assurance",
+        "issued_utc",
+        "valid_until_utc",
+        "max_clock_uncertainty_ms",
+        "offline_horizon_ms",
+        "controls",
+        "challenge"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-checkpoint"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "phase": {
+          "const": "authority"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "authority_seq": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "previous_checkpoint": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "registry_seq": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "registry_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "hive_head": {
+          "$ref": "#/$defs/hiveHead"
+        },
+        "hive_head_assurance": {
+          "const": "owner-attested-not-locally-verified"
+        },
+        "issued_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "valid_until_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "max_clock_uncertainty_ms": {
+          "$ref": "#/$defs/uncertainty"
+        },
+        "offline_horizon_ms": {
+          "$ref": "#/$defs/horizon"
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hash"
+          },
+          "minItems": 0,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "challenge": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "checkpoint": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/genesis"
+        },
+        {
+          "$ref": "#/$defs/authorityCheckpoint"
+        }
+      ]
+    },
+    "bundleItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "space",
+        "hash",
+        "bytes",
+        "octets_sha256",
+        "essential"
+      ],
+      "properties": {
+        "space": {
+          "type": "string",
+          "enum": [
+            "rapp/1:wave",
+            "rapp/1:egg-manifest"
+          ]
+        },
+        "hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "octets_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "essential": {
+          "type": "boolean"
+        }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "bundle_id",
+        "request",
+        "destination",
+        "items",
+        "expires_utc",
+        "max_hops"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-bundle"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "bundle_id": {
+          "$ref": "#/$defs/hash"
+        },
+        "request": {
+          "$ref": "#/$defs/hash"
+        },
+        "destination": {
+          "$ref": "#/$defs/party"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bundleItem"
+          },
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "expires_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "max_hops": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        }
+      }
+    },
+    "custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "bundle",
+        "previous_custody",
+        "hop",
+        "status",
+        "next_custodian"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-custody"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "bundle": {
+          "$ref": "#/$defs/hash"
+        },
+        "previous_custody": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hop": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "stored",
+            "forwarded",
+            "refused",
+            "expired"
+          ]
+        },
+        "next_custodian": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/rappid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "hive_mind",
+        "issuer",
+        "checkpoint",
+        "depends_on",
+        "subject",
+        "status",
+        "missing",
+        "clock_lower",
+        "clock_upper"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-federation/1-observation"
+        },
+        "hive_mind": {
+          "const": "urn:rapp:hive-mind"
+        },
+        "issuer": {
+          "$ref": "#/$defs/party"
+        },
+        "checkpoint": {
+          "$ref": "#/$defs/hash"
+        },
+        "depends_on": {
+          "$ref": "#/$defs/dependencies"
+        },
+        "subject": {
+          "$ref": "#/$defs/hash"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "transport-arrived",
+            "content-verified",
+            "pending-dependencies",
+            "expired",
+            "rejected"
+          ]
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/hash"
+          },
+          "minItems": 0,
+          "maxItems": 64,
+          "uniqueItems": true
+        },
+        "clock_lower": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "clock_upper": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/utc"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/discovery"
+        },
+        {
+          "$ref": "#/$defs/peer"
+        },
+        {
+          "$ref": "#/$defs/policy"
+        },
+        {
+          "$ref": "#/$defs/grant"
+        },
+        {
+          "$ref": "#/$defs/agreement"
+        },
+        {
+          "$ref": "#/$defs/approval"
+        },
+        {
+          "$ref": "#/$defs/request"
+        },
+        {
+          "$ref": "#/$defs/receipt"
+        },
+        {
+          "$ref": "#/$defs/control"
+        },
+        {
+          "$ref": "#/$defs/checkpoint"
+        },
+        {
+          "$ref": "#/$defs/bundle"
+        },
+        {
+          "$ref": "#/$defs/custody"
+        },
+        {
+          "$ref": "#/$defs/observation"
+        }
+      ]
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "spec",
+        "kind",
+        "stream_id",
+        "seq",
+        "utc",
+        "payload",
+        "payload_hash",
+        "frame_hash",
+        "prev",
+        "prev_wave",
+        "sig"
+      ],
+      "properties": {
+        "spec": {
+          "const": "rapp/1"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "federation.discovery",
+            "federation.peer",
+            "federation.policy",
+            "federation.grant",
+            "federation.agreement",
+            "federation.approval",
+            "federation.request",
+            "federation.receipt",
+            "federation.control",
+            "federation.checkpoint",
+            "federation.bundle",
+            "federation.custody",
+            "federation.observation"
+          ]
+        },
+        "stream_id": {
+          "$ref": "#/$defs/memoryStream"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "payload": {
+          "$ref": "#/$defs/payload"
+        },
+        "payload_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "frame_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "prev": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "prev_wave": {
+          "const": null
+        },
+        "sig": {
+          "$ref": "#/$defs/signature"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.discovery"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/discovery"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.peer"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/peer"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.policy"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/policy"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.grant"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/grant"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.agreement"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/agreement"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.approval"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/approval"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.request"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/request"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.receipt"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/receipt"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.control"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/control"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.checkpoint"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/checkpoint"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.bundle"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/bundle"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.custody"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/custody"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "federation.observation"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/observation"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "registryEntry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "rappid"
+          ],
+          "properties": {
+            "type": {
+              "const": "estate_owner"
+            },
+            "rappid": {
+              "$ref": "#/$defs/rappid"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "name",
+            "spec_repo",
+            "spec_path",
+            "spec_hash",
+            "deprecated"
+          ],
+          "properties": {
+            "type": {
+              "const": "protocol"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "spec_repo": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "spec_path": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "spec_hash": {
+              "$ref": "#/$defs/hash"
+            },
+            "deprecated": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "kind",
+            "family",
+            "deprecated"
+          ],
+          "properties": {
+            "type": {
+              "const": "kind"
+            },
+            "kind": {
+              "type": "string",
+              "maxLength": 129,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "family": {
+              "type": "string",
+              "enum": [
+                "body",
+                "memory",
+                "swarm"
+              ]
+            },
+            "deprecated": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "rappid",
+            "spki_der_b64",
+            "deprecated"
+          ],
+          "properties": {
+            "type": {
+              "const": "spki"
+            },
+            "rappid": {
+              "$ref": "#/$defs/rappid"
+            },
+            "spki_der_b64": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "deprecated": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "stream_id",
+            "frame_hash",
+            "deprecated"
+          ],
+          "properties": {
+            "type": {
+              "const": "genesis"
+            },
+            "stream_id": {
+              "$ref": "#/$defs/registeredStream"
+            },
+            "frame_hash": {
+              "$ref": "#/$defs/hash"
+            },
+            "deprecated": {
+              "const": false
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "rappid",
+            "revoked_utc",
+            "sig"
+          ],
+          "properties": {
+            "type": {
+              "const": "tombstone"
+            },
+            "rappid": {
+              "$ref": "#/$defs/rappid"
+            },
+            "revoked_utc": {
+              "$ref": "#/$defs/utc"
+            },
+            "sig": {
+              "$ref": "#/$defs/signature"
+            }
+          }
+        }
+      ]
+    },
+    "registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "registry_seq",
+        "canonical_source",
+        "entries",
+        "sig"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp/1-registry"
+        },
+        "registry_seq": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "canonical_source": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 512,
+          "pattern": "^https://[^\\s?#@]+$"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/registryEntry"
+          },
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true
+        },
+        "sig": {
+          "$ref": "#/$defs/signature"
+        }
+      }
+    }
+  }
+}
