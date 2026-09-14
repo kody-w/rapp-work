@@ -17,6 +17,9 @@ the RAPP/1 frame, identity, hashing, signature, egg, or registry contracts.
 - [`.github/skills/rapp-workspace-manager`](.github/skills/rapp-workspace-manager/SKILL.md)
   — the main entrypoint for creating, registering, listing, and opening local
   RAPP Workspaces.
+- [`.github/skills/autonomous-rapp-estate-manager`](.github/skills/autonomous-rapp-estate-manager/SKILL.md)
+  — the single-file end-to-end workflow for consolidating and maintaining a
+  full pointer-only local AI estate.
 - [`rappid.json`](rappid.json), [`owner-anchor.json`](owner-anchor.json), and
   [`registry.json`](registry.json) — the public identity and signed adoption
   record for this standards estate.
