@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
+import tempfile
 import warnings
 from pathlib import Path
 from types import ModuleType
@@ -186,15 +187,21 @@ def _publisher_channels(path: Path) -> tuple[dict[str, Any], ...]:
         require_private=True,
     )
     database = sqlite3.connect(":memory:")
+    temporary: tempfile.TemporaryDirectory[str] | None = None
     try:
         deserialize = getattr(database, "deserialize", None)
-        require(
-            callable(deserialize),
-            "REFUSE_PLATFORM",
-            "safe in-memory inspection of legacy publisher state is unavailable",
-        )
-        assert callable(deserialize)
-        deserialize(raw)
+        if callable(deserialize):
+            deserialize(raw)
+        else:
+            database.close()
+            temporary = tempfile.TemporaryDirectory(prefix="rapp-work-publisher-")
+            snapshot = Path(temporary.name) / "state.sqlite3"
+            snapshot.write_bytes(raw)
+            snapshot.chmod(0o600)
+            database = sqlite3.connect(
+                snapshot.resolve().as_uri() + "?mode=ro&immutable=1",
+                uri=True,
+            )
         database.execute("PRAGMA query_only=ON")
         row = database.execute(
             "SELECT value FROM metadata WHERE key='config'",
@@ -212,6 +219,8 @@ def _publisher_channels(path: Path) -> tuple[dict[str, Any], ...]:
         ) from error
     finally:
         database.close()
+        if temporary is not None:
+            temporary.cleanup()
     require(
         isinstance(config, dict) and isinstance(config.get("channels"), list),
         "REFUSE_COMPATIBILITY",
