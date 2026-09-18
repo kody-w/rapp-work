@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rapp-work"
+version = "1.0.0"
+description = "Typed, offline-first SDK for the RAPP Work business collaboration profile"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "RAPP Work contributors" }]
+keywords = ["rapp", "offline-first", "workspace", "hive", "sdk"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = ["cryptography>=42,<47"]
+
+[project.optional-dependencies]
+dev = [
+  "build>=1.2,<2",
+  "jsonschema>=4.21,<5",
+  "mypy>=1.15,<2",
+  "pytest>=8,<10",
+  "ruff>=0.11,<1",
+  "wheel>=0.45,<1",
+]
+
+[project.scripts]
+rapp-work = "rapp_work.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src", "rapp_work._vendor_rapp1" = "vendor/rapp-1", "rapp_work._protocols" = "protocols", "rapp_work._legacy_skills" = ".github/skills" }
+packages = [
+  "rapp_work",
+  "rapp_work.compat",
+  "rapp_work.data",
+  "rapp_work._vendor_rapp1",
+  "rapp_work._protocols",
+  "rapp_work._legacy_skills",
+]
+include-package-data = true
+
+[tool.setuptools.package-data]
+rapp_work = ["py.typed", "data/**/*.json", "data/**/*.md", "data/**/*.txt"]
+"rapp_work._vendor_rapp1" = ["SPEC.md"]
+"rapp_work._protocols" = ["**/*"]
+"rapp_work._legacy_skills" = ["**/*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests", ".github/skills/rapp-private-hive/tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+include = ["src/**/*.py", "tests/**/*.py", "tools/*.py"]
+extend-exclude = [
+  ".github/skills/rapp-private-hive/lib",
+  ".github/skills/rapp-private-hive/scripts/prepare_workspace.py",
+  "protocols",
+  "vendor",
+]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src/rapp_work"]
+exclude = ["src/rapp_work/compat"]
+warn_unused_configs = true

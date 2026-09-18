@@ -1,24 +1,23 @@
-# RAPP Work agent entrypoint
+# RAPP Work SDK agent entrypoint
 
-RAPP Work is the business collaboration and compliance layer over RAPP/1.
+The qualified product architecture is the installable `rapp-work` distribution
+and `rapp_work` package. Start with `README.md`, `docs/ARCHITECTURE.md`, and
+`protocols/rapp-work-sdk/1/SPEC.md`.
 
-Start with:
+Public JSON operations are exactly `status`, `verify`, `discover`, `scaffold`,
+`update`, and `migrate`. The first three are read-only. The latter three plan by
+default and require explicit apply plus the exact canonical plan SHA-256.
 
-1. `.github/skills/rapp-workspace-manager/SKILL.md` to create, register, list,
-   or route among local RAPP Workspaces.
-2. `.github/skills/rapp-workspace/SKILL.md` to operate workspace project
-   frames, leases, handoffs, and verification.
-3. `.github/skills/rapp-private-hive/SKILL.md` to migrate an older workspace,
-   prepare Hive selections, create signed authority, publish privately, or
-   verify a Hive client.
+Read the canonical `rapp-work/1` bytes named by `RAPP_WORK_PIN.json` before
+changing business protocol behavior. RAPP/1 remains authoritative for
+identity, canonical bytes, the eleven-key Frame, hashes, signatures, Eggs,
+sealed artifacts, and registries. Change canonical pins only for an explicitly
+accepted upstream revision. Never rewrite root `SPEC.md`, the historical
+signed registry, or its signatures to make an SDK pin update appear activated.
 
-Read `SPEC.md` before changing protocol behavior. RAPP/1 remains authoritative
-for identity, frames, hashes, signatures, eggs, and registries.
+Historical project skills are compatibility surfaces. Use `rapp_work.compat`
+rather than creating another workspace-manager or Private Hive
+implementation. Preserve their fixtures.
 
-Never infer authority from an AI vendor, account, URL, transport, or repository
-permission. Humans, AIs, agents, and services participate through the same
-RAPPID, signature, policy, and evidence rules.
-
-DOGG must be PII-free. GODD remains private. Nothing leaves a workspace unless
-it is explicitly classified, selected, approved, and sent through an
-authorized channel.
+No network or credential inheritance by default. Never execute discovered
+neurons, plugins, or skills. DOGG must be PII-free; GODD remains private.

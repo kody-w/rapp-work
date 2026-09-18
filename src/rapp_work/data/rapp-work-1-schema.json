@@ -1,0 +1,848 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/kody-w/rapp-1/main/protocols/rapp-work/1/schema.json",
+  "title": "RAPP Work v1 payloads",
+  "description": "Closed structural schemas. RAPP/1 signatures, registry authority, Hive ancestry, CI/CD and Deploy authorization, custody, and bounded retained state require the normative reference validator.",
+  "$comment": "Catalog locators and static paths are discovery only. They do not grant authority or add an endpoint.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/organization"
+    },
+    {
+      "$ref": "#/$defs/catalog"
+    },
+    {
+      "$ref": "#/$defs/vector"
+    },
+    {
+      "$ref": "#/$defs/migration"
+    },
+    {
+      "$ref": "#/$defs/receipt"
+    },
+    {
+      "$ref": "#/$defs/observation"
+    },
+    {
+      "$ref": "#/$defs/rollback"
+    }
+  ],
+  "$defs": {
+    "hex64": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uint53": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "rappid": {
+      "type": "string",
+      "pattern": "^rappid:@(?=[a-z0-9-]{1,39}/)[a-z0-9]+(?:-[a-z0-9]+)*/(?=[a-z0-9-]{1,100}:)[a-z0-9]+(?:-[a-z0-9]+)*:[0-9a-f]{64}$"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$"
+    },
+    "utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "httpsUri": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^/]+(?:/[^/]+)*$"
+    },
+    "address": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "space",
+        "hash"
+      ],
+      "properties": {
+        "space": {
+          "enum": [
+            "rapp/1:particle",
+            "rapp/1:wave",
+            "rapp/1:egg-manifest"
+          ]
+        },
+        "hash": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "addresses": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/address"
+      }
+    },
+    "head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stream_id",
+        "seq",
+        "utc",
+        "payload_hash",
+        "frame_hash"
+      ],
+      "properties": {
+        "stream_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "seq": {
+          "$ref": "#/$defs/uint53"
+        },
+        "utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "frame_hash": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "catalogLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "uri",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "git",
+            "raw",
+            "static"
+          ]
+        },
+        "uri": {
+          "$ref": "#/$defs/httpsUri"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        }
+      }
+    },
+    "immutableLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "object_format",
+        "commit",
+        "path"
+      ],
+      "properties": {
+        "repository": {
+          "$ref": "#/$defs/httpsUri"
+        },
+        "object_format": {
+          "enum": [
+            "sha1",
+            "sha256"
+          ]
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "object_format": {
+                "const": "sha1"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "commit": {
+                "pattern": "^[0-9a-f]{40}$"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "commit": {
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "portableNeuronCompatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "mode",
+        "verdict",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "portable-neuron/2",
+            "portable-neuron-catalog/2",
+            "portable-neuron-packet/2",
+            "portable-neuron-request/2"
+          ]
+        },
+        "mode": {
+          "const": "inert-data"
+        },
+        "verdict": {
+          "const": "compatible"
+        },
+        "evidence_sha256": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "catalogItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "address",
+        "locator",
+        "authority",
+        "compatibility"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/label"
+        },
+        "kind": {
+          "enum": [
+            "plugin",
+            "skill",
+            "static-api",
+            "portable-neuron"
+          ]
+        },
+        "address": {
+          "$ref": "#/$defs/address"
+        },
+        "locator": {
+          "$ref": "#/$defs/catalogLocator"
+        },
+        "authority": {
+          "const": "discovery-only"
+        },
+        "compatibility": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/portableNeuronCompatibility"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "portable-neuron"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "compatibility": {
+                "$ref": "#/$defs/portableNeuronCompatibility"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "compatibility": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "organization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_rappid",
+        "owner_rappid",
+        "world_id",
+        "hive_rappid",
+        "release_scope",
+        "policy_sha256",
+        "created_utc"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-organization"
+        },
+        "organization_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "owner_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "world_id": {
+          "$ref": "#/$defs/label"
+        },
+        "hive_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "release_scope": {
+          "$ref": "#/$defs/httpsUri"
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/hex64"
+        },
+        "created_utc": {
+          "$ref": "#/$defs/utc"
+        }
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_payload_hash",
+        "created_utc",
+        "previous_catalog_payload_hash",
+        "items"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-catalog"
+        },
+        "organization_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "created_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "previous_catalog_payload_hash": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/catalogItem"
+          }
+        }
+      }
+    },
+    "hiveCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "registry_seq",
+        "registry_hash",
+        "hive_rappid",
+        "mother_head_frame_hash",
+        "catalog_hash"
+      ],
+      "properties": {
+        "registry_seq": {
+          "$ref": "#/$defs/uint53"
+        },
+        "registry_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "hive_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "mother_head_frame_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "catalog_hash": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "vector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_payload_hash",
+        "observed_utc",
+        "hive_checkpoint",
+        "mother_head",
+        "previous_vector_payload_hash"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-vector"
+        },
+        "organization_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "observed_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "hive_checkpoint": {
+          "$ref": "#/$defs/hiveCheckpoint"
+        },
+        "mother_head": {
+          "$ref": "#/$defs/head"
+        },
+        "previous_vector_payload_hash": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_payload_hash",
+        "created_utc",
+        "release_payload_hash",
+        "artifact_sha256",
+        "grail_id",
+        "state_schema_sha256",
+        "snapshot",
+        "restore_evidence_sha256",
+        "locator"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-rollback"
+        },
+        "organization_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "created_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "release_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "artifact_sha256": {
+          "$ref": "#/$defs/hex64"
+        },
+        "grail_id": {
+          "type": "string",
+          "pattern": "^grail:[0-9a-f]{64}$"
+        },
+        "state_schema_sha256": {
+          "$ref": "#/$defs/hex64"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/address"
+        },
+        "restore_evidence_sha256": {
+          "$ref": "#/$defs/hex64"
+        },
+        "locator": {
+          "$ref": "#/$defs/immutableLocator"
+        }
+      }
+    },
+    "migrationSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspace_rappid",
+        "world_id",
+        "snapshot",
+        "head"
+      ],
+      "properties": {
+        "workspace_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "world_id": {
+          "$ref": "#/$defs/label"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/address"
+        },
+        "head": {
+          "$ref": "#/$defs/head"
+        }
+      }
+    },
+    "migrationTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workspace_rappid",
+        "release_payload_hash",
+        "vector_payload_hash"
+      ],
+      "properties": {
+        "workspace_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "release_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "vector_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_payload_hash",
+        "migration_id",
+        "created_utc",
+        "mode",
+        "source",
+        "target",
+        "catalog_item_ids",
+        "rollback_payload_hash"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-migration"
+        },
+        "organization_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "migration_id": {
+          "$ref": "#/$defs/hex64"
+        },
+        "created_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "mode": {
+          "const": "create-only"
+        },
+        "source": {
+          "$ref": "#/$defs/migrationSource"
+        },
+        "target": {
+          "$ref": "#/$defs/migrationTarget"
+        },
+        "catalog_item_ids": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/label"
+          }
+        },
+        "rollback_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "receiptSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "address"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "plugin",
+            "skill",
+            "static-api",
+            "portable-neuron",
+            "catalog",
+            "migration",
+            "release",
+            "rollback",
+            "vector"
+          ]
+        },
+        "address": {
+          "$ref": "#/$defs/address"
+        }
+      }
+    },
+    "migrationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "migration_id",
+        "source_snapshot_hash",
+        "source_head_frame_hash",
+        "target_workspace_rappid",
+        "target_release_payload_hash",
+        "target_vector_payload_hash",
+        "rollback_payload_hash"
+      ],
+      "properties": {
+        "migration_id": {
+          "$ref": "#/$defs/hex64"
+        },
+        "source_snapshot_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "source_head_frame_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "target_workspace_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "target_release_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "target_vector_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "rollback_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "custody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "holder_rappid",
+        "key_rappid",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "holder_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "key_rappid": {
+          "$ref": "#/$defs/rappid"
+        },
+        "evidence_sha256": {
+          "$ref": "#/$defs/hex64"
+        }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_payload_hash",
+        "receipt_type",
+        "subject",
+        "issued_utc",
+        "result",
+        "evidence",
+        "migration",
+        "custody"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-receipt"
+        },
+        "organization_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "receipt_type": {
+          "enum": [
+            "migration-completed",
+            "catalog-verified",
+            "release-verified"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/receiptSubject"
+        },
+        "issued_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "result": {
+          "enum": [
+            "verified",
+            "failed"
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/addresses"
+        },
+        "migration": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/migrationReceipt"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "custody": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/custody"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "receipt_type": {
+                "const": "migration-completed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "result": {
+                "const": "verified"
+              },
+              "migration": {
+                "$ref": "#/$defs/migrationReceipt"
+              },
+              "custody": {
+                "$ref": "#/$defs/custody"
+              },
+              "evidence": {
+                "minItems": 1
+              },
+              "subject": {
+                "properties": {
+                  "kind": {
+                    "const": "migration"
+                  },
+                  "address": {
+                    "properties": {
+                      "space": {
+                        "const": "rapp/1:particle"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "migration": {
+                "type": "null"
+              },
+              "custody": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "organization_payload_hash",
+        "release_payload_hash",
+        "deployment_payload_hash",
+        "vector_payload_hash",
+        "observed_utc",
+        "verdict",
+        "evidence",
+        "previous_observation_payload_hash"
+      ],
+      "properties": {
+        "schema": {
+          "const": "rapp-work/1-observation"
+        },
+        "organization_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "release_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "deployment_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "vector_payload_hash": {
+          "$ref": "#/$defs/hex64"
+        },
+        "observed_utc": {
+          "$ref": "#/$defs/utc"
+        },
+        "verdict": {
+          "enum": [
+            "healthy",
+            "unhealthy",
+            "indeterminate"
+          ]
+        },
+        "evidence": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/addresses"
+            },
+            {
+              "minItems": 1
+            }
+          ]
+        },
+        "previous_observation_payload_hash": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/hex64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

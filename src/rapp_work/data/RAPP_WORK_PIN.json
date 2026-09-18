@@ -1,0 +1,10 @@
+{
+  "schema": "rapp-work-sdk-parent-pin/1",
+  "protocol": "rapp-work/1",
+  "repository": "https://github.com/kody-w/rapp-1",
+  "commit": "591e014ad39e223b00ab343ae26e5d9a867ebeee",
+  "spec_path": "protocols/rapp-work/1/SPEC.md",
+  "spec_sha256": "283359355c3fe2858e28744368255683af3ed28a68e290e56c231e7d4b13c08e",
+  "schema_path": "protocols/rapp-work/1/schema.json",
+  "schema_sha256": "ff30f9878f12fa4ad7d93c4c205eb1cb580137a7dee87aa9d23c88a93466d19e"
+}

@@ -1,0 +1,96 @@
+{
+  "schema": "rapp-work-static-api/1",
+  "distribution": "rapp-work",
+  "import": "rapp_work",
+  "command": "rapp-work",
+  "module_command": "python -m rapp_work",
+  "protocol": "rapp-work/1",
+  "workspace_profile": "rapp-work-sdk/1",
+  "network_default": "disabled",
+  "operations": [
+    {
+      "name": "status",
+      "read_only": true,
+      "default": "inspect",
+      "required_inputs": [],
+      "optional_inputs": [
+        "root"
+      ]
+    },
+    {
+      "name": "verify",
+      "read_only": true,
+      "default": "verify",
+      "required_inputs": [],
+      "optional_inputs": [
+        "root"
+      ]
+    },
+    {
+      "name": "discover",
+      "read_only": true,
+      "default": "inert-metadata-only",
+      "required_inputs": [
+        "roots"
+      ],
+      "optional_inputs": [
+        "max_entries"
+      ]
+    },
+    {
+      "name": "scaffold",
+      "read_only": false,
+      "default": "plan",
+      "required_inputs": [
+        "kind",
+        "mode",
+        "owner_label",
+        "root",
+        "slug",
+        "world_id"
+      ],
+      "optional_inputs": [
+        "apply",
+        "plan",
+        "plan_sha256"
+      ]
+    },
+    {
+      "name": "update",
+      "read_only": false,
+      "default": "plan",
+      "required_inputs": [
+        "root"
+      ],
+      "optional_inputs": [
+        "apply",
+        "plan",
+        "plan_sha256"
+      ]
+    },
+    {
+      "name": "migrate",
+      "read_only": false,
+      "default": "plan",
+      "required_inputs": [
+        "source",
+        "target"
+      ],
+      "optional_inputs": [
+        "apply",
+        "plan",
+        "plan_sha256"
+      ]
+    }
+  ],
+  "refusals": [
+    "implicit apply",
+    "unknown input members",
+    "network by default",
+    "credential inheritance",
+    "symlink or hardlink authority paths",
+    "unreviewed plan hashes",
+    "plugin, skill, or neuron execution",
+    "parent authority mutation"
+  ]
+}

@@ -13,6 +13,12 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class NoAbbrevArgumentParser(argparse.ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        kwargs["allow_abbrev"] = False
+        super().__init__(*args, **kwargs)
+
+
 def verify_lock():
     lock = json.loads((ROOT / "rapp" / "agent.lock.json").read_text(encoding="utf-8"))
     required = {"SKILL.md", "DEPLOYMENT.md", "requirements.txt", "requirements-test.txt"}
@@ -38,7 +44,7 @@ def verify_lock():
 
 
 def parser():
-    root = argparse.ArgumentParser(description=__doc__)
+    root = NoAbbrevArgumentParser(description=__doc__)
     root.add_argument("--preflight", action="store_true", help="verify every locked skill and vendored protocol byte")
     groups = root.add_subparsers(dest="group")
 
@@ -66,6 +72,8 @@ def parser():
             source.add_argument("--source-channel-id", help="existing private GitHub channel in --channels")
             command.add_argument("--read-state-dir", type=Path, help="explicit isolated Git read cache, outside workspace/custody/state")
             command.add_argument("--github-evidence", type=Path)
+            command.add_argument("--github-token-file", type=Path,
+                                 help="explicit owner-only token file; ambient credentials are refused")
             command.add_argument("--anchor", type=Path, required=True, help="separately supplied existing anchor")
             command.add_argument("--expected-spki-sha256", required=True)
     export = auth.add_parser("anchor")
@@ -86,7 +94,9 @@ def parser():
             command.add_argument("--created-utc")
         if name == "publish":
             command.add_argument("--github-evidence", type=Path,
-                                 help="explicit operator-supplied API evidence; gh still provides credentials")
+                                 help="explicit operator-supplied API evidence")
+            command.add_argument("--github-token-file", type=Path,
+                                 help="explicit owner-only token file; ambient credentials are refused")
 
     clients = groups.add_parser("client").add_subparsers(dest="operation", required=True)
     for name in ("init", "pull", "verify", "materialize"):
@@ -99,6 +109,8 @@ def parser():
             command.add_argument("--channels", type=Path, required=True)
             command.add_argument("--channel-id", required=True)
             command.add_argument("--github-evidence", type=Path)
+            command.add_argument("--github-token-file", type=Path,
+                                 help="explicit owner-only token file; ambient credentials are refused")
         if name in {"materialize", "verify"}:
             command.add_argument("--destination", type=Path, required=name == "materialize")
     for name in ("sharepoint", "public-git", "federation", "seal", "key-release", "rotate-owner", "topology"):
@@ -133,12 +145,19 @@ def main(argv=None):
         require(document["schema"] == "rapp-private-hive-channels/1", "wrong channels schema")
         return validate_channels(document["channels"])
 
-    def provider(path):
+    def provider(path, token_path=None):
         if path is None:
             return None
         class SnapshotEvidence(GitHubCLI):
             def __call__(self, config):
                 return R._strict_json(read_file(path))
+            def token(self):
+                require(token_path is not None,
+                        "hosted private Git requires an explicit --github-token-file")
+                token = read_file(token_path, private=True, limit=4096).strip().decode("ascii")
+                require(token and len(token) <= 4096 and not any(char.isspace() for char in token),
+                        "invalid explicit GitHub credential")
+                return token
         return SnapshotEvidence()
 
     if args.group in {"key", "keys"}:
@@ -167,7 +186,11 @@ def main(argv=None):
                     require(len(selected) == 1 and args.read_state_dir is not None,
                             "GitHub import requires an exact GitHub channel and an explicit --read-state-dir")
                     paths_disjoint(args.workspace, args.publisher_dir, args.key_dir, args.read_state_dir)
-                    source = GitHubGit(selected[0], args.read_state_dir, evidence_provider=provider(args.github_evidence))
+                    source = GitHubGit(
+                        selected[0],
+                        args.read_state_dir,
+                        evidence_provider=provider(args.github_evidence, args.github_token_file),
+                    )
                     with source.snapshot() as (read, ref):
                         imported = verify_bundle(anchor_raw, read("refs/current.json"), read)
             result = release.initialize(args.workspace, args.publisher_dir, key, configuration,
@@ -198,7 +221,7 @@ def main(argv=None):
                 result = release.approve(args.publisher_dir, key, args.plan_hash)
             else:
                 result = release.publish(args.publisher_dir, key, args.plan_hash,
-                                         evidence_provider=provider(args.github_evidence))
+                                         evidence_provider=provider(args.github_evidence, args.github_token_file))
     else:
         if args.operation == "init":
             result = client.initialize(args.client_dir, read_file(args.anchor),
@@ -207,7 +230,11 @@ def main(argv=None):
             configuration = channels(args.channels)
             selected = [item for item in configuration if item["id"] == args.channel_id]
             require(len(selected) == 1, "explicit channel not in configuration")
-            result = client.pull(args.client_dir, selected[0], evidence_provider=provider(args.github_evidence))
+            result = client.pull(
+                args.client_dir,
+                selected[0],
+                evidence_provider=provider(args.github_evidence, args.github_token_file),
+            )
         elif args.operation == "materialize":
             result = client.materialize(args.client_dir, args.destination)
         else:
