@@ -173,8 +173,8 @@ python3 scripts/deploy_hive.py authority import \
 To import directly from a configured private GitHub channel, replace
 `--source …` with `--source-channel-id <id> --read-state-dir /path/to/private-git-read-cache`.
 This path uses the same pinned repository/actor/privacy gates as publishing,
-supports the explicit `--github-evidence` option, reads a fixed commit
-snapshot, and performs no push.
+requires explicit `--github-evidence` and `--github-token-file` inputs, reads a
+fixed commit snapshot, and performs no push.
 
 Import verifies the complete signed history and object closure before creating
 publisher state, preserves the anchor/genesis/history, and requires the
@@ -267,11 +267,13 @@ repository, change visibility, grant collaborators, or use workspace Git.
 
 **The IDs above are fictional placeholders, not defaults.** Obtain and
 independently confirm your real immutable repository, owner and actor IDs.
-Authenticate the `gh` CLI separately. The adapter retrieves
-`gh api repos/<owner>/<repository>` and `gh api user`, checks exact identities,
-`private:true`, `visibility:"private"`, `fork:false`, `archived:false` and
-`disabled:false`, then checks again immediately before push. Evidence must be
-at most five minutes old and no more than thirty seconds in the future.
+Supply a fresh operator-reviewed API evidence document and an owner-only mode
+0600 token file explicitly. Ambient `gh` sessions, environment tokens, Git
+credential helpers, and SSH agents are refused. The adapter checks exact
+identities, `private:true`, `visibility:"private"`, `fork:false`,
+`archived:false`, and `disabled:false` immediately before transport use.
+Evidence must be at most five minutes old and no more than thirty seconds in
+the future.
 
 Every Git build requires an explicit expected ref per Git channel:
 
@@ -280,6 +282,12 @@ python3 scripts/deploy_hive.py release build \
   --publisher-dir /path/to/publisher --key-dir /path/to/owner-custody \
   --stage-root /path/to/private-outbox/hive-<derived-id> \
   --expected-ref 'private-github=absent'
+
+python3 scripts/deploy_hive.py release publish \
+  --publisher-dir /path/to/publisher --key-dir /path/to/owner-custody \
+  --plan-hash '<exact approved plan hash>' \
+  --github-evidence /path/to/fresh-github-evidence.json \
+  --github-token-file /path/to/owner-only-token
 ```
 
 For a successor, replace `absent` with the exact 40-hex old commit OID.
@@ -288,12 +296,13 @@ Publishing uses isolated bare repositories, shallow Git commit fetches
 commits, scrubbed inherited Git configuration, disabled hooks/automatic maintenance, no checkout/filter/
 submodule execution, HTTPS transport, and
 `--force-with-lease=<ref>:<expected-old-oid>`. It never stages, commits, resets
-or pushes the workspace repository. Credentials come from `gh`, are passed
-only in the Git child environment, and are not put in URLs, arguments, config
-files, plans, logs, or artifacts.
+or pushes the workspace repository. The explicit token is passed only in the
+isolated Git child environment and is not put in URLs, arguments, config files,
+plans, logs, or artifacts.
 
-For explicit operator evidence injection, pass `--github-evidence <file>` to
-`release publish` or `client pull`. The closed evidence document is:
+Pass both `--github-evidence <file>` and
+`--github-token-file <owner-only-file>` to `release publish`, direct Git
+authority import, or `client pull`. The closed evidence document is:
 
 ```json
 {
@@ -310,10 +319,9 @@ For explicit operator evidence injection, pass `--github-evidence <file>` to
 
 This flag is a deliberate **trusted operator-supplied API snapshot**, not a
 cryptographically signed GitHub attestation. It is checked twice and must
-remain fresh; `gh` still supplies real transport credentials. The default
-queries live evidence twice. Unit tests instead inject a provider and an
-explicit local bare-repository transport; the CLI has no local-transport
-bypass for GitHub privacy gates.
+remain fresh. The token file is read with no-follow owner-only checks. Unit
+tests inject a provider and an explicit local bare-repository transport; the
+CLI has no local-transport bypass for GitHub privacy gates.
 
 Git visibility and ref CAS are not one server transaction. The MVP cannot
 prevent an authorized administrator changing visibility immediately after the
@@ -335,7 +343,9 @@ python3 scripts/deploy_hive.py client init \
 
 python3 scripts/deploy_hive.py client pull \
   --client-dir /path/to/client --channels /path/to/client-channels.json \
-  --channel-id primary
+  --channel-id private-github \
+  --github-evidence /path/to/fresh-github-evidence.json \
+  --github-token-file /path/to/owner-only-token
 
 python3 scripts/deploy_hive.py client verify --client-dir /path/to/client
 

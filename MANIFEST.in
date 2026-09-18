@@ -1,0 +1,25 @@
+include .gitignore
+include AGENTS.md
+include CLAUDE.md
+include CHANGELOG.md
+include CONTRIBUTING.md
+include LICENSE
+include MANIFEST.in
+include README.md
+include RELEASE-INVENTORY.json
+include RAPP1_PIN.json
+include RAPP_WORK_PIN.json
+include SECURITY.md
+include SPEC.md
+include owner-anchor.json
+include pyproject.toml
+include rappid.json
+include registry.json
+recursive-include .github *
+recursive-include docs *
+recursive-include protocols *
+recursive-include src *
+recursive-include tests *
+recursive-include tools *
+recursive-include vendor/rapp-1 *
+global-exclude __pycache__ *.py[cod] .DS_Store

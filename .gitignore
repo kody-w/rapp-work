@@ -3,3 +3,14 @@ __pycache__/
 .DS_Store
 .venv/
 venv/
+.clean-install/
+.pip-cache/
+.pip-tmp/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.test-work/
+.hive-test-work/
+build/
+dist/
+*.egg-info/

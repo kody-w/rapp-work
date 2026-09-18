@@ -41,42 +41,29 @@ def validate_evidence(evidence: dict, config: dict) -> dict:
 
 
 class GitHubCLI:
-    """Use gh's authenticated API, without accepting repository names as privacy evidence."""
+    """Deprecated ambient provider: explicit evidence and token inputs are required."""
 
     def __call__(self, config):
-        def api(endpoint):
-            try:
-                process = subprocess.run(["gh", "api", "--hostname", "github.com", endpoint],
-                                         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-            except (OSError, subprocess.SubprocessError) as error:
-                raise ValueError("GitHub CLI privacy evidence unavailable") from error
-            require(len(process.stdout) <= MAX_ARTIFACT_BYTES, "GitHub evidence byte limit")
-            return json.loads(process.stdout)
-        repo, actor = api("repos/" + config["repository"]), api("user")
-        return {"schema": "rapp-private-hive-github-evidence/1", "checked_utc": now(),
-                "repository": {"id": repo["id"], "full_name": repo["full_name"], "owner_id": repo["owner"]["id"],
-                               "private": repo["private"], "visibility": repo["visibility"], "fork": repo["fork"],
-                               "archived": repo["archived"], "disabled": repo["disabled"]},
-                "actor": {"id": actor["id"], "login": actor["login"]}}
+        raise ValueError("explicit GitHub privacy evidence is required; ambient CLI sessions are not inherited")
 
     def token(self):
-        try:
-            result = subprocess.run(["gh", "auth", "token", "--hostname", "github.com"],
-                                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-        except (OSError, subprocess.SubprocessError) as error:
-            raise ValueError("GitHub CLI credential unavailable") from error
-        token = result.stdout.strip().decode("ascii")
-        require(token and len(token) <= 4096 and not any(char.isspace() for char in token), "invalid GitHub credential")
-        return token
+        raise ValueError("explicit GitHub token provider is required; ambient credentials are not inherited")
 
 
 class GitSession:
     def __init__(self, root, remote, *, local=False, token=None):
         self.root, self.remote = root, remote
-        self.env = {name: value for name, value in os.environ.items() if not name.startswith("GIT_")}
-        self.env.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_SYSTEM="/dev/null", GIT_CONFIG_GLOBAL="/dev/null",
-                        GIT_TERMINAL_PROMPT="0", GIT_NO_REPLACE_OBJECTS="1", GIT_ATTR_NOSYSTEM="1",
-                        GIT_PAGER="cat", GIT_CEILING_DIRECTORIES=str(root.parent), LC_ALL="C")
+        self.env = {
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": "/dev/null",
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_TERMINAL_PROMPT": "0",
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_ATTR_NOSYSTEM": "1",
+            "GIT_PAGER": "cat",
+            "GIT_CEILING_DIRECTORIES": str(root.parent),
+            "LC_ALL": "C",
+        }
         if token:
             authorization = base64.b64encode(("x-access-token:" + token).encode()).decode()
             self.env.update(GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="http.https://github.com/.extraheader",
