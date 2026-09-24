@@ -60,7 +60,7 @@ THE RAPP/1 ORGANISM  ·  read it bottom (0) to top (6)
                                              ┊ idea (G5, G10)  │ work.vector: │ Hives, by         │
                                              ┊                 │ the accepted │ agreement only    │
                                              ┊                 │ Hive         │ rapp-federation/1 │
-                                             ▼                 ▼ checkpoint   │ · Hive Hub        │
+                                             ▼                 ▼ checkpoint   │ · Hive Hub cards  │
                               ┌────────────────────────────────────────────┐  │ [candidate]       │
                               │ 2 · ORGANIZATION               [specified] │  └───────────────────┘
                               │ the accountable body                       │
@@ -132,7 +132,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | [RAR](parts/rar.md) | in, beside 5 | The public registry of single-file agents | in force |
 | [Outside knowledge](parts/outside-knowledge.md) | in, beside 4 | Old Hives, second brains, Obsidian vaults, markdown wikis, docs folders, other AI tools' own workspaces | own shape |
 | [Public copy](parts/public-copy.md) | out, beside 3 | A separate, reviewed repository holding exactly the approved files, plus `PUBLISHED.md` | experimental |
-| [Hive Mind](parts/hive-mind.md) | across, beside 3 | The network of sovereign Hives: discovery, dial records and join cards, agreements between organizations | candidate (G12) |
+| [Hive Mind](parts/hive-mind.md) | across, beside 3 | The network of sovereign Hives: discovery through Hive Hub cards, and agreements between organizations | candidate (G12) |
 | [Release rings](parts/release-rings.md) | out, beside 2 | Estate-named stages over `rapp-cicd/1` §3: here canary, nightly, alpha, beta, then the production ring (the grail) | specified (G16) |
 
 ## Crossings
@@ -170,7 +170,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | [G9](gaps/G09.md) | A git commit is not authority in canonical `rapp-work/1` | proposed |
 | [G10](gaps/G10.md) | An organization cannot bind a folder Hive | idea |
 | [G11](gaps/G11.md) | “Organization” means two things | idea |
-| [G12](gaps/G12.md) | Hive Hub dial records do not describe folder Hives | idea |
+| [G12](gaps/G12.md) | Hive Hub dial records did not describe folder Hives | experimental |
 | [G13](gaps/G13.md) | Outside knowledge had no way in | experimental |
 | [G14](gaps/G14.md) | The Hive agent's path to the production ring | open |
 | [G15](gaps/G15.md) | No estate declares the Brainstem's kernel | open |
@@ -199,7 +199,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
 - **The Brainstem is the one surface you talk to.** Every other layer is plumbing.
 
-[Dogfood: the RAPP Hive, our public example](dogfood.md) (planned): where the organism is tried for real. Other words: [glossary.md](glossary.md).
+[Dogfood: the RAPP Hive, our public example](dogfood.md) (experimental): where the organism is tried for real. Other words: [glossary.md](glossary.md).
 
 ## How to adapt it
 

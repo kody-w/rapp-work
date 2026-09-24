@@ -50,7 +50,7 @@ Beside the stack:
 | In | **RAR** | The public registry of single-file agents | [`kody-w/RAR`](https://github.com/kody-w/RAR) (`rapp-registry/1.0`) | in force |
 | In | **Outside knowledge** | Old Hives, second brains, Obsidian vaults, markdown wikis, docs folders, other AI tools' own workspaces | Wherever they live; never changed | own shape |
 | Out | **Public copy** | A separate, reviewed repository holding exactly the approved files, plus `PUBLISHED.md` | The Hive folder convention; DOGG rules of `rapp-hive/1` §2 | experimental |
-| Across | **Hive Mind** | The network of sovereign Hives: discovery, dial records and join cards, agreements between organizations | [`rapp-federation/1`](protocols/rapp-federation/1/SPEC.md) (candidate); [`kody-w/hive-hub`](https://github.com/kody-w/hive-hub) | candidate; folder Hives unmapped (G12) |
+| Across | **Hive Mind** | The network of sovereign Hives: discovery through Hive Hub cards, and agreements between organizations | [`rapp-federation/1`](protocols/rapp-federation/1/SPEC.md) (candidate); [`kody-w/hive-hub`](https://github.com/kody-w/hive-hub/tree/experimental/organism-fit) | candidate; folder Hives through Hive Hub cards (experimental, G12) |
 | Out | **Release rings** | Estate-named stages over `rapp-cicd/1` §3: here canary, nightly, alpha, beta, then the production ring (the grail) | `rapp-cicd/1` §3 and `rapp-deploy/1` in `kody-w/rapp-1` | specified (G16) |
 
 ## 2. Crossings: how anything moves between layers
@@ -127,7 +127,8 @@ A layer is healthy when it has a specification with an owner, a reference that r
 | Organization | `python3 work_conformance.py` in `kody-w/rapp-1`, the canonical `rapp-work/1` gate |
 | Folder Hive | For the folder convention: `python agents/hive_agent.py check <hive>`, `check-public <copy>`, and `tools/build_example.py --check` with the tests (CI on macOS, Linux and Windows) |
 | Private Hive, Workspaces | For `rapp-hive/1` and Workspace/1: the `kody-w/rapp-workspace` CI jobs (core pins and conformance, Private Hive suite) |
-| Brainstem, RAR, Hive Mind | Each repository's own test suite and runner |
+| Brainstem, RAR | Each repository's own test suite and runner |
+| Hive Mind | `python tools/build.py --check` and the tests in `kody-w/hive-hub` |
 
 ## 6. Gap register
 
@@ -144,8 +145,8 @@ A layer is healthy when it has a specification with an owner, a reference that r
 | G9 | A git commit is not authority in canonical `rapp-work/1` | Canonical `rapp-work/1` §9 | Constitution Part V.2 | proposed |
 | G10 | An organization cannot bind a folder Hive | Canonical `rapp-work/1` §§1, 2, 4 | Name the Hive by its id, first commit and founder key fingerprint. A `work.vector` names an accepted head, which must come after the previous one | idea |
 | G11 | “Organization” means two things | `rapp-work-sdk/1` §7 | Rename the SDK's pointer-only object “workspace index” | idea |
-| G12 | Hive Hub dial records do not describe folder Hives | `kody-w/hive-hub` | A dial record resolves to an address, the Hive id, its first commit and the founder key fingerprint; joining writes one request file | idea |
-| G13 | Outside knowledge had no way in | Hive folder convention | References: read-only pointers; bring by signed copy with provenance | experimental; building, not yet in HIVE-MD.md |
+| G12 | Hive Hub dial records did not describe folder Hives | `kody-w/hive-hub` (branch `experimental/organism-fit`) | A Hive card carries the address, the Hive id, its first commit and the founder key fingerprint; joining writes one request file in the person's own Brainstem | experimental |
+| G13 | Outside knowledge had no way in | Hive folder convention | References: read-only pointers; bring by signed copy with provenance | experimental |
 | G14 | The Hive agent's path to the production ring | Release rings; RAPP/1 §11.1 (new behavior stays outside the frozen kernel) | A real team's week in canary, then nightly, alpha, beta and the production ring | open |
 | G15 | No estate declares the Brainstem's kernel | RAPP/1 §§11.1, 13.3; `KERNEL_PIN.json` in `kody-w/RAPP` | The estate owner signs a `grail-kernel` entry for the Brainstem's release scope | open |
 | G16 | No estate has activated canonical `rapp-work/1` | Canonical `rapp-work/1` §1 | An estate appends the `rapp-work/1` protocol entry, its seven `work.*` kinds, and its `rapp-hive/1`, `rapp-cicd/1` and `rapp-deploy/1` pins | open |

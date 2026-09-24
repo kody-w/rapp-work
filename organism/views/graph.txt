@@ -51,7 +51,7 @@ THE RAPP/1 ORGANISM  ·  read it bottom (0) to top (6)
                                              ┊ idea (G5, G10)  │ work.vector: │ Hives, by         │
                                              ┊                 │ the accepted │ agreement only    │
                                              ┊                 │ Hive         │ rapp-federation/1 │
-                                             ▼                 ▼ checkpoint   │ · Hive Hub        │
+                                             ▼                 ▼ checkpoint   │ · Hive Hub cards  │
                               ┌────────────────────────────────────────────┐  │ [candidate]       │
                               │ 2 · ORGANIZATION               [specified] │  └───────────────────┘
                               │ the accountable body                       │
