@@ -4,6 +4,8 @@
 
 - Added an experimental `CONSTITUTION.md` (not in force until ratified):
   lessons from the Hive redesign and four pending amendments.
+- Added an experimental `ECOSYSTEM.md`: the RAPP/1 organism layer by layer, with
+  a graph (`docs/ecosystem.svg`, editable `docs/ecosystem.excalidraw`) and a gap register.
 
 ## 1.0.0 — 2026-09-18
 

@@ -2,6 +2,7 @@ include .gitignore
 include AGENTS.md
 include CLAUDE.md
 include CONSTITUTION.md
+include ECOSYSTEM.md
 include CHANGELOG.md
 include CONTRIBUTING.md
 include LICENSE
