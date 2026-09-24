@@ -188,6 +188,8 @@ helper, and SSH-agent state is not inherited.
   lessons and pending amendments; not in force until ratified.
 - [`ECOSYSTEM.md`](ECOSYSTEM.md) — experimental map of the RAPP/1 organism,
   layer by layer, with its graph and gap register.
+- [`organism/`](organism/) — that organism as a pullable template: a tree of
+  markdown files, one fact per file, whose builder generates `ECOSYSTEM.md` and every view.
 
 ## Validate and build
 

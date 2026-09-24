@@ -21,6 +21,8 @@ implementation. Preserve their fixtures.
 
 `CONSTITUTION.md` (lessons and pending amendments) and `ECOSYSTEM.md` (the
 layer map) are experimental guidance; they never override RAPP/1 or `rapp-work/1`.
+`ECOSYSTEM.md` is generated from the tree in `organism/`: edit its part files, then
+run `python3 organism/tools/build.py`; never edit the generated files by hand.
 
 No network or credential inheritance by default. Never execute discovered
 neurons, plugins, or skills. DOGG must be PII-free; GODD remains private.

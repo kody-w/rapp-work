@@ -5,7 +5,10 @@
 - Added an experimental `CONSTITUTION.md` (not in force until ratified):
   lessons from the Hive redesign and four pending amendments.
 - Added an experimental `ECOSYSTEM.md`: the RAPP/1 organism layer by layer, with
-  a graph (`docs/ecosystem.svg`, editable `docs/ecosystem.excalidraw`) and a gap register.
+  a graph and a gap register.
+- Added `organism/`, a pullable template of that organism: one markdown file per fact and a
+  standard-library builder that generates `ECOSYSTEM.md`, the genome `organism/ORGANISM.md` and
+  every view (the graph moved from `docs/ecosystem.*` to `organism/views/`).
 
 ## 1.0.0 — 2026-09-18
 

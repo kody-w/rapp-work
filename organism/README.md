@@ -1,0 +1,109 @@
+# The RAPP/1 organism
+
+The anatomy of the RAPP/1 ecosystem as a tree of small markdown files, one fact per file, and a builder that draws every view from them. The tree is the single source of truth. The views are generated, so they cannot drift from it.
+
+It is experimental. Specifications decide; the organism only points at them.
+
+| Path | What it holds |
+|---|---|
+| [`ORGANISM.md`](ORGANISM.md) | The genome: the whole organism on one page. Generated. |
+| `layers/` | The seven layers, from 0 (RAPP/1) to 6 (you), one file each |
+| `parts/` | Parts inside a layer, and parts beside the stack |
+| `crossings/` | How anything moves between layers, one crossing per file |
+| `journeys/` | E1 to E7: end to end, through every layer |
+| `gaps/` | G01 to G14: what is still open |
+| `invariants.md` | What holds everywhere |
+| `dogfood.md` | The RAPP Hive, where the organism is tried for real |
+| `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html` and `one-page.pdf` |
+| `tools/build.py` | The builder: Python 3.10 or newer, standard library only |
+
+## Pull a fresh copy
+
+Each of these gets you this folder from the `experimental/rapp-work-constitution` branch of [`kody-w/rapp-work`](https://github.com/kody-w/rapp-work).
+
+1. With degit (needs Node.js):
+
+   ```bash
+   npx degit kody-w/rapp-work/organism#experimental/rapp-work-constitution my-organism
+   ```
+
+2. With git, as a shallow sparse clone:
+
+   ```bash
+   git clone --depth 1 --filter=blob:none --sparse -b experimental/rapp-work-constitution https://github.com/kody-w/rapp-work.git
+   cd rapp-work
+   git sparse-checkout set organism
+   ```
+
+   Later, `git pull` in that folder brings the newest version.
+
+3. Without tools: download the [branch ZIP](https://github.com/kody-w/rapp-work/archive/refs/heads/experimental/rapp-work-constitution.zip) and keep its `organism/` folder.
+
+## View it
+
+- Open `views/one-page.html` in a browser. It prints on one US Letter landscape page.
+- Read `views/graph.txt` in a terminal, or `ORGANISM.md` for the graph with every table.
+- Open `views/organism.svg` for the drawing, or load `views/organism.excalidraw` in [Excalidraw](https://excalidraw.com).
+
+## Copy and tweak
+
+Each file starts with a short frontmatter block, the facts the builder needs, then a few plain words: the anatomy page.
+
+```markdown
+---
+name: Public copy
+column: out
+beside: 3
+role: A separate, reviewed repository holding exactly the approved files, plus `PUBLISHED.md`
+home: The Hive folder convention; DOGG rules of `rapp-hive/1` §2
+health: experimental
+lines:
+  - approved files
+  - PUBLISHED.md
+  - check-public
+---
+A public copy is a separate repository. It holds exactly the files the members approved.
+```
+
+- **Change a fact:** edit the one file that holds it.
+- **Reorganize:** move a part with `beside` or `layer`, or add, rename and remove files. The views follow.
+- **Add a crossing:** add a file to `crossings/` that names its `from`, `to`, `arrow` and `label`.
+- **Rebuild:**
+
+  ```bash
+  python3 tools/build.py          # writes ORGANISM.md and views/
+  python3 tools/build.py --pdf    # also prints views/one-page.pdf, when Chrome or Chromium is installed
+  ```
+
+The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end, or a value that would break the frontmatter.
+
+| File | Fields (optional ones in brackets) |
+|---|---|
+| `layers/<n>-<id>.md` | `layer`, `name`, `role`, `decides`, `signed_with`, `home`, `health`, `color`, [`lines`, `check`] |
+| `parts/<id>.md` | `name`, `role`, `home`, `health`, and either `layer` or `column` with `beside`; [`order`, `lines`, `check`] |
+| `crossings/<id>.md` | `from`, `to`, `what`, `authorized_by`, `home`, `health`, `arrow`, `label` |
+| `gaps/G<nn>.md` | `id`, `gap`, `home`, `fix`, `status` |
+| `journeys/E<n>.md` | `id`, `title`; the steps are the body's `- ` lines |
+| `invariants.md` | `healthy`, `upstream`; each rule is a body line `- **Lead.** More words.` |
+| `dogfood.md` | `name`, `health`, `tree`, `loop` |
+
+- `health` and `status` start with one of: in force, experimental, candidate, proposed, open, planned, gap, own shape. Words after it are notes. `—` means none.
+- `color` is an Open Color family: gray, orange, green, blue or purple.
+- `column` is in, out or across. `beside` and `layer` are layer numbers.
+- `arrow` is down, up or both inside the stack; in, out or both beside it.
+- `lines` are the words drawn in a box. A layer `role` that starts with a short phrase and a colon gives the box its title.
+- Wrap a value in double quotes when it holds `: ` or starts with a sign such as `` ` ``, `[` or `"`, so the frontmatter stays valid YAML.
+
+## Check it
+
+```bash
+python3 tools/build.py --check
+```
+
+It rebuilds every view in memory and exits 1 if any generated file differs from the tree. The PDF is left out, because Chrome stamps the time into it.
+
+Inside `kody-w/rapp-work`, the builder also keeps `../ECOSYSTEM.md`, the long-form map, generated from the same tree. It touches that file only when it already starts with the generated-file marker, so a copy anywhere else never writes outside its own folder.
+
+## Make it your own
+
+The folder stands alone: the builder needs only Python, and every link out of the tree is a full URL. It can become its own template repository later, unchanged. To grow your own organism, copy the folder, change the facts, and keep `tools/build.py`.

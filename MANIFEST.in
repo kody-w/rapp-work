@@ -19,6 +19,7 @@ include rappid.json
 include registry.json
 recursive-include .github *
 recursive-include docs *
+recursive-include organism *
 recursive-include protocols *
 recursive-include src *
 recursive-include tests *

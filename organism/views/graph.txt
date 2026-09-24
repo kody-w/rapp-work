@@ -1,0 +1,80 @@
+THE RAPP/1 ORGANISM  ·  read it bottom (0) to top (6)
+
+                              ┌────────────────────────────────────────────┐
+                              │ 6 · YOU                                    │
+                              │ Talk to your Brainstem. Every change is    │
+                              │ shown to you in plain words first.         │
+                              │ Nothing applies until you confirm the      │
+                              │ exact plan in a later turn.                │
+                              │ “Give me my Brainstem.”                    │
+                              └────────────────────────────────────────────┘
+                                                     ▲ ask · propose · confirm the exact plan in a
+                                                     ▼ later turn
+┌─────────────────┐           ┌────────────────────────────────────────────┐
+│ RAR             │           │ 5 · BRAINSTEM, the one product  [in force] │
+│ one-file agents │           │ Your own AI: frozen Grail kernel ·         │
+│ read one first  │─copy in──►│ hot-loaded agents (the Hive agent is one   │
+│ then copy it in │           │ file) · soul · memory                      │
+│ [in force]      │           │ It proposes; you decide. A Hive is never   │
+└─────────────────┘           │ its agents folder or its soul.             │
+                              └────────────────────────────────────────────┘
+                                      │ operates your Hive copies   ▲ status · verify · discover ·
+                                      ▼ and references              ▼ scaffold · update · migrate
+┌─────────────────┐           ┌────────────────────────────────────────────┐
+│ OUTSIDE         │           │ 4 · YOUR DEVICE, your "local dimension"    │
+│ KNOWLEDGE       │           ├──────────────┬──────────────┬──────────────┤
+│ old Hives       │           │ REFERENCES   │ HIVE COPY    │ WORKSPACES   │
+│ second brains   │           │ read-only    │ your space   │ private GODD │
+│ Obsidian vaults │─pinned───►│ pointers     │ one key per  │ local-first  │
+│ wikis and docs  │           │ never run    │ device       │ SDK plans    │
+│ other AI tools  │           │ read as data │ verified     │ [in force]   │
+│ [own shape]     │           │ [exp]        │ [exp]        │              │
+│                 │           └───────┬──────┴───────┬──────┴──────────────┘
+│                 │                   │ bring: one   ▲ signed commits, verified before checkout
+│                 │                   │ signed copy  │
+│                 │                   ▼ + provenance ▼
+│                 │           ┌────────────────────────────────────────────┐   ┌──────────────────┐
+│                 │─joins────►│ 3 · HIVE                             [exp] │   │ PUBLIC COPY      │
+└─────────────────┘           │ the organization's one shared folder       │   │ approved files   │
+                              │ HIVE.md · members/ · requests/ · shared/ · │──►│ PUBLISHED.md     │
+                              │ former/ — markdown, git underneath, no     │   │ check-public     │
+                              │ owner inside                               │   │ [exp]            │
+                              │ Every change is one signed commit, judged  │   └──────────────────┘
+                              │ by the Hive as it stood just before ·      │   ┌──────────────────┐
+                              │ approvals ≥ 2                              │◄─►│ HIVE MIND        │
+                              └────────────────────────────────────────────┘   │ other Hives      │
+                                                     ┊ work.vector: the owner  │ by agreement     │
+                                                     ┊ notarizes the Hive head │ never members    │
+                                                     ▼ GAP G10: no spec yet    │ [candidate]      │
+                              ┌────────────────────────────────────────────┐   └──────────────────┘
+                              │ 2 · ORGANIZATION                [in force] │
+                              │ the accountable body                       │   ┌──────────────────┐
+                              │ One owner · one world · one policy · one   │   │ RELEASE RINGS    │
+                              │ release scope · exactly one Hive           │   │ canary → nightly │
+                              │ Body stream: catalog · vector ·            │──►│ → alpha → beta   │
+                              │ migration · receipt · observation ·        │   │ → each grail     │
+                              │ rollback                                   │   │ [in force]       │
+                              └────────────────────────────────────────────┘   └──────────────────┘
+                                                     ▲ authorizes the owner (estate registry)
+                                                     │
+                              ┌────────────────────────────────────────────┐
+                              │ 1 · ESTATE                      [in force] │
+                              │ an owner's signed registry                 │
+                              │ Who may sign as whom · which protocols are │
+                              │ pinned · which Brainstem kernel (Grail) is │
+                              │ declared                                   │
+                              │ Append-only · rappid.json ·                │
+                              │ registry.json · owner-anchor.json          │
+                              └────────────────────────────────────────────┘
+                                                     ▲ RAPP/1 frames · RAPPIDs · registry entries
+                                                     │
+                              ┌────────────────────────────────────────────┐
+                              │ 0 · RAPP/1, bytes and identity  [in force] │
+                              │ RAPPIDs · the eleven-key frame · hashes ·  │
+                              │ Ed25519 signatures · eggs · registries     │
+                              │ Frozen forms: a frame that passes once     │
+                              │ passes forever                             │
+                              └────────────────────────────────────────────┘
+
+[in force] specified and running   [exp] experimental   ┊ GAP: no spec allows it yet
+In by signed copy (left) · out by approved copy (right) · transport carries, signatures decide
