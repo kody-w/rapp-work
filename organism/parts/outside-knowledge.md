@@ -6,11 +6,8 @@ role: Old Hives, second brains, Obsidian vaults, markdown wikis, docs folders, o
 home: Wherever they live; never changed
 health: own shape; reached by reference (experimental)
 lines:
-  - old Hives
-  - second brains
-  - Obsidian vaults
-  - wikis and docs
-  - other AI tools
+  - old Hives · second brains · wikis
+  - vaults · docs · other AI tools
 ---
 Outside knowledge is everything you already have, kept in its own shape: old Hives, second brains, Obsidian vaults, markdown wikis, docs folders, other AI tools' own workspaces.
 

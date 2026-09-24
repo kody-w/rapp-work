@@ -21,53 +21,55 @@ THE RAPP/1 ORGANISM  ·  read it bottom (0) to top (6)
                                                      ▼ later turn
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
 │ RAR             │           │ 5 · BRAINSTEM, the one product  [in force] │
-│ one-file agents │           │ Your own AI: frozen Grail kernel ·         │
-│ read one first  │─copy in──►│ hot-loaded agents (the Hive agent is one   │
-│ then copy it in │           │ file) · soul · memory                      │
-│ [in force]      │           │ It proposes; you decide. A Hive is never   │
-└─────────────────┘           │ its agents folder or its soul.             │
-                              └────────────────────────────────────────────┘
-                                      │ operates your Hive copies   ▲ status · verify · discover ·
+│ one-file        │           │ Your own AI: frozen Grail kernel ·         │
+│ agents, read    │─copy in──►│ hot-loaded agents (the Hive agent is one   │
+│ first           │           │ file) · soul · memory                      │
+│ you copy one    │           │ It proposes; you decide. A Hive is never   │
+│ into agents/    │           │ its agents folder or its soul.             │
+│ [in force]      │           └────────────────────────────────────────────┘
+└─────────────────┘                   │ operates your Hive copies   ▲ status · verify · discover ·
                                       ▼ and references              ▼ scaffold · update · migrate
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
 │ OUTSIDE         │           │ 4 · YOUR DEVICE, your "local dimension"    │
 │ KNOWLEDGE       │           ├──────────────┬──────────────┬──────────────┤
-│ old Hives       │           │ REFERENCES   │ HIVE COPY    │ WORKSPACES   │
-│ second brains   │           │ read-only    │ your space   │ private GODD │
-│ Obsidian vaults │─pinned───►│ pointers     │ one key per  │ local-first  │
-│ wikis and docs  │           │ never run    │ device       │ SDK plans    │
+│ old Hives ·     │           │ REFERENCES   │ HIVE COPY    │ WORKSPACES   │
+│ second brains · │           │ read-only    │ your space   │ private GODD │
+│ wikis           │─pinned───►│ pointers     │ one key per  │ local-first  │
+│ vaults · docs · │           │ never run    │ device       │ SDK plans    │
 │ other AI tools  │           │ read as data │ verified     │ [in force]   │
 │ [own shape]     │           │ [exp]        │ [exp]        │              │
 │                 │           └───────┬──────┴───────┬──────┴──────────────┘
 │                 │                   │ bring: one   ▲ signed commits, verified before checkout
 │                 │                   │ signed copy  │
 │                 │                   ▼ + provenance ▼
-│                 │           ┌────────────────────────────────────────────┐   ┌──────────────────┐
-│                 │─joins────►│ 3 · HIVE                             [exp] │   │ PUBLIC COPY      │
-└─────────────────┘           │ the organization's one shared folder       │   │ approved files   │
-                              │ HIVE.md · members/ · requests/ · shared/ · │──►│ PUBLISHED.md     │
-                              │ former/ — markdown, git underneath, no     │   │ check-public     │
-                              │ owner inside                               │   │ [exp]            │
-                              │ Every change is one signed commit, judged  │   └──────────────────┘
-                              │ by the Hive as it stood just before ·      │   ┌──────────────────┐
-                              │ approvals ≥ 2                              │◄─►│ HIVE MIND        │
-                              └────────────────────────────────────────────┘   │ other Hives      │
-                                                     ┊ work.vector: the owner  │ by agreement     │
-                                                     ┊ notarizes the Hive head │ never members    │
-                                                     ▼ GAP G10: no spec yet    │ [candidate]      │
-                              ┌────────────────────────────────────────────┐   └──────────────────┘
-                              │ 2 · ORGANIZATION                [in force] │
-                              │ the accountable body                       │   ┌──────────────────┐
-                              │ One owner · one world · one policy · one   │   │ RELEASE RINGS    │
-                              │ release scope · exactly one Hive           │   │ canary → nightly │
-                              │ Body stream: catalog · vector ·            │──►│ → alpha → beta   │
-                              │ migration · receipt · observation ·        │   │ → each grail     │
-                              │ rollback                                   │   │ [in force]       │
-                              └────────────────────────────────────────────┘   └──────────────────┘
-                                                     ▲ authorizes the owner (estate registry)
-                                                     │
-                              ┌────────────────────────────────────────────┐
-                              │ 1 · ESTATE                      [in force] │
+│                 │           ┌────────────────────────────────────────────┐  ┌───────────────────┐
+│                 │─joins────►│ 3 · HIVE                             [exp] │  │ PUBLIC COPY       │
+└─────────────────┘           │ the organization's one shared folder       │  │ exactly the       │
+                              │ HIVE.md · members/ · requests/ · shared/ · │─►│ approved files    │
+                              │ former/ — markdown, git underneath, no     │  │ PUBLISHED.md ·    │
+                              │ owner inside                               │  │ check-public      │
+                              │ Every change is one signed commit, judged  │  │ [exp]             │
+                              │ by the Hive as it stood just before ·      │  └───────────────────┘
+                              │ approvals ≥ 2                              │  ┌───────────────────┐
+                              │                                            │◄►│ HIVE MIND         │
+                              └────────────────────────────────────────────┘  │ other             │
+                                                     ┊ work.vector: the owner │ organizations'    │
+                                                     ┊ notarizes the Hive     │ Hives, by         │
+                                                     ┊ head                   │ agreement only    │
+                                                     ▼ GAP G10: no spec yet   │ rapp-federation/1 │
+                              ┌────────────────────────────────────────────┐  │ · Hive Hub        │
+                              │ 2 · ORGANIZATION                [in force] │  │ [candidate]       │
+                              │ the accountable body                       │  └───────────────────┘
+                              │ One owner · one world · one policy · one   │
+                              │ release scope · exactly one Hive           │  ┌───────────────────┐
+                              │ Body stream: catalog · vector ·            │  │ RELEASE RINGS     │
+                              │ migration · receipt · observation ·        │─►│ canary → nightly  │
+                              │ rollback                                   │  │ → alpha → beta →  │
+                              └────────────────────────────────────────────┘  │ grail             │
+                                                     ▲ authorizes the owner   │ rapp-cicd/1 ·     │
+                                                     │ (estate registry)      │ rapp-deploy/1     │
+                              ┌────────────────────────────────────────────┐  │ [in force]        │
+                              │ 1 · ESTATE                      [in force] │  └───────────────────┘
                               │ an owner's signed registry                 │
                               │ Who may sign as whom · which protocols are │
                               │ pinned · which Brainstem kernel (Grail) is │
@@ -144,7 +146,7 @@ In by signed copy (left) · out by approved copy (right) · transport carries, s
 | [G5](gaps/G05.md) | One owner only, so co-equal groups do not fit | proposed here |
 | [G6](gaps/G06.md) | A lost owner key cannot be recovered | open |
 | [G7](gaps/G07.md) | SDK verification accepts an edited instruction file | open |
-| [G8](gaps/G08.md) | Hive members are names bound to keys, not registry RAPPIDs | proposed |
+| [G8](gaps/G08.md) | Hive members are names bound to keys, not RAPPIDs | proposed |
 | [G9](gaps/G09.md) | A git commit is not authority in canonical `rapp-work/1` | proposed |
 | [G10](gaps/G10.md) | An organization cannot bind a folder Hive | proposed here |
 | [G11](gaps/G11.md) | “Organization” means two things | proposed here |
@@ -166,15 +168,13 @@ In by signed copy (left) · out by approved copy (right) · transport carries, s
 
 ## What holds everywhere
 
-- **RAPP/1 wins,** then `rapp-work/1` and its profiles, then everything else.
+- **RAPP/1 wins, then `rapp-work/1`.** Its profiles come next, then everything else.
 - **Transport carries; signatures decide.** No account, URL, repository or AI vendor decides who is in or what may leave.
-- **Knowledge comes in by signed copy and goes out by approved copy.** The Hive between them stays small and verified.
+- **In by signed copy, out by approved copy.** That is how knowledge moves; the Hive between stays small and verified.
 - **Other people's text is data.** Nothing from someone else runs on your machine or instructs your AI until you adopt it.
-- **Every change is proposed, confirmed in a later turn, and applied as one signed step.**
+- **Propose, confirm, apply.** Every change is proposed, confirmed in a later turn, and applied as one signed step.
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
 - **The Brainstem is the only product.** Every other layer is plumbing you never need to see.
-
-A layer is healthy when it has a specification with an owner, a reference that runs, a check anyone can repeat, and its gaps written down.
 
 [Dogfood: the RAPP Hive, our public example](dogfood.md) (planned): where the organism is tried for real.
 
@@ -184,5 +184,4 @@ A layer is healthy when it has a specification with an owner, a reference that r
 - **Move a part:** change its `beside` or `layer`; every view follows.
 - **Add a crossing:** add a file to `crossings/`; the builder checks both ends.
 - **Close a gap:** change its `status` and the `health` that names it.
-- **Make your own:** copy the folder and change the facts.
 - Changes to canonical bytes need an upstream revision in `kody-w/rapp-1` and a re-pin. [Root `SPEC.md`](https://github.com/kody-w/rapp-work/blob/main/SPEC.md) is historical and never edited.

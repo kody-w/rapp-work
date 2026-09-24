@@ -12,53 +12,55 @@ THE RAPP/1 ORGANISM  ·  read it bottom (0) to top (6)
                                                      ▼ later turn
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
 │ RAR             │           │ 5 · BRAINSTEM, the one product  [in force] │
-│ one-file agents │           │ Your own AI: frozen Grail kernel ·         │
-│ read one first  │─copy in──►│ hot-loaded agents (the Hive agent is one   │
-│ then copy it in │           │ file) · soul · memory                      │
-│ [in force]      │           │ It proposes; you decide. A Hive is never   │
-└─────────────────┘           │ its agents folder or its soul.             │
-                              └────────────────────────────────────────────┘
-                                      │ operates your Hive copies   ▲ status · verify · discover ·
+│ one-file        │           │ Your own AI: frozen Grail kernel ·         │
+│ agents, read    │─copy in──►│ hot-loaded agents (the Hive agent is one   │
+│ first           │           │ file) · soul · memory                      │
+│ you copy one    │           │ It proposes; you decide. A Hive is never   │
+│ into agents/    │           │ its agents folder or its soul.             │
+│ [in force]      │           └────────────────────────────────────────────┘
+└─────────────────┘                   │ operates your Hive copies   ▲ status · verify · discover ·
                                       ▼ and references              ▼ scaffold · update · migrate
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
 │ OUTSIDE         │           │ 4 · YOUR DEVICE, your "local dimension"    │
 │ KNOWLEDGE       │           ├──────────────┬──────────────┬──────────────┤
-│ old Hives       │           │ REFERENCES   │ HIVE COPY    │ WORKSPACES   │
-│ second brains   │           │ read-only    │ your space   │ private GODD │
-│ Obsidian vaults │─pinned───►│ pointers     │ one key per  │ local-first  │
-│ wikis and docs  │           │ never run    │ device       │ SDK plans    │
+│ old Hives ·     │           │ REFERENCES   │ HIVE COPY    │ WORKSPACES   │
+│ second brains · │           │ read-only    │ your space   │ private GODD │
+│ wikis           │─pinned───►│ pointers     │ one key per  │ local-first  │
+│ vaults · docs · │           │ never run    │ device       │ SDK plans    │
 │ other AI tools  │           │ read as data │ verified     │ [in force]   │
 │ [own shape]     │           │ [exp]        │ [exp]        │              │
 │                 │           └───────┬──────┴───────┬──────┴──────────────┘
 │                 │                   │ bring: one   ▲ signed commits, verified before checkout
 │                 │                   │ signed copy  │
 │                 │                   ▼ + provenance ▼
-│                 │           ┌────────────────────────────────────────────┐   ┌──────────────────┐
-│                 │─joins────►│ 3 · HIVE                             [exp] │   │ PUBLIC COPY      │
-└─────────────────┘           │ the organization's one shared folder       │   │ approved files   │
-                              │ HIVE.md · members/ · requests/ · shared/ · │──►│ PUBLISHED.md     │
-                              │ former/ — markdown, git underneath, no     │   │ check-public     │
-                              │ owner inside                               │   │ [exp]            │
-                              │ Every change is one signed commit, judged  │   └──────────────────┘
-                              │ by the Hive as it stood just before ·      │   ┌──────────────────┐
-                              │ approvals ≥ 2                              │◄─►│ HIVE MIND        │
-                              └────────────────────────────────────────────┘   │ other Hives      │
-                                                     ┊ work.vector: the owner  │ by agreement     │
-                                                     ┊ notarizes the Hive head │ never members    │
-                                                     ▼ GAP G10: no spec yet    │ [candidate]      │
-                              ┌────────────────────────────────────────────┐   └──────────────────┘
-                              │ 2 · ORGANIZATION                [in force] │
-                              │ the accountable body                       │   ┌──────────────────┐
-                              │ One owner · one world · one policy · one   │   │ RELEASE RINGS    │
-                              │ release scope · exactly one Hive           │   │ canary → nightly │
-                              │ Body stream: catalog · vector ·            │──►│ → alpha → beta   │
-                              │ migration · receipt · observation ·        │   │ → each grail     │
-                              │ rollback                                   │   │ [in force]       │
-                              └────────────────────────────────────────────┘   └──────────────────┘
-                                                     ▲ authorizes the owner (estate registry)
-                                                     │
-                              ┌────────────────────────────────────────────┐
-                              │ 1 · ESTATE                      [in force] │
+│                 │           ┌────────────────────────────────────────────┐  ┌───────────────────┐
+│                 │─joins────►│ 3 · HIVE                             [exp] │  │ PUBLIC COPY       │
+└─────────────────┘           │ the organization's one shared folder       │  │ exactly the       │
+                              │ HIVE.md · members/ · requests/ · shared/ · │─►│ approved files    │
+                              │ former/ — markdown, git underneath, no     │  │ PUBLISHED.md ·    │
+                              │ owner inside                               │  │ check-public      │
+                              │ Every change is one signed commit, judged  │  │ [exp]             │
+                              │ by the Hive as it stood just before ·      │  └───────────────────┘
+                              │ approvals ≥ 2                              │  ┌───────────────────┐
+                              │                                            │◄►│ HIVE MIND         │
+                              └────────────────────────────────────────────┘  │ other             │
+                                                     ┊ work.vector: the owner │ organizations'    │
+                                                     ┊ notarizes the Hive     │ Hives, by         │
+                                                     ┊ head                   │ agreement only    │
+                                                     ▼ GAP G10: no spec yet   │ rapp-federation/1 │
+                              ┌────────────────────────────────────────────┐  │ · Hive Hub        │
+                              │ 2 · ORGANIZATION                [in force] │  │ [candidate]       │
+                              │ the accountable body                       │  └───────────────────┘
+                              │ One owner · one world · one policy · one   │
+                              │ release scope · exactly one Hive           │  ┌───────────────────┐
+                              │ Body stream: catalog · vector ·            │  │ RELEASE RINGS     │
+                              │ migration · receipt · observation ·        │─►│ canary → nightly  │
+                              │ rollback                                   │  │ → alpha → beta →  │
+                              └────────────────────────────────────────────┘  │ grail             │
+                                                     ▲ authorizes the owner   │ rapp-cicd/1 ·     │
+                                                     │ (estate registry)      │ rapp-deploy/1     │
+                              ┌────────────────────────────────────────────┐  │ [in force]        │
+                              │ 1 · ESTATE                      [in force] │  └───────────────────┘
                               │ an owner's signed registry                 │
                               │ Who may sign as whom · which protocols are │
                               │ pinned · which Brainstem kernel (Grail) is │

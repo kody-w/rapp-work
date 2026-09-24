@@ -232,9 +232,13 @@ def inline(md):
     return re.sub(r"`([^`]+)`", r"<code>\1</code>", re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s))
 
 
-def wrap(text, width):  # a " ·" stays with the word before it
-    rows = textwrap.wrap(text.replace(" \u00b7", "\u00a0\u00b7"), width, break_long_words=False, break_on_hyphens=False)
-    return [row.replace("\u00a0", " ") for row in rows] or [""]
+def wrap(text, width):  # a " ·" stays with the word before it, when that still fits
+    for glued in (text.replace(" \u00b7", "\u00a0\u00b7"), text):
+        rows = [r.replace("\u00a0", " ") for r in textwrap.wrap(glued, width, break_long_words=False,
+                                                                 break_on_hyphens=False)] or [""]
+        if max(map(len, rows)) <= width:
+            break
+    return rows
 
 
 def lower1(text):
@@ -249,7 +253,7 @@ def tagline(x):
 
 def leads(t):
     """The invariants' bold leads, as one running phrase."""
-    return [lead.rstrip(".,;:") if k == 0 else lower1(lead.rstrip(".,;:"))
+    return [plain(lead).rstrip(".,;:") if k == 0 else lower1(plain(lead).rstrip(".,;:"))
             for k, (lead, _) in enumerate(t["invariants"]["rules"])]
 
 
@@ -287,7 +291,7 @@ def spots(t, n, xs, mid, step):
 
 def graph_txt(t):
     """99 columns: the stack in the middle, what comes in on the left, what goes out or across on the right."""
-    W, LW, C, CW, R = 99, 19, 30, 46, 79
+    W, LW, C, CW, R = 99, 19, 30, 46, 78
     RW, MID, IN = W - R, C + CW // 2, CW - 4
     grid, cells, spans, avoid, sides, low = [], {}, {}, set(), [], {"in": -2, "out": -2}
 
@@ -331,29 +335,8 @@ def graph_txt(t):
     put(0, 0, "THE RAPP/1 ORGANISM  \u00b7  read it bottom (0) to top (6)")
     r = 2
     for layer in reversed(t["layer"]):
-        n, inner = layer["n"], t["inner"][layer["n"]]
-        if not inner:
-            rows = fit(titled(layer, tag(layer), IN) + items(layer, IN), IN, layer)
-            frame(r, C, CW, rows, len(rows) + 2)
-            bottom = r + len(rows) + 1
-        else:
-            heads = titled(layer, "", IN)
-            cols = [fit(wrap(p["name"].upper(), cells[p["id"]][1] - 2) + items(p, cells[p["id"]][1] - 2) + [tag(p)],
-                        cells[p["id"]][1] - 2, p) for p in inner]
-            depth = max(len(col) for col in cols)
-            widths = [cells[p["id"]][1] for p in inner]
-            frame(r, C, CW, heads, len(heads) + 2)
-            sep = r + len(heads) + 1
-            avoid.add(sep)
-            put(sep, C, "\u251c" + "\u252c".join("\u2500" * w for w in widths) + "\u2524")
-            for i in range(depth):
-                put(sep + 1 + i, C, "\u2502" + "\u2502".join(
-                    " " + (col[i] if i < len(col) else "").ljust(w - 1) for col, w in zip(cols, widths)) + "\u2502")
-            bottom = sep + depth + 1
-            put(bottom, C, "\u2514" + "\u2534".join("\u2500" * w for w in widths) + "\u2518")
-        for x in [layer, *inner]:
-            spans[x["id"]] = (r, bottom)
-        for sb in sides:
+        n, inner, need = layer["n"], t["inner"][layer["n"]], 0
+        for sb in sides:  # a part from above that reaches down to this layer ends just inside it
             if sb["open"] == n:
                 sb["bottom"], sb["open"] = max(sb["bottom"], r + 2), None
                 low[sb["col"]] = max(low[sb["col"]], sb["bottom"])
@@ -369,6 +352,28 @@ def graph_txt(t):
                               open=min(below) if below else None))
             if not below:
                 low[p["col"]] = sides[-1]["bottom"]
+            need = max(need, top - r + 3)  # the layer grows until each part beside it overlaps it
+        if not inner:
+            rows = fit(titled(layer, tag(layer), IN) + items(layer, IN), IN, layer)
+            bottom = r + max(len(rows) + 2, need) - 1
+            frame(r, C, CW, rows, bottom - r + 1)
+        else:
+            heads = titled(layer, "", IN)
+            cols = [fit(wrap(p["name"].upper(), cells[p["id"]][1] - 2) + items(p, cells[p["id"]][1] - 2) + [tag(p)],
+                        cells[p["id"]][1] - 2, p) for p in inner]
+            depth = max([len(col) for col in cols] + [need - len(heads) - 3])
+            widths = [cells[p["id"]][1] for p in inner]
+            frame(r, C, CW, heads, len(heads) + 2)
+            sep = r + len(heads) + 1
+            avoid.add(sep)
+            put(sep, C, "\u251c" + "\u252c".join("\u2500" * w for w in widths) + "\u2524")
+            for i in range(depth):
+                put(sep + 1 + i, C, "\u2502" + "\u2502".join(
+                    " " + (col[i] if i < len(col) else "").ljust(w - 1) for col, w in zip(cols, widths)) + "\u2502")
+            bottom = sep + depth + 1
+            put(bottom, C, "\u2514" + "\u2534".join("\u2500" * w for w in widths) + "\u2518")
+        for x in [layer, *inner]:
+            spans[x["id"]] = (r, bottom)
         r = bottom + 1
         gap = [c for c in t["crossing"] if c.get("upper") and c["top"] == n]
         if n == 0 or not gap:
@@ -419,8 +424,24 @@ def graph_txt(t):
 
 # ---- the drawing: one layout, drawn as SVG and as Excalidraw -------------------------------------
 
-def per(px, size=13.5):
-    return int(px / (size * 0.52))  # characters of Helvetica that fit in px
+EM = {c: w for w, cs in ((.222, "ijl'\u2019"), (.278, " tf.,:;!I/[]|\u00b7"), (.333, "r-()\"\u201c\u201d"),
+                         (.5, "cksvxyzJ?*"), (.611, "TZF"), (.667, "ABEKPSVXY&"), (.722, "CDHNRUw"), (.778, "GOQ"),
+                         (.833, "mM"), (.944, "W"), (1.0, "\u2014\u2192\u2265")) for c in cs}  # Helvetica widths
+
+
+def em(text):
+    return sum(EM.get(c, 0.556) for c in text)
+
+
+def fitwrap(text, px, size):
+    """Greedy word wrap by estimated Helvetica width; a " ·" stays with the word before it."""
+    rows = []
+    for word in text.replace(" \u00b7", "\u00a0\u00b7").split(" "):
+        if rows and em(rows[-1] + " " + word) * size <= px:
+            rows[-1] += " " + word
+        else:
+            rows.append(word)
+    return [row.replace("\u00a0", " ") for row in rows] or [""]
 
 
 def drawing(t):
@@ -429,10 +450,10 @@ def drawing(t):
     mid, stack, shapes, span, cells = CX + CW // 2, list(reversed(t["layer"])), [], {}, {}
 
     def rows(x, px):
-        return [row for line in x.get("lines", []) for row in wrap(smart(plain(line)), per(px - 28))]
+        return [row for line in x.get("lines", []) for row in fitwrap(smart(plain(line)), px - 24, 13.5)]
 
     def home(x):  # the drawing also names each layer's home
-        return [] if x["home"] == "\u2014" else wrap(smart(plain("Home: " + x["home"])), per(CW - 28))
+        return [] if x["home"] == "\u2014" else fitwrap(smart(plain("Home: " + x["home"])), CW - 24, 13.5)
 
     def shape(k, g, **kw):
         shapes.append(dict(k=k, g=g, **kw))
@@ -481,7 +502,7 @@ def drawing(t):
         for k, (x, c, end) in enumerate(placed):
             stop = placed[k + 1][0] - 20 if k + 1 < len(placed) else CX + CW + 30
             note = [f"gap {c['gap']} \u2014 no specification allows this yet"] if c["red"] else []
-            here.append((x, c, wrap(smart(plain(c["label"])), per(stop - x - 12, 12.5)) + note))
+            here.append((x, c, fitwrap(smart(plain(c["label"])), stop - x - 12, 12.5) + note))
         gap = max([62] + [24 + 17 * (len(words) - 1) + 21 for _, _, words in here])
         labels += [(*q, gap) for q in here]
         y += band + gap
@@ -522,7 +543,7 @@ def drawing(t):
         shape("line", c["stem"], pts=[(far, y), (near, y)] if c["arrow"] == "in" else [(near, y), (far, y)],
               red=c["red"], both=c["arrow"] == "both")
     foot = max(b for _, b in span.values()) + 40
-    notes = wrap("Holds everywhere: " + " \u00b7 ".join(smart(x) for x in leads(t)), per(W - 60, 14))
+    notes = fitwrap("Holds everywhere: " + " \u00b7 ".join(smart(x) for x in leads(t)), W - 60, 14)
     for i, row in enumerate(notes):
         text("foot", 30, foot + 24 * i, row, 14)
     text("foot", 30, foot + 24 * len(notes), "Drawn from the organism/ tree by tools/build.py \u00b7 the tree "
@@ -579,7 +600,7 @@ def excalidraw(d):
             add("ellipse", s, s["x"] - s["r"], s["y"] - s["r"], 2 * s["r"], 2 * s["r"], strokeColor=s["fill"],
                 backgroundColor=s["fill"])
         elif s["k"] == "text":
-            w = round(len(s["s"]) * s["size"] * (0.6 if s["bold"] else 0.56)) + 10
+            w = round(em(s["s"]) * s["size"] * (1.08 if s["bold"] else 1)) + 10
             add("text", s, s["x"] - w // 2 if s["middle"] else s["x"], round(s["y"] - s["size"]), w,
                 round(s["size"] * 1.25), text=s["s"], originalText=s["s"], fontSize=s["size"], fontFamily=2,
                 textAlign="center" if s["middle"] else "left", verticalAlign="top", containerId=None,
@@ -610,7 +631,7 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .chip { display: inline-block; border: 1px solid; border-radius: 9px; padding: 0 6px; font-size: 6.4pt; line-height: 1.45;
         white-space: nowrap; font-weight: 600; }
 .gapline { display: inline-block; width: 26px; border-top: 2px dashed #c92a2a; vertical-align: middle; margin-right: 3px; }
-.org { display: grid; grid-template-columns: 1.62in 1fr 1.78in; column-gap: 0.13in; }
+.org { display: grid; grid-template-columns: 1.9in 1fr 2.3in; column-gap: 0.13in; }
 .layer, .side, .cell { position: relative; }
 .layer { border: 1.6px solid var(--s); background: var(--f); border-radius: 7px; padding: 2px 7px 3px 7px; }
 .h { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
@@ -621,22 +642,22 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .device { border: 1.6px dashed var(--s); border-radius: 8px; padding: 2px 5px 4px 5px; }
 .cells { display: grid; gap: 5px; margin-top: 2px; }
 .cell { background: var(--f); border: 1.4px solid var(--s); border-radius: 6px; padding: 2px 6px 3px 6px; }
-.conn { font-size: 6.9pt; color: #222; height: 0.155in; display: flex; align-items: center; justify-content: center;
+.conn { font-size: 6.9pt; color: #222; min-height: 0.155in; display: flex; align-items: center; justify-content: center;
         gap: 0.4in; }
 .conn b { font-size: 8.6pt; color: #343a40; margin-right: 3px; }
 .conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; }
 .side { border: 1.4px solid #495057; background: #f1f3f5; border-radius: 7px; padding: 2px 7px 3px 7px; font-size: 7.1pt; }
 .side[data-a]::after { content: attr(data-a); position: absolute; top: 34%; font-size: 12pt; color: #343a40; font-weight: 700; }
 .side.in[data-a]::after { right: -0.145in; } .side.out[data-a]::after { left: -0.155in; }
-.bottom { display: grid; grid-template-columns: 1.25fr 1.15fr 0.9fr; gap: 0.12in; flex: 1; }
+.bottom { display: grid; grid-template-columns: 1.3fr 1.25fr 0.75fr; gap: 0.12in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
 .panel h2 { font-size: 9pt; margin: 0 0 3px 0; display: flex; align-items: center; justify-content: space-between; }
 pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt; line-height: 1.25; margin: 2px 0 4px 0;
            background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 3px 5px; white-space: pre; }
-.loop { display: flex; align-items: stretch; gap: 3px; margin: 3px 0; }
-.step { flex: 1; border: 1.3px solid #2f9e44; background: #ebfbee; border-radius: 6px; padding: 2px 4px; font-size: 6.6pt; }
-.step b { display: block; font-size: 7.2pt; }
-.loopa { align-self: center; font-weight: 700; color: #343a40; }
+.loop { display: flex; align-items: stretch; gap: 2px; margin: 3px 0; }
+.step { flex: 1; border: 1.3px solid #2f9e44; background: #ebfbee; border-radius: 6px; padding: 2px 3px; font-size: 6.4pt; }
+.step b { display: block; font-size: 7pt; }
+.loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; }
 table.gaps { border-collapse: collapse; width: 100%; font-size: 6.4pt; line-height: 1.12; }
 table.gaps td { padding: 0.3px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.gaps .chip { font-size: 5.8pt; line-height: 1.2; padding: 0 5px; }
@@ -673,8 +694,9 @@ def one_page(t):
         inward, outward = bool(ways & {"in", "both"}), bool(ways & {"out", "both"})
         glyph = "\u2194" if inward and outward else "\u2192" if inward == (p["col"] == "in") else "\u2190"
         arrow = f' data-a="{glyph}"' if ways else ""
+        rows = "<br>".join(e(smart(plain(line))) for line in p.get("lines", []))  # one row per line
         return (f'<div class="side {p["col"]}"{arrow}><div class="h"><span class="t">{e(smart(p["name"]))}</span>'
-                f'{chip(p["health"])}</div><div>{e(joined(p))}</div></div>')
+                f'{chip(p["health"])}</div><div>{rows}</div></div>')
 
     def conn(n):
         inner = t["inner"][n] + t["inner"][n - 1]
@@ -708,7 +730,7 @@ def one_page(t):
         for k, step in enumerate(d["loop"], 1))
     gaps = "".join(f'<tr><td>{e(g["id"])}</td><td>{inline(g["gap"])}</td><td>{chip(g["status"])}</td></tr>'
                    for g in sorted(t["gap"], key=lambda g: int(g["id"][1:])))
-    rules = "".join(f"<li><b>{inline(lead)}</b> {inline(rest)}</li>" for lead, rest in t["invariants"]["rules"])
+    rules = "".join(f"<li><b>{inline(lead)}</b></li>" for lead, _ in t["invariants"]["rules"])  # one line each
     css = CSS + "".join(f".s-{k.replace(' ', '-')} {{ background: {f}; border-color: {s}; }}\n"
                         for k, (s, f) in STATUS.items())
     css += "".join(f".f-{k} {{ --s: {s}; --f: {f}; }}\n" for k, (s, f) in FAMILY.items())
@@ -726,8 +748,8 @@ def one_page(t):
 <div class="page">
 <header>
 <div><h1>The RAPP/1 organism, on one page</h1>
-<div class="sub">Read it bottom (0) to top (6). Left: what comes in. Right: what goes out or across. Bottom: how we dogfood it, what is still open, and what holds everywhere.</div></div>
-<div class="legend"><div>{legend}</div><div><span class="gapline"></span>red dashed: a crossing no specification allows yet</div></div>
+<div class="sub">Read it bottom (0) to top (6). Left: what comes in. Right: what goes out or across.</div></div>
+<div class="legend"><div>{legend}</div><div><span class="gapline"></span>no specification allows it yet</div></div>
 </header>
 <section class="org">
 {chr(10).join(org)}
@@ -784,13 +806,12 @@ def genome(t, graph):
     L += ["", "## Journeys"] + table(
         ["ID", "Journey"], [[f"[{j['id']}](journeys/{j['id']}.md)", j["title"]] for j in t["journey"]])
     L += ["", "## What holds everywhere", ""] + [f"- **{lead}** {rest}".rstrip() for lead, rest in inv["rules"]]
-    L += ["", inv["healthy"], "", f"[{d['name']}](dogfood.md) ({d['health']}): where the organism is tried for real.",
+    L += ["", f"[{d['name']}](dogfood.md) ({d['health']}): where the organism is tried for real.",
           "", "## How to adapt it", "",
           "- **Change a fact:** edit the one file that holds it.",
           "- **Move a part:** change its `beside` or `layer`; every view follows.",
           "- **Add a crossing:** add a file to `crossings/`; the builder checks both ends.",
           "- **Close a gap:** change its `status` and the `health` that names it.",
-          "- **Make your own:** copy the folder and change the facts.",
           f"- {inv['upstream']}", ""]
     return "\n".join(L)
 

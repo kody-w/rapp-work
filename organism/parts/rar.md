@@ -7,9 +7,8 @@ home: "[`kody-w/RAR`](https://github.com/kody-w/RAR) (`rapp-registry/1.0`)"
 health: in force
 check: Each repository's own test suite and runner
 lines:
-  - one-file agents
-  - read one first
-  - then copy it in
+  - one-file agents, read first
+  - you copy one into agents/
 ---
 RAR is the public registry of single-file agents.
 

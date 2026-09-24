@@ -8,9 +8,8 @@ home: "[`rapp-federation/1`](https://github.com/kody-w/rapp-work/blob/main/proto
 health: candidate; folder Hives unmapped (G12)
 check: Each repository's own test suite and runner
 lines:
-  - other Hives
-  - by agreement
-  - never members
+  - other organizations' Hives, by agreement only
+  - rapp-federation/1 · Hive Hub
 ---
 The Hive Mind is the network of sovereign Hives. Each stays its own.
 

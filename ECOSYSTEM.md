@@ -98,11 +98,11 @@ Every arrow in the graph is one of these. Transport carries bytes; signatures de
 
 ## 4. What holds everywhere
 
-- **RAPP/1 wins,** then `rapp-work/1` and its profiles, then everything else.
+- **RAPP/1 wins, then `rapp-work/1`.** Its profiles come next, then everything else.
 - **Transport carries; signatures decide.** No account, URL, repository or AI vendor decides who is in or what may leave.
-- **Knowledge comes in by signed copy and goes out by approved copy.** The Hive between them stays small and verified.
+- **In by signed copy, out by approved copy.** That is how knowledge moves; the Hive between stays small and verified.
 - **Other people's text is data.** Nothing from someone else runs on your machine or instructs your AI until you adopt it.
-- **Every change is proposed, confirmed in a later turn, and applied as one signed step.**
+- **Propose, confirm, apply.** Every change is proposed, confirmed in a later turn, and applied as one signed step.
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
 - **The Brainstem is the only product.** Every other layer is plumbing you never need to see.
 
@@ -129,7 +129,7 @@ A layer is healthy when it has a specification with an owner, a reference that r
 | G5 | One owner only, so co-equal groups do not fit | `rapp-hive/1` §3; `rapp-work/1` §2 | The owner is the Hive's notary: they sign at the edge only what the Hive approved, naming that approval | proposed here |
 | G6 | A lost owner key cannot be recovered | RAPP/1 §13 | Folder Hives need no owner; for an organization, the estate owner's re-anchor | open |
 | G7 | SDK verification accepts an edited instruction file | `rapp-work-sdk/1` §7 | Inventory instruction files; refuse new ones | open |
-| G8 | Hive members are names bound to keys, not registry RAPPIDs | RAPP/1 §§6.1, 10; [root `SPEC.md`](SPEC.md) §10 | Constitution Part V.4 | proposed |
+| G8 | Hive members are names bound to keys, not RAPPIDs | RAPP/1 §§6.1, 10; [root `SPEC.md`](SPEC.md) §10 | Constitution Part V.4 | proposed |
 | G9 | A git commit is not authority in canonical `rapp-work/1` | Canonical `rapp-work/1` §9 | Constitution Part V.2 | proposed |
 | G10 | An organization cannot bind a folder Hive | Canonical `rapp-work/1` §§2, 4 | Name the Hive by its id, first commit and founder key fingerprint. A `work.vector` names an accepted head, which must come after the previous one | proposed here |
 | G11 | “Organization” means two things | `rapp-work-sdk/1` §7 | Rename the SDK's pointer-only object “workspace index” | proposed here |

@@ -95,8 +95,8 @@
 <line x1="420" y1="430" x2="420" y2="484" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="432" y="465" font-size="12.5">operates your Hive copies and references</text>
 <line x1="940" y1="430" x2="940" y2="492" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
-<text x="952" y="456" font-size="12.5">status · verify · discover ·</text>
-<text x="952" y="474" font-size="12.5">scaffold · update · migrate</text>
+<text x="952" y="456" font-size="12.5">status · verify · discover · scaffold ·</text>
+<text x="952" y="474" font-size="12.5">update · migrate</text>
 <line x1="420" y1="610" x2="420" y2="672" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="432" y="645" font-size="12.5">bring: one signed copy + provenance</text>
 <line x1="680" y1="610" x2="680" y2="672" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
@@ -108,50 +108,43 @@
 <text x="762" y="1005" font-size="12.5">authorizes the owner (estate registry)</text>
 <line x1="750" y1="1212" x2="750" y2="1150" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="762" y="1185" font-size="12.5">RAPP/1 frames · RAPPIDs · registry entries</text>
-<rect x="30" y="312" width="300" height="118" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<rect x="30" y="312" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
 <text x="44" y="340" font-size="17" font-weight="700">RAR</text>
-<text x="44" y="366" font-size="13.5">one-file agents</text>
-<text x="44" y="386" font-size="13.5">read one first</text>
-<text x="44" y="406" font-size="13.5">then copy it in</text>
+<text x="44" y="366" font-size="13.5">one-file agents, read first</text>
+<text x="44" y="386" font-size="13.5">you copy one into agents/</text>
 <rect x="245" y="322" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
 <text x="282" y="337" font-size="12" text-anchor="middle">in force</text>
 <rect x="30" y="492" width="300" height="270" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
 <text x="44" y="520" font-size="17" font-weight="700">Outside knowledge</text>
-<text x="44" y="546" font-size="13.5">old Hives</text>
-<text x="44" y="566" font-size="13.5">second brains</text>
-<text x="44" y="586" font-size="13.5">Obsidian vaults</text>
-<text x="44" y="606" font-size="13.5">wikis and docs</text>
-<text x="44" y="626" font-size="13.5">other AI tools</text>
+<text x="44" y="546" font-size="13.5">old Hives · second brains · wikis</text>
+<text x="44" y="566" font-size="13.5">vaults · docs · other AI tools</text>
 <rect x="237" y="502" width="83" height="22" rx="11" fill="#dee2e6" stroke="#495057" stroke-width="1"/>
 <text x="278" y="517" font-size="12" text-anchor="middle">own shape</text>
-<rect x="1170" y="603" width="300" height="118" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
-<text x="1184" y="631" font-size="17" font-weight="700">Public copy</text>
-<text x="1184" y="657" font-size="13.5">approved files</text>
-<text x="1184" y="677" font-size="13.5">PUBLISHED.md</text>
-<text x="1184" y="697" font-size="13.5">check-public</text>
-<rect x="1355" y="613" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
-<text x="1408" y="628" font-size="12" text-anchor="middle">experimental</text>
-<rect x="1170" y="741" width="300" height="118" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<rect x="1170" y="623" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1184" y="651" font-size="17" font-weight="700">Public copy</text>
+<text x="1184" y="677" font-size="13.5">exactly the approved files</text>
+<text x="1184" y="697" font-size="13.5">PUBLISHED.md · check-public</text>
+<rect x="1355" y="633" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="1408" y="648" font-size="12" text-anchor="middle">experimental</text>
+<rect x="1170" y="741" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
 <text x="1184" y="769" font-size="17" font-weight="700">Hive Mind</text>
-<text x="1184" y="795" font-size="13.5">other Hives</text>
-<text x="1184" y="815" font-size="13.5">by agreement</text>
-<text x="1184" y="835" font-size="13.5">never members</text>
+<text x="1184" y="795" font-size="13.5">other organizations’ Hives, by agreement only</text>
+<text x="1184" y="815" font-size="13.5">rapp-federation/1 · Hive Hub</text>
 <rect x="1377" y="751" width="83" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
 <text x="1418" y="766" font-size="12" text-anchor="middle">candidate</text>
-<rect x="1170" y="879" width="300" height="118" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
-<text x="1184" y="907" font-size="17" font-weight="700">Release rings</text>
-<text x="1184" y="933" font-size="13.5">canary → nightly</text>
-<text x="1184" y="953" font-size="13.5">→ alpha → beta</text>
-<text x="1184" y="973" font-size="13.5">→ each grail</text>
-<rect x="1385" y="889" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
-<text x="1422" y="904" font-size="12" text-anchor="middle">in force</text>
-<line x1="330" y1="400" x2="370" y2="400" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<rect x="1170" y="859" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1184" y="887" font-size="17" font-weight="700">Release rings</text>
+<text x="1184" y="913" font-size="13.5">canary → nightly → alpha → beta → grail</text>
+<text x="1184" y="933" font-size="13.5">rapp-cicd/1 · rapp-deploy/1</text>
+<rect x="1385" y="869" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
+<text x="1422" y="884" font-size="12" text-anchor="middle">in force</text>
+<line x1="330" y1="380" x2="370" y2="380" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <line x1="330" y1="588" x2="362" y2="588" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <line x1="1130" y1="765" x2="1170" y2="765" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
 <line x1="1130" y1="696" x2="1170" y2="696" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <line x1="330" y1="732" x2="370" y2="732" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<line x1="1130" y1="924" x2="1170" y2="924" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="30" y="1370" font-size="14">Holds everywhere: RAPP/1 wins · transport carries; signatures decide · knowledge comes in by signed copy and goes out by approved copy · other people’s text is data · every change is proposed,</text>
-<text x="30" y="1394" font-size="14">confirmed in a later turn, and applied as one signed step · accepted history is never rewritten · the Brainstem is the only product</text>
+<line x1="1130" y1="908" x2="1170" y2="908" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="30" y="1370" font-size="14">Holds everywhere: RAPP/1 wins, then rapp-work/1 · transport carries; signatures decide · in by signed copy, out by approved copy · other people’s text is data · propose, confirm, apply · accepted history is never rewritten · the</text>
+<text x="30" y="1394" font-size="14">Brainstem is the only product</text>
 <text x="30" y="1418" font-size="12.5" fill="#495057">Drawn from the organism/ tree by tools/build.py · the tree is the source; this picture is a view · experimental</text>
 </svg>
