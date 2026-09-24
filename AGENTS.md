@@ -19,5 +19,8 @@ Historical project skills are compatibility surfaces. Use `rapp_work.compat`
 rather than creating another workspace-manager or Private Hive
 implementation. Preserve their fixtures.
 
+`CONSTITUTION.md` is an experimental draft of lessons and pending amendments.
+It is guidance until ratified and never overrides RAPP/1 or `rapp-work/1`.
+
 No network or credential inheritance by default. Never execute discovered
 neurons, plugins, or skills. DOGG must be PII-free; GODD remains private.

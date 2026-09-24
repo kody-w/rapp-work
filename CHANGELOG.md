@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added an experimental `CONSTITUTION.md` (not in force until ratified):
+  lessons from the Hive redesign and four pending amendments.
+
 ## 1.0.0 — 2026-09-18
 
 - Replaced the standards-only front door with the installable, typed
