@@ -11,9 +11,11 @@ It is experimental. Specifications decide; the organism only points at them.
 | `parts/` | Parts inside a layer, and parts beside the stack |
 | `crossings/` | How anything moves between layers, one crossing per file |
 | `journeys/` | E1 to E7: end to end, through every layer |
-| `gaps/` | G01 to G14: what is still open |
+| `gaps/` | G01 to G17: what is still open |
 | `invariants.md` | What holds everywhere |
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
+| `health.md` | The health words every `health` and `status` starts with |
+| `glossary.md` | The other words this map uses, one per line |
 | `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html` and `one-page.pdf` |
 | `tools/build.py` | The builder: Python 3.10 or newer, standard library only |
 
@@ -54,20 +56,20 @@ Each file starts with a short frontmatter block, the facts the builder needs, th
 name: Public copy
 column: out
 beside: 3
+order: 1
 role: A separate, reviewed repository holding exactly the approved files, plus `PUBLISHED.md`
 home: The Hive folder convention; DOGG rules of `rapp-hive/1` §2
 health: experimental
 lines:
-  - approved files
-  - PUBLISHED.md
-  - check-public
+  - exactly the approved files
+  - PUBLISHED.md · check-public
 ---
 A public copy is a separate repository. It holds exactly the files the members approved.
 ```
 
 - **Change a fact:** edit the one file that holds it.
 - **Reorganize:** move a part with `beside` or `layer`, or add, rename and remove files. The views follow.
-- **Add a crossing:** add a file to `crossings/` that names its `from`, `to`, `arrow` and `label`.
+- **Add a crossing:** add a file to `crossings/` that names its `from`, `to`, `arrow` and `label`. Name the file `<from>-<to>.md`.
 - **Rebuild:**
 
   ```bash
@@ -75,22 +77,24 @@ A public copy is a separate repository. It holds exactly the files the members a
   python3 tools/build.py --pdf    # also prints views/one-page.pdf, when Chrome or Chromium is installed
   ```
 
-The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end, or a value that would break the frontmatter.
+The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, or a value that would break the frontmatter.
 
 | File | Fields (optional ones in brackets) |
 |---|---|
 | `layers/<n>-<id>.md` | `layer`, `name`, `role`, `decides`, `signed_with`, `home`, `health`, `color`, [`lines`, `check`] |
-| `parts/<id>.md` | `name`, `role`, `home`, `health`, and either `layer` or `column` with `beside`; [`order`, `lines`, `check`] |
+| `parts/<id>.md` | `name`, `role`, `home`, `health`, and either `layer` or `column` with `beside`; [`order`, `span`, `lines`, `check`] |
 | `crossings/<id>.md` | `from`, `to`, `what`, `authorized_by`, `home`, `health`, `arrow`, `label` |
 | `gaps/G<nn>.md` | `id`, `gap`, `home`, `fix`, `status` |
 | `journeys/E<n>.md` | `id`, `title`; the steps are the body's `- ` lines |
 | `invariants.md` | `healthy`, `upstream`; each rule is a body line `- **Lead.** More words.` |
 | `dogfood.md` | `name`, `health`, `tree`, `loop` |
+| `health.md`, `glossary.md` | `name`; each word is a body line `- **word:** meaning` |
 
-- `health` and `status` start with one of: in force, experimental, candidate, proposed, open, planned, gap, own shape. Words after it are notes. `—` means none.
+- `health` and `status` start with a word from `health.md`: in force, specified, experimental, candidate, planned, gap, idea, open, proposed or own shape. Words after it are notes. `—` means none.
 - `color` is an Open Color family: gray, orange, green, blue or purple.
 - `column` is in, out or across. `beside` and `layer` are layer numbers.
-- `arrow` is down, up or both inside the stack; in, out or both beside it.
+- `arrow` is down, up or both inside the stack; in, out or both beside it. It must point from `from` to `to`, so every arrow reads like its row.
+- `span` sets how much of its layer's width a part inside it takes (default 1).
 - `lines` are the words drawn in a box. A layer `role` that starts with a short phrase and a colon gives the box its title.
 - Wrap a value in double quotes when it holds `: ` or starts with a sign such as `` ` ``, `[` or `"`, so the frontmatter stays valid YAML.
 

@@ -17,7 +17,8 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .legend { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; font-size: 7pt; white-space: nowrap; }
 .chip { display: inline-block; border: 1px solid; border-radius: 9px; padding: 0 6px; font-size: 6.4pt; line-height: 1.45;
         white-space: nowrap; font-weight: 600; }
-.gapline { display: inline-block; width: 26px; border-top: 2px dashed #c92a2a; vertical-align: middle; margin-right: 3px; }
+.dash { display: inline-block; width: 18px; border-top: 2px dashed #868e96; vertical-align: middle; margin: 0 2px 0 4px; }
+.dash.red { border-top-color: #c92a2a; }
 .org { display: grid; grid-template-columns: 1.9in 1fr 2.3in; column-gap: 0.13in; }
 .layer, .side, .cell { position: relative; }
 .layer { border: 1.6px solid var(--s); background: var(--f); border-radius: 7px; padding: 2px 7px 3px 7px; }
@@ -29,14 +30,14 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .device { border: 1.6px dashed var(--s); border-radius: 8px; padding: 2px 5px 4px 5px; }
 .cells { display: grid; gap: 5px; margin-top: 2px; }
 .cell { background: var(--f); border: 1.4px solid var(--s); border-radius: 6px; padding: 2px 6px 3px 6px; }
-.conn { font-size: 6.9pt; color: #222; min-height: 0.155in; display: flex; align-items: center; justify-content: center;
+.conn { font-size: 6.9pt; color: #222; min-height: 0.14in; display: flex; align-items: center; justify-content: center;
         gap: 0.4in; }
 .conn b { font-size: 8.6pt; color: #343a40; margin-right: 3px; }
 .conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; }
 .side { border: 1.4px solid #495057; background: #f1f3f5; border-radius: 7px; padding: 2px 7px 3px 7px; font-size: 7.1pt; }
 .side[data-a]::after { content: attr(data-a); position: absolute; top: 34%; font-size: 12pt; color: #343a40; font-weight: 700; }
 .side.in[data-a]::after { right: -0.145in; } .side.out[data-a]::after { left: -0.155in; }
-.bottom { display: grid; grid-template-columns: 1.3fr 1.25fr 0.75fr; gap: 0.12in; flex: 1; }
+.bottom { display: grid; grid-template-columns: 1.15fr 1.28fr 0.89fr; gap: 0.1in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
 .panel h2 { font-size: 9pt; margin: 0 0 3px 0; display: flex; align-items: center; justify-content: space-between; }
 pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt; line-height: 1.25; margin: 2px 0 4px 0;
@@ -45,20 +46,22 @@ pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt;
 .step { flex: 1; border: 1.3px solid #2f9e44; background: #ebfbee; border-radius: 6px; padding: 2px 3px; font-size: 6.4pt; }
 .step b { display: block; font-size: 7pt; }
 .loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; }
-table.gaps { border-collapse: collapse; width: 100%; font-size: 6.4pt; line-height: 1.12; }
-table.gaps td { padding: 0.3px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.gaps { border-collapse: collapse; width: 100%; font-size: 6.4pt; line-height: 1.06; }
+table.gaps td { padding: 0 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.gaps .chip { font-size: 5.8pt; line-height: 1.2; padding: 0 5px; }
 table.gaps td:first-child { font-weight: 700; width: 24px; } table.gaps td:last-child { text-align: right; width: 58px; }
 code { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 94%; }
 ul.inv { margin: 0; padding-left: 12px; font-size: 7.1pt; } ul.inv li { margin: 0 0 2px 0; }
 footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-between; gap: 0.3in; }
 .s-in-force { background: #b2f2bb; border-color: #2f9e44; }
+.s-specified { background: #c5f6fa; border-color: #0c8599; }
 .s-experimental { background: #ffe8cc; border-color: #e67700; }
-.s-candidate { background: #ffe8cc; border-color: #e67700; }
-.s-proposed { background: #fff3bf; border-color: #f08c00; }
-.s-open { background: #e9ecef; border-color: #868e96; }
+.s-candidate { background: #fff3bf; border-color: #f08c00; }
 .s-planned { background: #e5dbff; border-color: #6741d9; }
 .s-gap { background: #ffc9c9; border-color: #c92a2a; }
+.s-idea { background: #ffdeeb; border-color: #a61e4d; }
+.s-open { background: #e9ecef; border-color: #868e96; }
+.s-proposed { background: #dbe4ff; border-color: #3b5bdb; }
 .s-own-shape { background: #dee2e6; border-color: #495057; }
 .f-gray { --s: #495057; --f: #e9ecef; }
 .f-orange { --s: #e67700; --f: #fff3bf; }
@@ -72,53 +75,53 @@ footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-be
 <header>
 <div><h1>The RAPP/1 organism, on one page</h1>
 <div class="sub">Read it bottom (0) to top (6). Left: what comes in. Right: what goes out or across.</div></div>
-<div class="legend"><div><span class="chip s-in-force">in force</span> <span class="chip s-experimental">experimental</span> <span class="chip s-proposed">proposed</span> <span class="chip s-open">open</span> <span class="chip s-planned">planned</span></div><div><span class="gapline"></span>no specification allows it yet</div></div>
+<div class="legend"><div><span class="chip s-in-force">in force</span> <span class="chip s-specified">specified</span> <span class="chip s-experimental">experimental</span> <span class="dash"></span><span class="chip s-candidate">candidate</span> <span class="chip s-planned">planned</span></div><div><span class="dash red"></span><span class="chip s-gap">gap</span> <span class="chip s-idea">idea</span> <span class="chip s-open">open</span> <span class="chip s-proposed">proposed</span> <span class="chip s-own-shape">own shape</span></div></div>
 </header>
 <section class="org">
 <div></div>
 <div class="layer f-gray"><div class="h"><span class="t"><span class="n">6</span>You</span></div><div>Talk to your Brainstem. Every change is shown to you in plain words first. Nothing applies until you confirm the exact plan in a later turn. “Give me my Brainstem.”</div></div>
 <div></div>
-<div></div><div class="conn"><span><b>▲▼</b>ask · propose · confirm the exact plan in a later turn</span></div><div></div>
+<div></div><div class="conn"><span class=""><b>▲▼</b>ask · propose · confirm the exact plan</span></div><div></div>
 <div class="side in" data-a="→"><div class="h"><span class="t">RAR</span><span class="chip s-in-force">in force</span></div><div>one-file agents, read first<br>you copy one into agents/</div></div>
-<div class="layer f-orange"><div class="h"><span class="t"><span class="n">5</span>Brainstem — the one product</span><span class="chip s-in-force">in force</span></div><div>Your own AI: frozen Grail kernel · hot-loaded agents (the Hive agent is one file) · soul · memory · It proposes; you decide. A Hive is never its agents folder or its soul.</div></div>
+<div class="layer f-orange"><div class="h"><span class="t"><span class="n">5</span>Brainstem — the one surface you talk to</span><span class="chip s-in-force">in force</span></div><div>Your own AI: frozen Grail kernel · hot-loaded agents (the Hive agent is one file) · soul · memory · It proposes; you decide. A Hive is never its agents folder or its soul.</div></div>
 <div></div>
-<div></div><div class="conn"><span><b>▼</b>operates your Hive copies and references</span><span><b>▲▼</b>status · verify · discover · scaffold · update · migrate</span></div><div></div>
+<div></div><div class="conn"><span class=""><b>▼</b>operates your Hive copies and references</span><span class=""><b>▲▼</b>SDK operations (not wired to the Brainstem yet, G17)</span></div><div></div>
 <div class="side in" data-a="→"><div class="h"><span class="t">Outside knowledge</span><span class="chip s-own-shape">own shape</span></div><div>old Hives · second brains · wikis<br>vaults · docs · other AI tools</div></div>
-<div class="device f-orange"><div class="h"><span class="t"><span class="n">4</span>Your device — your “local dimension”</span></div><div class="cells" style="grid-template-columns: repeat(3, 1fr)"><div class="cell"><div class="h"><span class="t">References</span><span class="chip s-experimental">experimental</span></div><div>read-only pointers · never run · read as data</div></div><div class="cell"><div class="h"><span class="t">Hive copy</span><span class="chip s-experimental">experimental</span></div><div>your space · one key per device · verified</div></div><div class="cell"><div class="h"><span class="t">Workspaces</span><span class="chip s-in-force">in force</span></div><div>private GODD · local-first · SDK plans</div></div></div></div>
+<div class="device f-orange"><div class="h"><span class="t"><span class="n">4</span>Your device</span></div><div class="cells" style="grid-template-columns: 1fr 1fr 1fr"><div class="cell"><div class="h"><span class="t">References</span><span class="chip s-experimental">experimental</span></div><div>read-only pointers · never run · read as data</div></div><div class="cell"><div class="h"><span class="t">Hive copy</span><span class="chip s-experimental">experimental</span></div><div>your copy of each Hive · your space is shared · one key per device</div></div><div class="cell"><div class="h"><span class="t">Workspaces</span><span class="chip s-in-force">in force</span></div><div>private GODD · local-first · SDK plans</div></div></div></div>
 <div></div>
-<div></div><div class="conn"><span><b>▼</b>bring: one signed copy + provenance</span><span><b>▲▼</b>signed commits, verified before checkout</span></div><div></div>
+<div></div><div class="conn"><span class=""><b>▼</b>bring: one signed copy + provenance</span><span class=""><b>▲▼</b>signed commits, verified before checkout</span></div><div></div>
 <div></div>
-<div class="layer f-green"><div class="h"><span class="t"><span class="n">3</span>Hive — the organization’s one shared folder</span><span class="chip s-experimental">experimental</span></div><div>HIVE.md · members/ · requests/ · shared/ · former/ — markdown, git underneath, no owner inside · Every change is one signed commit, judged by the Hive as it stood just before · approvals ≥ 2</div></div>
+<div class="device f-green"><div class="h"><span class="t"><span class="n">3</span>Hive — where the members share work</span></div><div class="cells" style="grid-template-columns: 2fr 1fr"><div class="cell"><div class="h"><span class="t">Folder Hive</span><span class="chip s-experimental">experimental</span></div><div>HIVE.md · members/ · requests/ · shared/ · former/ · no owner inside · new Hives start at 2 approvals · not bindable yet (G10)</div></div><div class="cell"><div class="h"><span class="t">Private Hive</span><span class="chip s-in-force">in force</span></div><div>rapp-hive/1 · one owner · bound by hive_rappid</div></div></div></div>
 <div class="side out" data-a="→"><div class="h"><span class="t">Public copy</span><span class="chip s-experimental">experimental</span></div><div>exactly the approved files<br>PUBLISHED.md · check-public</div></div>
-<div></div><div class="conn"><span class="red"><b>┊▼</b>work.vector: the owner notarizes the Hive head — <b>GAP G10</b>: no specification allows it yet</span></div><div></div>
+<div></div><div class="conn"><span class="red"><b>┊▼</b>idea (G5, G10)</span><span class=""><b>▼</b>work.vector: the accepted Hive checkpoint</span></div><div></div>
 <div></div>
-<div class="layer f-blue"><div class="h"><span class="t"><span class="n">2</span>Organization — the accountable body</span><span class="chip s-in-force">in force</span></div><div>One owner · one world · one policy · one release scope · exactly one Hive · Body stream: catalog · vector · migration · receipt · observation · rollback</div></div>
+<div class="layer f-blue"><div class="h"><span class="t"><span class="n">2</span>Organization — the accountable body</span><span class="chip s-specified">specified</span></div><div>One owner · one world · one policy · one release scope · exactly one Hive · Body stream: catalog · vector · migration · receipt · observation · rollback</div></div>
 <div class="side out" data-a="↔"><div class="h"><span class="t">Hive Mind</span><span class="chip s-candidate">candidate</span></div><div>other organizations’ Hives, by agreement only<br>rapp-federation/1 · Hive Hub</div></div>
-<div></div><div class="conn"><span><b>▲</b>authorizes the owner (estate registry)</span></div><div></div>
+<div></div><div class="conn"><span class=""><b>▲</b>authorizes the owner (estate registry)</span></div><div></div>
 <div></div>
-<div class="layer f-purple"><div class="h"><span class="t"><span class="n">1</span>Estate — an owner’s signed registry</span><span class="chip s-in-force">in force</span></div><div>Who may sign as whom · which protocols are pinned · which Brainstem kernel (Grail) is declared · Append-only · rappid.json · registry.json · owner-anchor.json</div></div>
-<div class="side out" data-a="→"><div class="h"><span class="t">Release rings</span><span class="chip s-in-force">in force</span></div><div>canary → nightly → alpha → beta → grail<br>rapp-cicd/1 · rapp-deploy/1</div></div>
-<div></div><div class="conn"><span><b>▲</b>RAPP/1 frames · RAPPIDs · registry entries</span></div><div></div>
+<div class="layer f-purple"><div class="h"><span class="t"><span class="n">1</span>Estate — an owner’s signed registry</span><span class="chip s-in-force">in force</span></div><div>Who may sign as whom · which protocols are pinned · which Grail kernel each release scope pins · Append-only · rappid.json · registry.json · owner-anchor.json</div></div>
+<div class="side out" data-a="←"><div class="h"><span class="t">Release rings</span><span class="chip s-specified">specified</span></div><div>canary → nightly → alpha → beta → grail<br>rapp-cicd/1 · rapp-deploy/1</div></div>
+<div></div><div class="conn"><span class=""><b>▲</b>RAPP/1 frames · RAPPIDs · registry entries</span></div><div></div>
 <div></div>
-<div class="layer f-purple"><div class="h"><span class="t"><span class="n">0</span>RAPP/1 — bytes and identity</span><span class="chip s-in-force">in force</span></div><div>RAPPIDs · the eleven-key frame · hashes · Ed25519 signatures · eggs · registries · Frozen forms: a frame that passes once passes forever</div></div>
+<div class="layer f-purple"><div class="h"><span class="t"><span class="n">0</span>RAPP/1 — bytes and identity</span><span class="chip s-in-force">in force</span></div><div>RAPPIDs · the eleven-key frame · hashes · Ed25519 (or ES256) signatures · eggs · registries · Frozen forms</div></div>
 <div></div>
 </section>
 <section class="bottom">
 <div class="panel"><h2>Dogfood: the RAPP Hive, our public example <span class="chip s-planned">planned</span></h2>
 <pre class="tree">HIVE.md        members: the maintainers (AIs are tools)
 shared/canon/  one canonical fact per file, hash-stamped
-shared/drift/  one verdict per estate repo: aligned or drifted
+shared/drift/  one verdict per repo: aligned or drifted
 shared/map/    layers 0–6 · crossings · this page
-shared/gaps/   G01 … G14, one per file
+shared/gaps/   one file per gap
 (your device)  references: every estate repo, read-only</pre>
-<div class="loop"><div class="step"><b>1 Canon</b>each fact, once, from its repo</div><span class="loopa">→</span><div class="step"><b>2 Sweep</b>rapp_check.py, outside the Hive</div><span class="loopa">→</span><div class="step"><b>3 Record</b>one signed verdict per repo</div><span class="loopa">→</span><div class="step"><b>4 Fix upstream</b>the next sweep flips it</div><span class="loopa">↻</span></div>
-<div><b>How it scales:</b> the Contoso model home is 6 synthetic people and about 35 files; the RAPP Hive is about 30 real repos and 100+ fact files. It is the same one agent, the same rules and no new concepts. It exercises every layer, and makes G10 concrete: the RAPP project’s own organization notarizes its Hive.</div></div>
+<div class="loop"><div class="step"><b>1 Canon</b>one fact, once, from its repo</div><span class="loopa">→</span><div class="step"><b>2 Sweep</b>rapp_check.py, not in the Hive</div><span class="loopa">→</span><div class="step"><b>3 Record</b>one verdict per repo, signed</div><span class="loopa">→</span><div class="step"><b>4 Fix upstream</b>the next sweep flips it</div><span class="loopa">↻</span></div>
+<div><b>How it scales:</b> the Contoso model home is 6 synthetic people and about 35 files; the RAPP Hive is about 30 real repos and 100+ fact files. It is the same one agent, the same rules and no new concepts. It exercises every layer. Its first sweep already has seeds: G15, G16 and G17 are real drift findings. It could also test the G5 and G10 ideas, with the RAPP project’s own organization notarizing its Hive.</div></div>
 <div class="panel"><h2>Gap register (the way to fully healthy)</h2>
-<table class="gaps"><tr><td>G1</td><td>A <code>rapp-hive/1</code> roster can never change</td><td><span class="chip s-open">open</span></td></tr><tr><td>G2</td><td>SDK plans cannot move a file</td><td><span class="chip s-open">open</span></td></tr><tr><td>G3</td><td>SDK discovery misses <code>*_agent.py</code></td><td><span class="chip s-open">open</span></td></tr><tr><td>G4</td><td>SDK migration refuses repository-seeded Hives and long world ids</td><td><span class="chip s-open">open</span></td></tr><tr><td>G5</td><td>One owner only, so co-equal groups do not fit</td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G6</td><td>A lost owner key cannot be recovered</td><td><span class="chip s-open">open</span></td></tr><tr><td>G7</td><td>SDK verification accepts an edited instruction file</td><td><span class="chip s-open">open</span></td></tr><tr><td>G8</td><td>Hive members are names bound to keys, not RAPPIDs</td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G9</td><td>A git commit is not authority in canonical <code>rapp-work/1</code></td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G10</td><td>An organization cannot bind a folder Hive</td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G11</td><td>“Organization” means two things</td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G12</td><td>Hive Hub dial records do not describe folder Hives</td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G13</td><td>Outside knowledge had no way in</td><td><span class="chip s-experimental">experimental</span></td></tr><tr><td>G14</td><td>The Hive agent’s path to the Brainstem grail</td><td><span class="chip s-open">open</span></td></tr></table></div>
+<table class="gaps"><tr><td>G1</td><td>A <code>rapp-hive/1</code> roster can never change</td><td><span class="chip s-open">open</span></td></tr><tr><td>G2</td><td>SDK plans cannot move a file</td><td><span class="chip s-open">open</span></td></tr><tr><td>G3</td><td>SDK discovery misses <code>*_agent.py</code></td><td><span class="chip s-open">open</span></td></tr><tr><td>G4</td><td>SDK migration refuses repository-seeded Hives and long world ids</td><td><span class="chip s-open">open</span></td></tr><tr><td>G5</td><td>One owner only, so co-equal groups do not fit</td><td><span class="chip s-idea">idea</span></td></tr><tr><td>G6</td><td>Implementations refuse owner succession</td><td><span class="chip s-open">open</span></td></tr><tr><td>G7</td><td>SDK verification accepts an edited instruction file</td><td><span class="chip s-open">open</span></td></tr><tr><td>G8</td><td>Hive members are names bound to keys, not RAPPIDs</td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G9</td><td>A git commit is not authority in canonical <code>rapp-work/1</code></td><td><span class="chip s-proposed">proposed</span></td></tr><tr><td>G10</td><td>An organization cannot bind a folder Hive</td><td><span class="chip s-idea">idea</span></td></tr><tr><td>G11</td><td>“Organization” means two things</td><td><span class="chip s-idea">idea</span></td></tr><tr><td>G12</td><td>Hive Hub dial records do not describe folder Hives</td><td><span class="chip s-idea">idea</span></td></tr><tr><td>G13</td><td>Outside knowledge had no way in</td><td><span class="chip s-experimental">experimental</span></td></tr><tr><td>G14</td><td>The Hive agent’s path to the production ring</td><td><span class="chip s-open">open</span></td></tr><tr><td>G15</td><td>No estate declares the Brainstem’s kernel</td><td><span class="chip s-open">open</span></td></tr><tr><td>G16</td><td>No estate has activated canonical <code>rapp-work/1</code></td><td><span class="chip s-open">open</span></td></tr><tr><td>G17</td><td>The Brainstem does not call the RAPP Work SDK</td><td><span class="chip s-idea">idea</span></td></tr></table></div>
 <div class="panel"><h2>What holds everywhere</h2>
-<ul class="inv"><li><b>RAPP/1 wins, then <code>rapp-work/1</code>.</b></li><li><b>Transport carries; signatures decide.</b></li><li><b>In by signed copy, out by approved copy.</b></li><li><b>Other people’s text is data.</b></li><li><b>Propose, confirm, apply.</b></li><li><b>Accepted history is never rewritten.</b></li><li><b>The Brainstem is the only product.</b></li></ul></div>
+<ul class="inv"><li><b>RAPP/1 wins, then <code>rapp-work/1</code>.</b></li><li><b>Transport carries; signatures decide.</b></li><li><b>In by signed copy, out by approved copy.</b></li><li><b>Other people’s text is data.</b></li><li><b>Propose, confirm, apply.</b></li><li><b>Accepted history is never rewritten.</b></li><li><b>The Brainstem is the one surface you talk to.</b></li></ul></div>
 </section>
-<footer><span>Experimental map, generated from the organism/ tree · details: ECOSYSTEM.md and CONSTITUTION.md in kody-w/rapp-work (branch experimental/rapp-work-constitution) · model Hive: kody-w/rapp-model-hive (experimental/hive-md)</span>
+<footer><span>Experimental map, generated from organism/ · details: ECOSYSTEM.md and CONSTITUTION.md in kody-w/rapp-work, branch experimental/rapp-work-constitution</span>
 <span>Specifications decide; this page only points at them.</span></footer>
 </div>
 </body>

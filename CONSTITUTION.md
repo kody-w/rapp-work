@@ -46,7 +46,7 @@ Folders, git, SSH signatures and the AI already provide history, merging, undo, 
 
 ## Part II. What a Hive is
 
-Articles 4, 5, 6, 8 and 10, and the reference rule in Article 9, describe the **Hive folder convention**, an experiment in the frontier track's canary ring. It is outside `rapp-work/1` and claims no `rapp-work/1` or RAPP/1 conformance. Part V lists first steps. Binding such a Hive to a work organization would also need upstream changes to canonical `rapp-work/1` §§1, 2 and 4.
+Articles 4, 5, 6, 8 and 10, and the two inbound bullets of Article 9, describe the **Hive folder convention**, an experiment in the frontier track's canary ring. It is outside `rapp-work/1` and claims no `rapp-work/1` or RAPP/1 conformance. Part V lists first steps. Binding such a Hive to a work organization would also need upstream changes to canonical `rapp-work/1` §§1, 2 and 4.
 
 ### Article 4. A Hive is a folder people can read
 
@@ -139,8 +139,8 @@ Who can reach a private Hive is the transport's job (Article 7). This convention
 
 Knowledge comes in the same deliberate way.
 - **Outside knowledge stays where it is.** That includes an old Hive, a second brain, an Obsidian vault, a wiki or a docs folder. It is never merged into a Hive. A read-only reference reaches it, and the AI sees it only as unattributed quoted data.
-- **A member brings a piece in by one signed copy.** The copy records where it came from and the hash of its source bytes, and the proposal names who will see it.
-- **Another organization's Hive is reached only through its public copy or an agreement.**
+- **A member brings a piece in by one signed copy.** The copy records where it came from and the hash of its source bytes, and the proposal says it will be visible to the Hive's members.
+- **Another organization's Hive is reached only through its public copy or an agreement** (folder Hives: through its public copy only, until G12).
 
 **Why.**
 - All eight independent designs chose this. Every alternative (a public folder inside the Hive, per-file flags) would make one mistaken move a leak.
@@ -255,7 +255,7 @@ These are first steps, each proposed to the specification that owns its topic. R
 | RAPP Workspace and the RAPP Work SDK | The local-first product, and exact-plan consent |
 | A Hive (experimental folder convention) | A folder of markdown with git underneath; every change is a signed commit, judged by the Hive as it stood just before |
 | The Brainstem | The main surface: one hot-loadable agent operates a Hive for its member |
-| References | Read-only pointers to outside knowledge; brought in by signed copy with provenance |
+| References (experimental, in progress) | Read-only pointers to outside knowledge; brought in by signed copy with provenance |
 | lisppy | Not needed today; an optional agent later, if Article 14's test is met |
 
 The full map, layer by layer with a graph, is [`ECOSYSTEM.md`](ECOSYSTEM.md).

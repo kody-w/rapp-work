@@ -4,7 +4,7 @@ layer: 4
 order: 1
 role: Read-only pointers to outside knowledge, never run, synced or changed
 home: Hive folder convention, “References”
-health: experimental
+health: experimental; building, not yet in HIVE-MD.md
 lines:
   - read-only pointers
   - never run

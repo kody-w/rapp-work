@@ -6,7 +6,7 @@ role: Your private, local-first workspaces (GODD), changed only by exact SDK pla
 home: RAPP Workspace/1; `rapp-work-sdk/1`
 health: in force
 check:
-  - "`python3 tools/check.py`, `python3 -m pytest` and `python3 tools/release_inventory.py --check` in `kody-w/rapp-work`"
+  - "`python3 tools/check.py` (signed registry, plus `rapp-hive/1` and `rapp-federation/1` conformance), `python3 -m pytest` and `python3 tools/release_inventory.py --check` in `kody-w/rapp-work`"
   - "For `rapp-hive/1` and Workspace/1: the `kody-w/rapp-workspace` CI jobs (core pins and conformance, Private Hive suite)"
 lines:
   - private GODD

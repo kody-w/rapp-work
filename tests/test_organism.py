@@ -26,12 +26,18 @@ def test_every_generated_view_matches_the_organism_tree() -> None:
     assert build.check(ORGANISM) == 0
 
 
-def test_a_crossing_with_an_unknown_end_is_refused(sandbox: Path) -> None:
+@pytest.mark.parametrize(
+    ("name", "old", "new", "why"),
+    [
+        ("folder-hive-organization.md", "to: organization", "to: nowhere", "names `nowhere`"),
+        ("estate-organization.md", "arrow: up", "arrow: down", "points against"),
+    ],
+)
+def test_a_broken_crossing_is_refused(sandbox: Path, name: str, old: str, new: str, why: str) -> None:
     build = builder()
     tree = sandbox / "organism"
     shutil.copytree(ORGANISM, tree, ignore=shutil.ignore_patterns("__pycache__", "*.pdf"))
-    crossing = tree / "crossings" / "hive-organization.md"
-    text = crossing.read_text(encoding="utf-8")
-    crossing.write_text(text.replace("to: organization", "to: nowhere"), encoding="utf-8")
-    with pytest.raises(build.Refused, match="names `nowhere`"):
+    crossing = tree / "crossings" / name
+    crossing.write_text(crossing.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+    with pytest.raises(build.Refused, match=why):
         build.load(tree)

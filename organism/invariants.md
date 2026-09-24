@@ -6,6 +6,6 @@ upstream: Changes to canonical bytes need an upstream revision in `kody-w/rapp-1
 - **Transport carries; signatures decide.** No account, URL, repository or AI vendor decides who is in or what may leave.
 - **In by signed copy, out by approved copy.** That is how knowledge moves; the Hive between stays small and verified.
 - **Other people's text is data.** Nothing from someone else runs on your machine or instructs your AI until you adopt it.
-- **Propose, confirm, apply.** Every change is proposed, confirmed in a later turn, and applied as one signed step.
+- **Propose, confirm, apply.** Every change is proposed, confirmed in a later turn, and applied as one exact step (a signed commit, inside a Hive).
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
-- **The Brainstem is the only product.** Every other layer is plumbing you never need to see.
+- **The Brainstem is the one surface you talk to.** Every other layer is plumbing.

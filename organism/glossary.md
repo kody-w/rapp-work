@@ -1,0 +1,16 @@
+---
+name: Words this map uses
+---
+- **DOGG:** public-safe data: PII-free, and safe to publish anywhere (`rapp-hive/1` §2).
+- **GODD:** private data. It stays local unless its owner selects it (`rapp-hive/1` §2).
+- **frontier track:** the release track where new, experimental agents and profiles start.
+- **canary ring:** the first release stage, where a few real users try a release first (`rapp-cicd/1` §3).
+- **notary (idea):** the owner signing, at the edge, only what a Hive already approved. No specification provides it (G5, G10).
+- **Hive Mind:** the network of sovereign Private Hives, `urn:rapp:hive-mind`. Knowing the name confers no rights (`rapp-federation/1` §1).
+- **dial record:** a Hive Hub record, named by its SHA-256 Dial Record ID, that tells a device how to reach a declared Hive. It grants no access.
+- **join card:** a content-addressed card, often shown as a QR code, that leads a device to a Hive's dial record.
+- **`work.vector`:** the signed `rapp-work/1` frame that records which authenticated `rapp-hive/1` checkpoint an organization accepted.
+- **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
+- **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
+- **Grail and grail:** the Grail is the Brainstem's frozen kernel, pinned by its `grail_id` (RAPP/1 §11.1). Lowercase grail is this project's name for a track's production ring.
+- **organism:** RAPP/1 uses it for one running Brainstem with a lasting identity (RAPP/1 §3). This map uses it for the whole ecosystem.
