@@ -255,7 +255,7 @@ These are first steps, each proposed to the specification that owns its topic. R
 | RAPP Workspace and the RAPP Work SDK | The local-first product, and exact-plan consent |
 | A Hive (experimental folder convention) | A folder of markdown with git underneath; every change is a signed commit, judged by the Hive as it stood just before |
 | The Brainstem | The main surface: one hot-loadable agent operates a Hive for its member |
-| References (experimental, in progress) | Read-only pointers to outside knowledge; brought in by signed copy with provenance |
+| References (experimental) | Read-only pointers to outside knowledge; brought in by signed copy with provenance |
 | lisppy | Not needed today; an optional agent later, if Article 14's test is met |
 
 The full map, layer by layer with a graph, is [`ECOSYSTEM.md`](ECOSYSTEM.md).
