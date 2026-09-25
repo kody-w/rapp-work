@@ -7,16 +7,25 @@ Proposal 0006 (gap G6), intended for `1.1.0`; see
 
 - Synced `vendor/rapp-1/rapp_registry.py` to the exact bytes at the already
   accepted canonical commit `591e014` and pinned them with the additive
-  `RAPP1_REGISTRY_PIN.json` record (`rapp-work-parent-registry-pin/1`).
+  `RAPP1_REGISTRY_PIN.json` record (`rapp-work-parent-registry-pin/1`). This
+  also fixes drift: the vendored copy lagged its `RAPP1_PIN.json` commit.
 - Added opt-in RAPP/1 section 13.2 owner succession to the `rapp-hive/1`
   reference: `RegistryAuthority(..., succession="rapp1-13.2",
-  tombstone_issued_at=...)`. The default authority still fails closed on
-  `re-anchor`. Added check H21 (pinned reference parity) and H22 (succession
-  vectors).
+  tombstone_issued_at=..., retained_registry=...)`. The default authority
+  still fails closed on `re-anchor`, and its behavior and `checkpoint()` are
+  unchanged; it no longer needs `rapp_registry.py` to import. Under
+  succession: retained registry state (owner lineage and lifecycle entries,
+  carried in `checkpoint()`) is required for a predecessor anchor or any
+  persisted floor, so no later registry can undo a succession or revocation;
+  causal bounds stop back-dated owner acts over later state; and a compromise
+  re-anchor must share one observed append with its tombstone. Added check H21
+  (pinned reference parity) and H22 (30 succession vectors).
 - Added the read-only `rapp_work.registry` submodule: registry, owner
   succession, compromise re-anchor, and lineage verification through the
-  pinned reference. Performing owner rotation stays refused.
-- Updated `rapp-work-sdk/1` sections 5.1 and 12 and their profile pins.
+  pinned reference, with a `retained` input for the caller's last verified
+  registry. Performing owner rotation stays refused.
+- Updated `rapp-work-sdk/1` section 5.1, inserted a section 12 paragraph, and
+  refreshed their profile pins.
 
 ## 1.0.0 — 2026-09-18
 

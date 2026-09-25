@@ -101,27 +101,31 @@ verified = verify_registry(
     anchor_rappid=anchor_rappid,        # distributed out of band
     anchor_spki_der=anchor_spki_der,
     tombstone_issued_at=resolver,       # trusted: particle hash -> issuance UTC
-    persisted_seq=None,
-    persisted_hash=None,
+    retained=previous,                  # last VerifiedRegistry or its to_dict() record
 )
 verified.owner_at(utc)                  # RAPP/1 section 13.2 owner in effect
 verified.signer_acceptable(kid, utc)    # key retirement matched by SPKI tail
 verified.signature_verifier()           # for validate_frame / validate_chain
+verified.to_dict()                      # persist; pass back as retained next time
 verify_registry_lineage(documents, ..., retained=None)
 pinned_registry_reference()
 ```
 
 It delegates to the `rapp_registry.py` bytes pinned by
 `RAPP1_REGISTRY_PIN.json`. An anchor extends to a successor owner only through
-signed `rotation` records; owner compromise recovery requires a newly
-distributed anchor. A lineage must be contiguous and may only extend its
-succession and revocation history. Refusal codes are `REFUSE_REGISTRY`,
-`REFUSE_REGISTRY_ENTRY`, `REFUSE_REGISTRY_ANCHOR`,
+signed `rotation` records, and only together with `retained`, the caller's
+last verified registry. `retained` also carries the persisted sequence floor
+and same-sequence commitment, and a later registry must keep every retained
+`re-anchor` and `tombstone` entry and extend the retained owner lineage. A new
+`compromise` re-anchor must arrive one sequence after the retained state,
+together with its tombstone. Owner compromise recovery requires a newly
+distributed anchor. A lineage must be contiguous. Refusal codes are
+`REFUSE_REGISTRY`, `REFUSE_REGISTRY_ENTRY`, `REFUSE_REGISTRY_ANCHOR`,
 `REFUSE_REGISTRY_SUCCESSION`, `REFUSE_REGISTRY_ISSUANCE`,
 `REFUSE_REGISTRY_AUTHORITY`, `REFUSE_REGISTRY_OWNER`,
 `REFUSE_REGISTRY_ROLLBACK`, `REFUSE_REGISTRY_FORK`,
-`REFUSE_REGISTRY_LINEAGE`, and `REFUSE_REGISTRY_TIME`. The module never signs
-or writes anything.
+`REFUSE_REGISTRY_LINEAGE`, `REFUSE_REGISTRY_TIME`, and `REFUSE_INPUT_SHAPE`.
+The module never signs or writes anything.
 
 ## Compatibility namespace
 

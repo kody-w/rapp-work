@@ -4,8 +4,9 @@ The SDK never mints, signs, appends, or rewrites a registry. It verifies a
 signed ``rapp/1-registry`` document with the pinned RAPP/1 registry reference
 named by ``RAPP1_REGISTRY_PIN.json``: exact section 13.3 entries, owner tenure,
 lifecycle signatures, and time-scoped key retirement. The caller supplies the
-out-of-band anchor and a trusted tombstone issuance resolver; neither is read
-from the untrusted document.
+out-of-band anchor, a trusted tombstone issuance resolver, and the registry
+state it retained from its last verification; none is read from the untrusted
+document.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from __future__ import annotations
 import builtins
 import hashlib
 import json
+import re
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from types import ModuleType
@@ -29,11 +31,25 @@ REGISTRY_PIN_SCHEMA = "rapp-work-parent-registry-pin/1"
 REGISTRY_PIN_KEYS = frozenset(
     {"commit", "protocol", "reference_path", "reference_sha256", "repository", "schema"}
 )
+RETAINED_KEYS = frozenset(
+    {
+        "anchor",
+        "commitment",
+        "estate_owner",
+        "lifecycle",
+        "owner_lineage",
+        "profile",
+        "registry_seq",
+        "status",
+    }
+)
 OWNER_SUCCESSION_CASES = frozenset({"rotation", "compromise"})
 LIFECYCLE_TYPES = frozenset({"re-anchor", "tombstone"})
 LIVE_UNTIL = "9999-12-31T23:59:59.999Z"
 UINT53_MAX = 2**53 - 1
 MAX_LINEAGE = 4096
+MAX_RETAINED = 65536
+_HEX64 = re.compile(r"[0-9a-f]{64}")
 
 TombstoneIssuance = Callable[[str], str]
 SignatureCheck = Callable[..., tuple[bool, str]]
@@ -216,6 +232,55 @@ class VerifiedRegistry:
         }
 
 
+@dataclass(frozen=True)
+class _Retained:
+    sequence: int
+    commitment: str
+    owner_lineage: tuple[str, ...]
+    lifecycle: frozenset[str]
+
+
+def _retained_state(retained: Any) -> _Retained | None:
+    """The caller's retained registry state: a `VerifiedRegistry` or its persisted `to_dict()` record."""
+    if retained is None:
+        return None
+    if isinstance(retained, VerifiedRegistry):
+        return _Retained(
+            retained.sequence,
+            retained.commitment,
+            retained.owner_lineage,
+            frozenset(retained.lifecycle),
+        )
+    require(
+        isinstance(retained, Mapping) and set(retained) == RETAINED_KEYS,
+        "REFUSE_INPUT_SHAPE",
+        "retained registry state must be a verified registry or its to_dict() record",
+    )
+    lineage, lifecycle = retained["owner_lineage"], retained["lifecycle"]
+    require(
+        retained["status"] == "verified"
+        and retained["profile"] == SUCCESSION_PROFILE
+        and _uint53(retained["registry_seq"])
+        and isinstance(retained["commitment"], str)
+        and bool(_HEX64.fullmatch(retained["commitment"]))
+        and isinstance(lineage, (list, tuple))
+        and 1 <= len(lineage) <= MAX_RETAINED
+        and all(bool(rapp1.rappid_valid(owner)) for owner in lineage)
+        and len(set(lineage)) == len(lineage)
+        and retained["estate_owner"] == lineage[-1]
+        and retained["anchor"] in lineage
+        and isinstance(lifecycle, (list, tuple))
+        and len(lifecycle) <= MAX_RETAINED
+        and all(isinstance(value, str) and bool(_HEX64.fullmatch(value)) for value in lifecycle)
+        and list(lifecycle) == sorted(set(lifecycle)),
+        "REFUSE_INPUT_SHAPE",
+        "retained registry state is not a verified registry record",
+    )
+    return _Retained(
+        retained["registry_seq"], retained["commitment"], tuple(lineage), frozenset(lifecycle)
+    )
+
+
 def verify_registry(
     document: bytes,
     *,
@@ -223,10 +288,15 @@ def verify_registry(
     anchor_rappid: str,
     anchor_spki_der: bytes,
     tombstone_issued_at: TombstoneIssuance,
-    persisted_seq: int | None = None,
-    persisted_hash: str | None = None,
+    retained: VerifiedRegistry | Mapping[str, Any] | None = None,
 ) -> VerifiedRegistry:
-    """Verify one signed registry; the anchor may be the current owner or a rotated predecessor."""
+    """Verify one signed registry against the out-of-band anchor and the retained registry state.
+
+    `retained` is the caller's last verified registry (or its `to_dict()` record). It
+    is required when the anchor is not the current estate owner; it carries the
+    persisted high-water, and a later registry must keep every retained `re-anchor`
+    and `tombstone` entry and extend the retained owner lineage.
+    """
     require(isinstance(document, bytes), "REFUSE_REGISTRY", "registry document must be bytes")
     require(
         isinstance(entries_member, str) and bool(entries_member),
@@ -246,12 +316,8 @@ def verify_registry(
         "REFUSE_REGISTRY_ANCHOR",
         "out-of-band anchor SPKI does not bind the anchor RAPPID",
     )
-    require(
-        (persisted_seq is None and persisted_hash is None)
-        or (_uint53(persisted_seq) and (persisted_hash is None or isinstance(persisted_hash, str))),
-        "REFUSE_INPUT_SHAPE",
-        "persisted registry high-water must be a uint53 sequence and optional hash",
-    )
+    state = _retained_state(retained)
+    persisted_seq = None if state is None else state.sequence
     value = strict_json_loads(document, where="RAPP/1 registry")
     require(isinstance(value, dict), "REFUSE_REGISTRY", "registry document must be an object")
     sequence = value.get("registry_seq")
@@ -301,23 +367,72 @@ def verify_registry(
     require(bool(live), "REFUSE_REGISTRY_OWNER", "current estate owner key is not live", reason=why)
     unsigned = {key: item for key, item in value.items() if key != "sig"}
     commitment = str(rapp1.hash_json("rapp/1:particle", unsigned))
-    if persisted_seq is not None and sequence == persisted_seq:
+    lifecycle = frozenset(
+        str(rapp1.hash_json("rapp/1:particle", entry))
+        for entry in loaded.entries
+        if entry["type"] in LIFECYCLE_TYPES
+    )
+    if state is None:
+        # A predecessor anchor is exactly what a leaked retired key could replay.
         require(
-            persisted_hash is not None and commitment == persisted_hash,
-            "REFUSE_REGISTRY_FORK",
-            "same-sequence registry differs from the persisted commitment",
+            loaded.estate_owner == anchor_rappid,
+            "REFUSE_REGISTRY_ANCHOR",
+            "an out-of-band anchor that is not the current estate owner "
+            "requires the retained registry state",
         )
+    else:
+        require(
+            sequence != state.sequence or commitment == state.commitment,
+            "REFUSE_REGISTRY_FORK",
+            "same-sequence registry differs from the retained commitment",
+        )
+        require(
+            lineage[: len(state.owner_lineage)] == state.owner_lineage,
+            "REFUSE_REGISTRY_LINEAGE",
+            "a later registry rewrote accepted owner succession",
+            registry_seq=sequence,
+        )
+        require(
+            state.lifecycle <= lifecycle,
+            "REFUSE_REGISTRY_LINEAGE",
+            "a later registry dropped or rewrote a succession or revocation record",
+            registry_seq=sequence,
+        )
+        appended = lifecycle - state.lifecycle
+        compromises = [
+            record
+            for record in loaded.reanchors
+            if record["case"] == "compromise"
+            and str(rapp1.hash_json("rapp/1:particle", record)) in appended
+        ]
+        if compromises:
+            # RAPP/1 section 6.3: only a one-step successor of retained state proves one append.
+            require(
+                sequence == state.sequence + 1,
+                "REFUSE_REGISTRY_LINEAGE",
+                "a new compromise re-anchor needs same-append evidence; "
+                "verify each intermediate registry in sequence",
+                registry_seq=sequence,
+            )
+        for record in compromises:
+            require(
+                any(
+                    entry["type"] == "tombstone"
+                    and entry["rappid"] == record["old_rappid"]
+                    and str(rapp1.hash_json("rapp/1:particle", entry)) in appended
+                    for entry in loaded.entries
+                ),
+                "REFUSE_REGISTRY_LINEAGE",
+                "a compromise re-anchor and its tombstone must be registered in the same append",
+                registry_seq=sequence,
+            )
     return VerifiedRegistry(
         sequence=sequence,
         commitment=commitment,
         anchor=anchor_rappid,
         estate_owner=str(loaded.estate_owner),
         owner_lineage=lineage,
-        lifecycle=tuple(
-            str(rapp1.hash_json("rapp/1:particle", entry))
-            for entry in loaded.entries
-            if entry["type"] in LIFECYCLE_TYPES
-        ),
+        lifecycle=tuple(sorted(lifecycle)),
         _reference=loaded,
     )
 
@@ -329,7 +444,7 @@ def verify_registry_lineage(
     anchor_rappid: str,
     anchor_spki_der: bytes,
     tombstone_issued_at: TombstoneIssuance,
-    retained: VerifiedRegistry | None = None,
+    retained: VerifiedRegistry | Mapping[str, Any] | None = None,
 ) -> tuple[VerifiedRegistry, ...]:
     """Verify contiguous registry snapshots after `retained`; accepted succession only grows.
 
@@ -341,13 +456,9 @@ def verify_registry_lineage(
         "REFUSE_REGISTRY_LINEAGE",
         "registry lineage must be a bounded nonempty sequence",
     )
-    require(
-        retained is None or isinstance(retained, VerifiedRegistry),
-        "REFUSE_REGISTRY_LINEAGE",
-        "retained registry must be a verified registry",
-    )
+    state = _retained_state(retained)
     verified: list[VerifiedRegistry] = []
-    previous = retained
+    previous: VerifiedRegistry | Mapping[str, Any] | None = retained
     for document in documents:
         current = verify_registry(
             document,
@@ -355,29 +466,16 @@ def verify_registry_lineage(
             anchor_rappid=anchor_rappid,
             anchor_spki_der=anchor_spki_der,
             tombstone_issued_at=tombstone_issued_at,
-            persisted_seq=None if previous is None else previous.sequence,
-            persisted_hash=None if previous is None else previous.commitment,
+            retained=previous,
         )
-        if previous is not None:
+        if state is not None:
             require(
-                current.sequence == previous.sequence + 1,
+                current.sequence == state.sequence + 1,
                 "REFUSE_REGISTRY_LINEAGE",
                 "registry lineage is not contiguous",
-                previous=previous.sequence,
+                previous=state.sequence,
                 current=current.sequence,
             )
-            require(
-                set(previous.lifecycle) <= set(current.lifecycle),
-                "REFUSE_REGISTRY_LINEAGE",
-                "a later registry dropped or rewrote a succession or revocation record",
-                registry_seq=current.sequence,
-            )
-            require(
-                current.owner_lineage[: len(previous.owner_lineage)] == previous.owner_lineage,
-                "REFUSE_REGISTRY_LINEAGE",
-                "a later registry rewrote accepted owner succession",
-                registry_seq=current.sequence,
-            )
         verified.append(current)
-        previous = current
+        previous, state = current, _retained_state(current)
     return tuple(verified)

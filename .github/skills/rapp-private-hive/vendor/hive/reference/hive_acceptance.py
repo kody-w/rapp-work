@@ -8,8 +8,10 @@ trust input. Persist checkpoint() atomically with the accepted artifacts.
 The default registry authority is direct-owner and fails closed on succession.
 RAPP/1 section 13.2 owner tenure is verified only when the caller explicitly
 selects succession="rapp1-13.2" and supplies a trusted tombstone issuance
-resolver; the pinned RAPP/1 registry reference then decides every section-13
-entry, lifecycle signature, and time-scoped key retirement.
+resolver; the pinned RAPP/1 registry reference (imported only then) decides
+every section-13 entry, lifecycle signature, and time-scoped key retirement.
+Under succession, checkpoint() also carries the retained registry state that
+the caller passes back as retained_registry.
 """
 
 from __future__ import annotations
@@ -22,7 +24,6 @@ from pathlib import Path
 
 import rapp as R
 import rapp_hive as H
-import rapp_registry as REG
 from rapp_profile import bounded_int, canonical_object, exact_keys, hex64, particle_hash, require, utc
 
 
@@ -30,7 +31,31 @@ CATALOG_KINDS = {"hive.object", "hive.godd-slice", "hive.reconciliation"}
 FORK_REASONS = {"stream-fork", "fork-ancestor"}
 SUCCESSION = "rapp1-13.2"
 OWNER_SUCCESSION_CASES = {"rotation", "compromise"}
+LIFECYCLE_TYPES = {"re-anchor", "tombstone"}
+RETAINED_REGISTRY_KEYS = {"registry_seq", "registry_hash", "owner_lineage", "registry_lifecycle"}
+RETAINED_LIMIT = 65536
 LIVE_UNTIL = "9999-12-31T23:59:59.999Z"
+
+
+def _retained_registry(value) -> dict:
+    """A consumer's persisted registry state: the registry members of a succession checkpoint()."""
+    exact_keys(value, RETAINED_REGISTRY_KEYS, "retained registry state")
+    lineage, lifecycle = value["owner_lineage"], value["registry_lifecycle"]
+    require(isinstance(lineage, (list, tuple)) and 1 <= len(lineage) <= RETAINED_LIMIT,
+            "retained registry state.owner_lineage: expected a nonempty bounded array")
+    require(isinstance(lifecycle, (list, tuple)) and len(lifecycle) <= RETAINED_LIMIT,
+            "retained registry state.registry_lifecycle: expected a bounded array")
+    owners = tuple(H.rappid(item, "retained registry state.owner_lineage") for item in lineage)
+    require(len(set(owners)) == len(owners), "retained registry state.owner_lineage: repeated owner")
+    hashes = tuple(hex64(item, "retained registry state.registry_lifecycle") for item in lifecycle)
+    require(list(hashes) == sorted(set(hashes)),
+            "retained registry state.registry_lifecycle: expected sorted unique hashes")
+    return {
+        "registry_seq": bounded_int(value["registry_seq"], "retained registry state.registry_seq", 0, H.UINT53_MAX),
+        "registry_hash": hex64(value["registry_hash"], "retained registry state.registry_hash"),
+        "owner_lineage": owners,
+        "registry_lifecycle": hashes,
+    }
 
 
 class RegistryAuthority:
@@ -46,17 +71,25 @@ class RegistryAuthority:
         same_sequence_hash: str | None = None,
         succession: str | None = None,
         tombstone_issued_at=None,
-        retained_owner_lineage=None,
+        retained_registry=None,
     ):
         require(succession is None or succession == SUCCESSION, "registry: unsupported succession mode")
+        retained = None
         if succession is None:
-            require(tombstone_issued_at is None and retained_owner_lineage is None,
-                    "registry: tombstone issuance and owner lineage require explicit succession verification")
+            require(tombstone_issued_at is None and retained_registry is None,
+                    "registry: tombstone issuance and retained registry state require explicit succession verification")
         else:
             require(callable(tombstone_issued_at),
                     "registry: succession verification requires a trusted tombstone issuance resolver")
+            # One persisted state: the floor, its commitment, the owner lineage, and the lifecycle travel together.
+            require(type(minimum_registry_seq) is int and minimum_registry_seq == 0 and same_sequence_hash is None,
+                    "registry: under succession the persisted floor and hash travel only in retained_registry")
+            if retained_registry is not None:
+                retained = _retained_registry(retained_registry)
+                minimum_registry_seq, same_sequence_hash = retained["registry_seq"], retained["registry_hash"]
         self.succession = succession
         self._reference = None
+        self._lifecycle = None
         require(isinstance(registry_bytes, bytes), "registry: expected bytes")
         document = canonical_object(R._strict_json(registry_bytes), "registry")
         require(document.get("schema") == "rapp/1-registry", "registry: wrong schema")
@@ -69,8 +102,8 @@ class RegistryAuthority:
             ok, why = R.verify_detached_jws(unsigned, document.get("sig"), owner_spki_der, owner_rappid)
             require(ok, f"registry: signature refused: {why}")
         else:
-            reference, lineage = self._verify_succession(document, owner_rappid, owner_spki_der,
-                                                         minimum_registry_seq, tombstone_issued_at)
+            reference, lineage, issued = self._verify_succession(document, owner_rappid, owner_spki_der,
+                                                                 minimum_registry_seq, tombstone_issued_at)
         self.commitment = particle_hash(unsigned)
         if self.sequence == minimum_registry_seq:
             require(minimum_registry_seq == 0 or same_sequence_hash is not None,
@@ -89,7 +122,7 @@ class RegistryAuthority:
         entries = document.get("entries")
         require(isinstance(entries, list), "registry.entries: expected array")
         if succession is not None:
-            self._index_succession(reference, lineage, retained_owner_lineage)
+            self._index_succession(reference, lineage, issued, retained)
             return
         owners, profiles = [], []
         for entry in entries:
@@ -152,6 +185,9 @@ class RegistryAuthority:
 
     def _verify_succession(self, document, anchor, anchor_spki_der, minimum_registry_seq, tombstone_issued_at):
         """RAPP/1 section 13.2 tenure through the pinned reference; an anchor extends only by rotation."""
+        # Imported only here, so the default direct-owner path runs without the registry reference.
+        import rapp_registry as REG
+
         require(isinstance(anchor_spki_der, bytes)
                 and R.Hb("rapp/1:rappid", anchor_spki_der) == R.rappid_parts(anchor)["hash"],
                 "registry: out-of-band anchor SPKI does not bind the anchor RAPPID")
@@ -175,12 +211,14 @@ class RegistryAuthority:
                 "compromise recovery requires a new out-of-band anchor")
         require(reference.spki_der(anchor) == anchor_spki_der,
                 "registry: out-of-band anchor SPKI is not the registered anchor key")
+        issued = {}
 
         def issued_at(entry_hash):
             try:
-                return tombstone_issued_at(entry_hash)
+                issued[entry_hash] = tombstone_issued_at(entry_hash)
             except (LookupError, OSError, TypeError, ValueError) as error:
                 raise ValueError(f"trusted issuance resolver refused: {error}") from error
+            return issued[entry_hash]
 
         status, loaded, why = REG.load_document(
             document, entries_member="entries", trust_anchor=reference.estate_owner,
@@ -189,12 +227,36 @@ class RegistryAuthority:
         require(status == "verified" and loaded is not None, f"registry: section-13 refusal: {why}")
         ok, why = loaded._signer_acceptable(loaded.estate_owner, LIVE_UNTIL, match_key_aliases=True)
         require(ok, f"registry: current estate owner key is not live: {why}")
-        return loaded, tuple(reversed(lineage))
+        return loaded, tuple(reversed(lineage)), issued
 
-    def _index_succession(self, reference, lineage, retained_owner_lineage):
-        if retained_owner_lineage is not None:
-            retained = tuple(retained_owner_lineage)
-            require(lineage[:len(retained)] == retained, "registry: owner succession rewrites retained history")
+    def _index_succession(self, reference, lineage, issued, retained):
+        entries = reference.entries
+        lifecycle = {particle_hash(entry) for entry in entries if entry["type"] in LIFECYCLE_TYPES}
+        if retained is None:
+            # A predecessor anchor is exactly what a leaked retired key could replay: require remembered state.
+            require(reference.estate_owner == self.anchor,
+                    "registry: an out-of-band anchor that is not the current estate owner "
+                    "requires the retained registry state")
+        else:
+            require(lineage[:len(retained["owner_lineage"])] == retained["owner_lineage"],
+                    "registry: owner succession rewrites retained history")
+            require(set(retained["registry_lifecycle"]) <= lifecycle,
+                    "registry: a retained succession or revocation record was dropped or rewritten")
+            appended = lifecycle - set(retained["registry_lifecycle"])
+            compromises = [record for record in reference.reanchors
+                           if record["case"] == "compromise" and particle_hash(record) in appended]
+            if compromises:
+                # RAPP/1 section 6.3: a snapshot cannot prove one append; the retained state can, one step at a time.
+                require(self.sequence == retained["registry_seq"] + 1,
+                        "registry: a new compromise re-anchor needs same-append evidence; "
+                        "verify each intermediate registry in sequence")
+                for record in compromises:
+                    require(any(entry["type"] == "tombstone" and entry["rappid"] == record["old_rappid"]
+                                and particle_hash(entry) in appended for entry in entries),
+                            "registry: a compromise re-anchor and its tombstone must be registered in the same append")
+        times = [record["utc"] for record in reference.reanchors] + list(issued.values())
+        self.epoch = max(times) if times else None
+        self._lifecycle = tuple(sorted(lifecycle))
         self.owner_lineage = lineage
         self._reference = reference
         self.owner = reference.estate_owner
@@ -221,6 +283,20 @@ class RegistryAuthority:
             return self.owner
         utc(stamp, "owner tenure time")
         return self._reference.owner_at(stamp)
+
+    @property
+    def lifecycle(self) -> tuple:
+        """Sorted particle hashes of every re-anchor and tombstone entry in this registry."""
+        if self._lifecycle is None:
+            self._lifecycle = tuple(sorted({particle_hash(entry) for entry in self._document["entries"]
+                                            if entry.get("type") in LIFECYCLE_TYPES}))
+        return self._lifecycle
+
+    @property
+    def retained_registry(self) -> dict:
+        """The registry state a consumer persists and passes back as retained_registry under succession."""
+        return {"registry_seq": self.sequence, "registry_hash": self.commitment,
+                "owner_lineage": list(self.owner_lineage), "registry_lifecycle": list(self.lifecycle)}
 
     def _verify_tenured_signature(self, unsigned: dict, signature: str, expected_signer: str | None):
         try:
@@ -295,13 +371,18 @@ class HiveAcceptance:
     def checkpoint(self) -> dict:
         with self._lock:
             require(not self._restore_failed, "restore: failed history recovery")
-            return {
+            state = {
                 "registry_seq": self.registry.sequence,
                 "registry_hash": self.registry.commitment,
                 "hive_rappid": self._hive,
                 "mother_head_frame_hash": self._head["frame_hash"],
                 "catalog_hash": particle_hash(self._catalog),
             }
+            if self.registry.succession is not None:
+                # Persisted atomically with the head, so a later registry cannot roll back succession.
+                state.update(owner_lineage=list(self.registry.owner_lineage),
+                             registry_lifecycle=list(self.registry.lifecycle))
+            return state
 
     def _authorized(self, frame: dict, purpose: str) -> bool:
         signer = R.parse_detached_jws(frame["sig"])[0]["kid"]
@@ -352,6 +433,10 @@ class HiveAcceptance:
             H.validate_convergence(payload, declaration)
             require(frame["stream_id"] == self._hive and signer == tenured,
                     "convergence: Mother Hive signer/stream authorization mismatch")
+            if self.registry.succession is not None:
+                # A back-dated owner act cannot reach state created after its own time (or its key's retirement).
+                require(all(candidate["utc"] <= frame["utc"] for candidate in payload["candidates"]),
+                        "convergence: a candidate is later than its convergence")
         elif kind == "hive.projection":
             require(signer == tenured and frame["stream_id"] != self._hive,
                     "projection: receipt signer/stream is not authorized")
@@ -359,6 +444,8 @@ class HiveAcceptance:
             require(convergence is not None or (frame["seq"] == 0 and payload.get("status") in {"stale", "failed"}),
                     "projection: unaccepted convergence")
             H.validate_projection(payload, declaration, convergence)
+            if self.registry.succession is not None and convergence is not None:
+                require(frame["utc"] >= convergence["created_utc"], "projection: receipt is earlier than its convergence")
         else:
             raise ValueError("frame: this acceptance gate only consumes declarations, catalog mutations and receipts")
         return True
@@ -550,8 +637,10 @@ class HiveAcceptance:
                 parents = set(payload["parents"])
                 match = next((index for index, group in enumerate(groups) if parents == group), None)
                 keys = sorted({key for parent in parents for key in self._frames[parent]["payload"]["mutation_keys"]})
+                # Under succession a reconciliation may not predate the Mother head it resolves against.
+                backdated = self.registry.succession is not None and frame["utc"] < self._head["utc"]
                 if (match is None or payload["base_head_frame_hash"] != self._head["frame_hash"]
-                        or payload["mutation_keys"] != keys):
+                        or payload["mutation_keys"] != keys or backdated):
                     newly_quarantined[value] = "invalid-reconciliation"
                     continue
                 matches.setdefault(match, []).append(value)
@@ -643,10 +732,18 @@ class HiveAcceptance:
             payload = frame["payload"]
             require(payload["base_head_frame_hash"] == self._head["frame_hash"],
                     "convergence: stale base head")
+            if self.registry.succession is not None:
+                # Strictly later than the head it extends, so a retired key cannot append at that instant.
+                require(frame["utc"] > self._head["utc"], "convergence: not later than the Mother head it extends")
             base_convergence = self._head["payload_hash"] if self._head["kind"] == "hive.convergence" else None
             require(payload["base_convergence_payload_hash"] == base_convergence, "convergence: stale base convergence")
             require(payload["base_catalog_hash"] == particle_hash(self._catalog), "convergence: stale base catalog")
             decisions, resolutions, catalog, accepted, valid, forks = self._evaluate(payload["candidates"])
+            if self.registry.succession is not None:
+                # Also by authenticated bytes, so a false candidate summary cannot hide a later frame.
+                require(all(self._frames[item["frame_hash"]]["utc"] <= frame["utc"] for item in payload["candidates"]
+                            if item["frame_hash"] in self._frames),
+                        "convergence: a candidate frame is later than its convergence")
             require([(item["frame_hash"], item["status"]) for item in payload["decisions"]]
                     == [(item["frame_hash"], item["status"]) for item in decisions],
                     "convergence: decisions differ from authenticated evaluation (including required duplicate decisions)")
@@ -740,6 +837,10 @@ class HiveAcceptance:
                         for item in chain), "projection: receipt stream/channel binding mismatch")
             require(payload["status"] == "current", "projection: receipt is not current")
             require(payload["registry_seq"] == self.registry.sequence, "projection: authenticated registry sequence mismatch")
+            if self.registry.succession is not None and self.registry.epoch is not None:
+                # A current receipt names its registry; it cannot predate that registry's latest lifecycle record.
+                require(receipt["utc"] >= self.registry.epoch,
+                        "projection: receipt predates the latest succession or revocation in its registry")
             require(payload["frame_head"] == self._head["frame_hash"], "projection: actual Mother Hive head mismatch")
             require(payload["convergence_payload_hash"] == self._head["payload_hash"],
                     "projection: current convergence mismatch")

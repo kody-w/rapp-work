@@ -86,10 +86,11 @@ before use.
 
 `rapp_work.registry` verifies a signed `rapp/1-registry` document read-only.
 The caller supplies the entries member name, the out-of-band anchor RAPPID and
-SPKI, and a trusted tombstone issuance resolver keyed by the exact signed
-tombstone's particle hash. None of these is read from the document. The
-pinned reference decides every section 13.3 entry, owner tenure, lifecycle
-signature, and time-scoped key retirement. The SDK additionally requires that:
+SPKI, a trusted tombstone issuance resolver keyed by the exact signed
+tombstone's particle hash, and the registry state it retained from its last
+verification. None of these is read from the document. The pinned reference
+decides every section 13.3 entry, owner tenure, lifecycle signature, and
+time-scoped key retirement. The SDK additionally requires that:
 
 1. the anchor is the current estate owner or a predecessor reachable only
    through `case:"rotation"` re-anchor records; an owner `compromise` record
@@ -99,10 +100,21 @@ signature, and time-scoped key retirement. The SDK additionally requires that:
 3. the current estate owner key is registered and never deprecated,
    superseded, or tombstoned;
 4. key retirement matches the SPKI tail, so a renamed RAPPID cannot revive a
-   superseded or tombstoned key; and
-5. a registry lineage is contiguous, and each later snapshot retains every
-   earlier `re-anchor` and `tombstone` entry and extends, never rewrites, the
-   verified owner lineage.
+   superseded or tombstoned key;
+5. an anchor that is not the current estate owner is accepted only together
+   with retained state: the caller's last verified registry, which also
+   carries the persisted sequence floor and same-sequence commitment;
+6. a registry verified after retained state keeps every retained `re-anchor`
+   and `tombstone` entry byte for byte and extends, never rewrites, the
+   retained owner lineage, so no later registry, whoever signs it, can undo a
+   succession or a revocation;
+7. a `compromise` re-anchor that is new since the retained state appears in a
+   registry exactly one sequence later, together with a new tombstone for its
+   `old_rappid` (the RAPP/1 section 6.3 same-append rule; a single snapshot
+   cannot show it, so a first verification relies on the trusted issuance
+   context); and
+8. a registry lineage is contiguous, and each snapshot is verified with the
+   previous one as its retained state.
 
 A verified registry reports the owner in effect at an artifact time and
 supplies a signature verifier for `validate_frame` and `validate_chain`. This
@@ -187,11 +199,14 @@ legacy paths. Those wrappers do not broaden their profile claims.
 
 ## 12. Refusals
 
+In the list below, owner rotation means performing it: minting keys, or
+signing or appending a registry, re-anchor, or tombstone record. The SDK also
+refuses owner succession that does not descend from the out-of-band anchor
+through signed rotation or that does not extend the caller's retained registry
+state. Read-only verification of lawful RAPP/1 owner succession (section 5.1)
+is supported.
+
 Unsupported sharing, public Git, credential inheritance, implicit apply,
 unknown JSON members, parent-authority changes, plugin execution, neuron
-execution, source deletion, performing owner rotation or compromise recovery
-(minting keys or signing or appending re-anchor, tombstone, or registry
-records), owner succession that does not descend from the out-of-band anchor
-through signed rotation, and unverified Hive rollback/fork acceptance are
-explicit refusals. Read-only verification of lawful RAPP/1 owner succession
-(section 5.1) is supported.
+execution, source deletion, owner rotation, and unverified Hive rollback/fork
+acceptance are explicit refusals.

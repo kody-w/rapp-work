@@ -14,7 +14,8 @@ catalog, convergence, and projection contracts.
 ## Owner succession (opt-in)
 
 `RegistryAuthority` is direct-owner by default and still refuses any
-`re-anchor` entry. Passing `succession="rapp1-13.2"` together with a trusted
+`re-anchor` entry; that path does not import `rapp_registry.py`. Passing
+`succession="rapp1-13.2"` together with a trusted
 `tombstone_issued_at(entry_hash)` resolver selects RAPP/1 section 13.2 tenure:
 the pinned `rapp_registry.py` (a byte copy of the reference named by
 `RAPP1_REGISTRY_PIN.json`) validates every section 13.3 entry and lifecycle
@@ -29,10 +30,24 @@ artifact's `utc`, matching retired keys by SPKI tail.
   compromise cutoff keeps verifying; the outgoing or compromised key is refused
   after it. Membership in the immutable declaration is not inherited by a
   successor identity.
-- Registry sequence floors and same-sequence commitments are unchanged.
-  Persist `owner_lineage` beside them and pass it back as
-  `retained_owner_lineage` so a later registry cannot rewrite accepted
-  succession.
+- Causal bounds stop a retired key from back-dating an owner act over later
+  state: a convergence is not earlier than any candidate it lists, a
+  reconciliation is not earlier than the Mother head it resolves, and a
+  receipt is not earlier than its convergence or than the latest re-anchor or
+  tombstone issuance in the registry it names. After a succession, the
+  successor should promptly advance the Mother stream and every receipt
+  stream past the boundary.
+- Under succession, `checkpoint()` also carries `owner_lineage` and
+  `registry_lifecycle`. Pass the registry members of the last persisted
+  checkpoint back as `retained_registry` (`RETAINED_REGISTRY_KEYS`); it
+  replaces `minimum_registry_seq` and `same_sequence_hash` and is required
+  whenever the anchor is not the current owner. A later registry must extend
+  the retained owner lineage and keep every retained `re-anchor` and
+  `tombstone` entry, so no registry can undo a succession or revocation. A
+  new `compromise` re-anchor must arrive one sequence after the retained state
+  together with its tombstone. When switching an existing Hive to
+  succession, a direct-owner authority's `retained_registry` supplies the
+  first retained state.
 - `restore()` replays signed Mother history across a succession boundary.
 
 The vectors are in `succession_conformance.py` (check H22).

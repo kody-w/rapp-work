@@ -114,7 +114,9 @@ class Estate:
         owner: str = "alice",
         lifecycle: Iterable[dict[str, Any]] = (),
         signer: str | None = None,
+        unregistered: Iterable[str] = (),
     ) -> bytes:
+        skip = set(unregistered)
         entries: list[dict[str, Any]] = [
             {"rappid": self.ids[owner], "type": "estate_owner"},
             {"deprecated": False, "family": "body", "kind": "example.note", "type": "kind"},
@@ -127,6 +129,7 @@ class Estate:
                 "type": "spki",
             }
             for name, key in self.spki.items()
+            if name not in skip
         )
         entries.extend(lifecycle)
         document: dict[str, Any] = {
@@ -143,7 +146,9 @@ class Estate:
             sequence, owner="heir", lifecycle=[self.reanchor("alice", "heir"), *lifecycle]
         )
 
-    def verify(self, document: bytes, *, anchor: str = "alice", **options: Any) -> VerifiedRegistry:
+    def verify(
+        self, document: bytes, *, anchor: str = "alice", **options: Any
+    ) -> VerifiedRegistry:
         options.setdefault("tombstone_issued_at", self.issuance.__getitem__)
         return verify_registry(
             document,
@@ -152,6 +157,10 @@ class Estate:
             anchor_spki_der=self.spki[anchor],
             **options,
         )
+
+    def walk(self, document: bytes, **options: Any) -> VerifiedRegistry:
+        """Verify `document` after first accepting the direct-owner registry (seq 1) as retained state."""
+        return self.verify(document, retained=self.verify(self.registry(1)), **options)
 
     def lineage(
         self, documents: list[bytes], *, anchor: str = "alice", **options: Any
@@ -220,22 +229,27 @@ def test_tampered_registry_reference_or_pin_is_refused_before_use(
 
 def test_planned_rotation_extends_the_original_out_of_band_anchor() -> None:
     estate = Estate()
-    verified = estate.verify(estate.succeeded())
+    with refused("REFUSE_REGISTRY_ANCHOR", "requires the retained registry state"):
+        estate.verify(estate.succeeded())
+    first = estate.verify(estate.registry(1))
+    verified = estate.verify(estate.succeeded(), retained=first)
     assert (verified.anchor, verified.estate_owner) == (estate.ids["alice"], estate.ids["heir"])
     assert verified.owner_lineage == (estate.ids["alice"], estate.ids["heir"])
     assert verified.owner_at(stamp(BOUNDARY - 1)) == estate.ids["alice"]
     assert verified.owner_at(stamp(BOUNDARY)) == estate.ids["heir"]
+    assert estate.verify(estate.succeeded(), retained=first.to_dict()) == verified
     assert estate.verify(estate.succeeded(), anchor="heir").estate_owner == estate.ids["heir"]
     with refused("REFUSE_REGISTRY_TIME"):
         verified.owner_at("2026-13-01T00:00:00.000Z")
     result = verified.to_dict()
     assert canonical(result) == canonical(dict(sorted(result.items())))
     assert result["status"] == "verified" and result["registry_seq"] == 2
+    assert result["lifecycle"] == [hash_json("rapp/1:particle", estate.reanchor("alice", "heir"))]
 
 
 def test_frames_across_the_boundary_follow_the_owner_key_history() -> None:
     estate = Estate()
-    verifier = estate.verify(estate.succeeded()).signature_verifier()
+    verifier = estate.walk(estate.succeeded()).signature_verifier()
     genesis = estate.note(0, BOUNDARY - 50, "alice", None)
     before = estate.note(1, BOUNDARY - 10, "alice", genesis)
     assert len(validate_chain([genesis, before], signature_verifier=verifier)) == 2
@@ -328,7 +342,7 @@ def test_renamed_alias_cannot_revive_a_retired_key() -> None:
             estate.registry(2, owner="device", lifecycle=[estate.reanchor("alice", "device")])
         )
     assert "fresh identity tail" in refusal_reason(error)
-    verified = estate.verify(estate.succeeded())
+    verified = estate.walk(estate.succeeded())
     assert verified.signer_acceptable(estate.ids["device"], stamp(BOUNDARY - 1)) == (True, "ok")
     ok, why = verified.signer_acceptable(estate.ids["device"], stamp(BOUNDARY))
     assert not ok and "superseded" in why
@@ -358,20 +372,95 @@ def test_anchor_must_descend_and_bind_its_key() -> None:
             anchor_spki_der=estate.spki["heir"],
             tombstone_issued_at=estate.issuance.__getitem__,
         )
+    with refused("REFUSE_REGISTRY_ANCHOR", "not the registered anchor key"):
+        estate.verify(estate.registry(2, unregistered=("alice",)))
 
 
 def test_registry_high_water_and_same_sequence_fork() -> None:
     estate = Estate()
     document = estate.succeeded()
-    verified = estate.verify(document)
+    verified = estate.walk(document)
+    later = estate.verify(estate.succeeded(sequence=3), retained=verified)
     with refused("REFUSE_REGISTRY_ROLLBACK"):
-        estate.verify(document, persisted_seq=3)
+        estate.verify(document, retained=later)
     with refused("REFUSE_REGISTRY_FORK"):
-        estate.verify(document, persisted_seq=2, persisted_hash="e" * 64)
-    with refused("REFUSE_REGISTRY_FORK"):
-        estate.verify(document, persisted_seq=2)
-    again = estate.verify(document, persisted_seq=2, persisted_hash=verified.commitment)
+        estate.verify(document, retained={**verified.to_dict(), "commitment": "e" * 64})
+    again = estate.verify(document, retained=verified)
     assert again.commitment == verified.commitment
+
+
+def test_retained_state_is_required_for_a_predecessor_anchor_and_is_closed() -> None:
+    estate = Estate()
+    good = estate.verify(estate.registry(1)).to_dict()
+    assert estate.verify(estate.succeeded(), retained=good).owner_lineage[-1] == estate.ids["heir"]
+    with refused("REFUSE_INPUT_SHAPE"):
+        estate.verify(estate.succeeded(), retained=["not", "a", "record"])
+
+
+RETAINED_BREAKS: dict[str, Any] = {
+    "missing": lambda good, ids: {key: value for key, value in good.items() if key != "lifecycle"},
+    "extra": lambda good, ids: {**good, "registry_hash": good["commitment"]},
+    "status": lambda good, ids: {**good, "status": "draft"},
+    "profile": lambda good, ids: {**good, "profile": "rapp1-13.3"},
+    "boolean-seq": lambda good, ids: {**good, "registry_seq": True},
+    "bad-commitment": lambda good, ids: {**good, "commitment": "E" * 64},
+    "empty-lineage": lambda good, ids: {**good, "owner_lineage": [], "estate_owner": good["anchor"]},
+    "repeated-owner": lambda good, ids: {**good, "owner_lineage": [good["anchor"]] * 2},
+    "owner-not-last": lambda good, ids: {**good, "estate_owner": ids["heir"]},
+    "anchor-outside": lambda good, ids: {**good, "anchor": ids["outsider"]},
+    "unsorted": lambda good, ids: {**good, "lifecycle": ["f" * 64, "0" * 64]},
+}
+
+
+@pytest.mark.parametrize("variant", sorted(RETAINED_BREAKS))
+def test_malformed_retained_state_is_refused(variant: str) -> None:
+    estate = Estate()
+    good = estate.verify(estate.registry(1)).to_dict()
+    with refused("REFUSE_INPUT_SHAPE"):
+        estate.verify(estate.succeeded(), retained=RETAINED_BREAKS[variant](good, estate.ids))
+
+
+def test_retained_state_refuses_rollback_by_a_retired_anchor_key_or_a_moved_boundary() -> None:
+    estate = Estate()
+    accepted = estate.walk(estate.succeeded())
+    rollback = estate.registry(3, owner="alice")
+    for retained in (accepted, accepted.to_dict()):
+        with refused("REFUSE_REGISTRY_LINEAGE", "rewrote accepted owner succession"):
+            estate.verify(rollback, retained=retained)
+    moved = estate.registry(
+        3, owner="heir", lifecycle=[estate.reanchor("alice", "heir", seconds=BOUNDARY + 300)]
+    )
+    with refused("REFUSE_REGISTRY_LINEAGE", "dropped or rewrote"):
+        estate.verify(moved, retained=accepted)
+    with refused("REFUSE_REGISTRY_LINEAGE", "dropped or rewrote"):
+        estate.lineage([moved], retained=accepted)
+    # Without retained state the consumer is fresh: its out-of-band anchor alone decides (RAPP/1 13.1).
+    assert estate.verify(rollback).estate_owner == estate.ids["alice"]
+
+
+def test_compromise_re_anchor_and_its_tombstone_share_one_append() -> None:
+    estate = Estate()
+    burned = estate.tombstone("bob", revoked=40, issued=60, signer="alice")
+    compromise = estate.reanchor("bob", "bob-next", case="compromise", seconds=60, signer="alice")
+    with refused("REFUSE_REGISTRY_LINEAGE", "same append"):
+        estate.lineage(
+            [estate.registry(1, lifecycle=[burned]), estate.registry(2, lifecycle=[burned, compromise])]
+        )
+    first = estate.verify(estate.registry(1))
+    together = estate.lineage([estate.registry(2, lifecycle=[compromise, burned])], retained=first)
+    assert together[-1].signer_acceptable(estate.ids["bob"], stamp(40))[0] is False
+    with refused("REFUSE_REGISTRY_LINEAGE", "verify each intermediate registry"):
+        estate.verify(estate.registry(3, lifecycle=[compromise, burned]), retained=first)
+
+
+def test_unverifiable_owner_succession_cases_are_refused() -> None:
+    estate = Estate()
+    for case in ("upgrade", "tag-migrate"):
+        document = estate.registry(
+            2, owner="heir", lifecycle=[estate.reanchor("alice", "heir", case=case)]
+        )
+        with refused("REFUSE_REGISTRY_SUCCESSION", "not verifiable"):
+            estate.verify(document, anchor="heir")
 
 
 def test_lineage_across_the_boundary_feeds_hive_high_water() -> None:
@@ -400,7 +489,7 @@ def test_lineage_refuses_gaps_dropped_revocations_and_rewritten_owner_history() 
         estate.lineage([first, estate.succeeded()])
     accepted = estate.lineage([first, estate.succeeded(burned)])
     invented = estate.succeeded(burned, estate.reanchor("carol", "alice", seconds=30), sequence=3)
-    assert estate.verify(invented).owner_lineage[0] == estate.ids["carol"]
+    assert estate.verify(invented, anchor="heir").owner_lineage[0] == estate.ids["carol"]
     with refused("REFUSE_REGISTRY_LINEAGE", "rewrote accepted owner succession"):
         estate.lineage([invented], retained=accepted[-1])
     extended = estate.registry(
