@@ -78,8 +78,11 @@ SDK migration does not duplicate or silently invoke it.
 ## Adopting the instruction inventory in place
 
 A Workspace or Organization integrated before the instruction inventory
-existed keeps its files; `verify` refuses it with
-`REFUSE_INSTRUCTION_INVENTORY_ABSENT` until one reviewed update adds the
+existed keeps its files and keeps verifying, with
+`status: "verified-without-instruction-inventory"` and
+`instruction_inventory: "absent"`; with `require_instruction_inventory`
+(`--require-instruction-inventory`) it is refused with
+`REFUSE_INSTRUCTION_INVENTORY_ABSENT`. One reviewed update adds the
 inventory:
 
 ```bash
@@ -90,6 +93,32 @@ rapp-work update --root /absolute/path/workspace \
 ```
 
 The plan creates `.rapp-work/instructions.json` and replaces the SDK-owned
-`.rapp-work/managed.json`; it never rewrites an instruction file. The same
-reviewed update is the only way to accept a later edit, addition, or removal of
-an instruction file.
+`.rapp-work/managed.json`; it never rewrites an instruction file. From then on
+verification refuses an unreviewed instruction change, and the same reviewed
+update is the only way to accept an edit, addition, or removal.
+
+If `result.instruction_review.planned_inventory` is `absent`, the tree cannot
+be inventoried as it stands (`scan_refusal` says why: for example a directory
+link that leaves the tree, an unreadable directory, or a scan bound). The plan
+then changes only what an SDK without the inventory would change, and the
+workspace stays `verified-without-instruction-inventory` until the cause is
+removed and a new plan is reviewed.
+
+## Recovering an interrupted update
+
+An interrupted update apply leaves `.rapp-work/update-recovery.json`, which
+holds the plan being applied and its SHA-256. While it exists, a refused apply
+of another plan names it (`REFUSE_RECOVERY_BINDING` with
+`pending_plan_sha256`), and managed-file refusals name it as
+`recovery_pending`. Resume by applying the same plan again; the CLI accepts the
+marker itself as the plan file:
+
+```bash
+rapp-work update --root /absolute/path/workspace \
+  --apply --plan /absolute/path/workspace/.rapp-work/update-recovery.json \
+  --plan-sha256 '<plan_sha256 from the marker>'
+```
+
+The resumed apply completes only the reviewed writes. If an instruction file
+changed during the interruption, the result is `updated-unverified` with the
+drift in `verification_refusal`; plan and review a new update to accept it.

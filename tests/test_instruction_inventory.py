@@ -5,7 +5,12 @@ import hashlib
 import json
 import os
 import stat
+import subprocess
+import sys
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -17,17 +22,22 @@ from rapp_work.errors import Refusal
 from rapp_work.instructions import (
     INSTRUCTION_INVENTORY_PATH,
     INSTRUCTION_SET_ID,
+    MAX_COMPONENT_BYTES,
     MAX_INSTRUCTION_FILE_BYTES,
     MAX_SCAN_DEPTH,
+    fold,
     is_instruction_path,
     scan_instruction_files,
 )
 from rapp_work.rapp1 import mint_rappid
 from rapp_work.workspace import SDK_SKILL_PATH, _managed_record
 
+ROOT = Path(__file__).resolve().parents[1]
 INVENTORY = INSTRUCTION_INVENTORY_PATH
 MANAGED = ".rapp-work/managed.json"
+MARKER = ".rapp-work/update-recovery.json"
 SDK_JSON = ".rapp-work/sdk.json"
+WEAK = "verified-without-instruction-inventory"
 
 
 def request(root: Path, *, kind: str = "workspace", slug: str | None = None) -> dict[str, object]:
@@ -80,28 +90,39 @@ def write(root: Path, relative: str, content: str | bytes) -> Path:
     return path
 
 
-def refusal_of(result: dict) -> dict:
+def link(root: Path, relative: str, target: str, *, directory: bool = False) -> Path:
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    path.symlink_to(target, target_is_directory=directory)
+    return path
+
+
+def refusal_of(result: dict[str, Any]) -> dict[str, Any]:
     assert result["status"] == "refused", result
-    return result["refusal"]
+    return dict(result["refusal"])
 
 
-def verify_refusal(root: Path) -> dict:
-    return refusal_of(verify({"root": str(root)}))
+def verify_refusal(root: Path, **extra: object) -> dict[str, Any]:
+    return refusal_of(verify({"root": str(root), **extra}))
 
 
-def verified(root: Path) -> dict:
-    result = verify({"root": str(root)})
+def verified(root: Path, **extra: object) -> dict[str, Any]:
+    result = verify({"root": str(root), **extra})
     assert result["status"] == "ok", result
-    return result["result"]["subject"]
+    return dict(result["result"]["subject"])
 
 
-def planned_update(root: Path) -> dict:
+def strict_refusal(root: Path) -> dict[str, Any]:
+    return verify_refusal(root, require_instruction_inventory=True)
+
+
+def planned_update(root: Path) -> dict[str, Any]:
     result = update({"root": str(root)})
     assert result["status"] == "planned", result
-    return result["result"]
+    return dict(result["result"])
 
 
-def apply_update(root: Path, planned: dict, *, plan_sha256: str | None = None) -> dict:
+def apply_update(root: Path, planned: dict[str, Any], *, plan_sha256: str | None = None) -> dict[str, Any]:
     return update(
         {
             "apply": True,
@@ -112,23 +133,36 @@ def apply_update(root: Path, planned: dict, *, plan_sha256: str | None = None) -
     )
 
 
-def inventory(root: Path) -> dict:
-    return json.loads((root / INVENTORY).read_bytes())
+def adopt(root: Path) -> dict[str, Any]:
+    planned = planned_update(root)
+    applied = apply_update(root, planned)
+    assert applied["status"] == "applied", applied
+    assert applied["result"]["status"] == "updated", applied
+    return planned
+
+
+def changes(planned: dict[str, Any]) -> dict[str, str]:
+    return {entry["path"]: entry["change"] for entry in planned["instruction_review"]["files"]}
+
+
+def operations(planned: dict[str, Any]) -> dict[str, str]:
+    return {action["path"]: action["operation"] for action in planned["plan"]["actions"]}
+
+
+def inventory(root: Path) -> dict[str, Any]:
+    return dict(json.loads((root / INVENTORY).read_bytes()))
 
 
 def rewrite_sdk_records(root: Path, inventory_bytes: bytes) -> None:
     """Rewrite the inventory and the managed inventory consistently, as a forger would."""
     (root / INVENTORY).write_bytes(inventory_bytes)
-    owned = {
-        path: (root / path).read_bytes()
-        for path in (SDK_SKILL_PATH, SDK_JSON, INVENTORY)
-    }
+    owned = {path: (root / path).read_bytes() for path in (SDK_SKILL_PATH, SDK_JSON, INVENTORY)}
     (root / MANAGED).write_bytes(canonical_bytes(_managed_record(owned)))
 
 
-def sdk_1_0_0_layout(root: Path) -> bytes:
-    """Reproduce a workspace integrated by SDK 1.0.0: no instruction inventory."""
-    scaffolded(root)
+def sdk_1_0_0_layout(root: Path, *, kind: str = "workspace") -> bytes:
+    """Reproduce a Workspace or Organization integrated by SDK 1.0.0: no instruction inventory."""
+    scaffolded(root, kind=kind)
     removed = (root / INVENTORY).read_bytes()
     (root / INVENTORY).unlink()
     owned = {path: (root / path).read_bytes() for path in (SDK_SKILL_PATH, SDK_JSON)}
@@ -159,6 +193,47 @@ def canonical_round_trip(value: object) -> None:
     assert canonical_text(strict_json_loads(text)) == text
 
 
+def interrupt_at(monkeypatch: pytest.MonkeyPatch, suffix: str) -> Callable[[], None]:
+    """Make an apply stop when it reaches the write of ``suffix``; return a restore function."""
+    real_replace = workspace_module.replace_owned
+    real_write = workspace_module.write_new
+
+    def replace(path: Path, *args: Any, **kwargs: Any) -> Any:
+        if Path(path).as_posix().endswith(suffix):
+            raise RuntimeError("simulated interruption")
+        return real_replace(path, *args, **kwargs)
+
+    def create(path: Path, *args: Any, **kwargs: Any) -> Any:
+        if Path(path).as_posix().endswith(suffix):
+            raise RuntimeError("simulated interruption")
+        return real_write(path, *args, **kwargs)
+
+    monkeypatch.setattr(workspace_module, "replace_owned", replace)
+    monkeypatch.setattr(workspace_module, "write_new", create)
+
+    def restore() -> None:
+        monkeypatch.setattr(workspace_module, "replace_owned", real_replace)
+        monkeypatch.setattr(workspace_module, "write_new", real_write)
+
+    return restore
+
+
+@contextmanager
+def unreadable(path: Path) -> Iterator[None]:
+    path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(path, 0)
+    try:
+        yield
+    finally:
+        os.chmod(path, 0o700)
+
+
+needs_permissions = pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="permission bits do not bind the superuser",
+)
+
+
 # --- scaffold, inventory record, and verification ---------------------------------------
 
 
@@ -167,8 +242,8 @@ def test_scaffold_records_exact_instruction_inventory_and_verifies(sandbox: Path
     planned = scaffold(request(root))
     actions = {action["path"]: action for action in planned["result"]["plan"]["actions"]}
     assert actions[INVENTORY]["operation"] == "create"
-    scaffolded_root = scaffolded(root)
-    raw = (scaffolded_root / INVENTORY).read_bytes()
+    scaffolded(root)
+    raw = (root / INVENTORY).read_bytes()
     assert raw == canonical_bytes(json.loads(raw))
     record = json.loads(raw)
     assert set(record) == {"files", "instruction_set", "profile", "schema", "sdk_version"}
@@ -187,22 +262,34 @@ def test_scaffold_records_exact_instruction_inventory_and_verifies(sandbox: Path
     assert set(managed) == {"files", "profile", "schema", "sdk_version"}
     assert [entry["path"] for entry in managed["files"]] == [SDK_SKILL_PATH, INVENTORY, SDK_JSON]
     subject = verified(root)
+    assert subject["status"] == "verified"
+    assert subject["instruction_inventory"] == "verified"
     assert subject["instruction_files"] == 2
     assert subject["instruction_set"] == INSTRUCTION_SET_ID
     assert subject["instruction_inventory_sha256"] == sha256(raw)
+    assert verified(root, require_instruction_inventory=True) == subject
     assert Workspace.load(root).verify()["instruction_files"] == 2
 
 
-def test_verify_is_read_only_for_accepted_and_refused_instructions(sandbox: Path) -> None:
+def test_verify_is_read_only_for_accepted_weak_and_refused_instructions(sandbox: Path) -> None:
     root = scaffolded(sandbox / "workspace")
     before = snapshot(root)
     verified(root)
+    verified(root, require_instruction_inventory=True)
     assert snapshot(root) == before
     write(root, "AGENTS.md", "new\n")
     before = snapshot(root)
     verify_refusal(root)
     planned_update(root)
     assert snapshot(root) == before
+    older = sandbox / "older"
+    sdk_1_0_0_layout(older)
+    write(older, "AGENTS.md", "new\n")
+    before = snapshot(older)
+    verified(older)
+    strict_refusal(older)
+    planned_update(older)
+    assert snapshot(older) == before
 
 
 def test_edited_claude_md_is_refused_by_path_without_echoing_content(sandbox: Path) -> None:
@@ -217,6 +304,7 @@ def test_edited_claude_md_is_refused_by_path_without_echoing_content(sandbox: Pa
         "total": 1,
     }
     assert "SECRET-MARKER-7f3" not in canonical_text(refusal)
+    assert "SECRET-MARKER-7f3" not in canonical_text(update({"root": str(root)}))
 
 
 def test_new_agents_md_is_refused_as_unlisted(sandbox: Path) -> None:
@@ -249,37 +337,184 @@ def test_every_drift_is_reported_in_path_order(sandbox: Path) -> None:
     assert refusal["details"]["total"] == 3
 
 
-# --- links and non-regular instruction paths ----------------------------------------------
+def test_drift_report_is_bounded_and_counts_every_finding(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    for index in range(70):
+        write(root, f"d{index:02d}/AGENTS.md", "x\n")
+    details = verify_refusal(root)["details"]
+    assert len(details["findings"]) == 64
+    assert details["total"] == 70
+    assert details["findings"][0] == {"path": "d00/AGENTS.md", "reason": "unlisted"}
+
+
+# --- links ----------------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    ("link", "target", "directory"),
+    ("relative", "target", "directory"),
     [
-        ("AGENTS.md", "README.md", False),
-        ("docs/CLAUDE.md", "../README.md", False),
         (".claude", "../elsewhere", True),
         ("docs/.github", "../../elsewhere", True),
         (".github/instructions", "../../elsewhere", True),
         (".github/skills/borrowed", "../../../elsewhere", True),
         (".cursor", "../elsewhere", True),
+        (".claude/rules/shared", "../../../elsewhere", True),
+        ("docs", "../elsewhere", True),
+        ("notes", ".git/x", True),
+        ("absolute", "<absolute>", True),
+        ("up", "..", True),
+        ("AGENTS.md", "../outside.md", False),
+        (".claude/rules/security.md", "../../../outside.md", False),
+        ("CLAUDE.local.md", "missing.md", False),
+        ("GEMINI.md", "docs-directory", True),
+        ("sub/AGENTS.md", "../hop.md", False),
     ],
 )
-def test_symlinked_instruction_paths_are_refused(
+def test_links_that_expose_unscanned_content_are_refused(
     sandbox: Path,
-    link: str,
+    relative: str,
     target: str,
     directory: bool,
 ) -> None:
     root = scaffolded(sandbox / "workspace")
-    (sandbox / "elsewhere").mkdir(exist_ok=True)
-    write(sandbox, "elsewhere/SKILL.md", "outside\n")
-    path = root / link
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    path.symlink_to(target, target_is_directory=directory)
+    write(sandbox, "elsewhere/AGENTS.md", "outside rules\n")
+    write(sandbox, "elsewhere/SKILL.md", "outside skill\n")
+    write(sandbox, "outside.md", "outside\n")
+    write(root, ".git/x/CLAUDE.md", "hidden in version-control internals\n")
+    (root / "docs-directory").mkdir(mode=0o700)
+    write(root, "real.md", "real\n")
+    link(root, "hop.md", "real.md")
+    if target == "<absolute>":
+        target = str(sandbox / "elsewhere")
+    link(root, relative, target, directory=directory)
     refusal = verify_refusal(root)
     assert refusal["code"] == "REFUSE_INSTRUCTION_PATH"
-    assert refusal["details"] == {"path": link, "reason": "symlink"}
+    assert refusal["details"] == {"path": relative, "reason": "symlink"}
     assert refusal_of(update({"root": str(root)}))["code"] == "REFUSE_INSTRUCTION_PATH"
+
+
+def test_link_at_an_instruction_path_records_the_bytes_tools_read(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    os.rename(root / "CLAUDE.md", root / "AGENTS.md")
+    link(root, "CLAUDE.md", "AGENTS.md")
+    shared = (root / "AGENTS.md").read_bytes()
+    assert verify_refusal(root)["details"]["findings"] == [
+        {"path": "AGENTS.md", "reason": "unlisted"}
+    ]
+    planned = adopt(root)
+    assert changes(planned) == {
+        SDK_SKILL_PATH: "unchanged",
+        "AGENTS.md": "added",
+        "CLAUDE.md": "unchanged",
+    }
+    subject = verified(root)
+    assert subject["instruction_files"] == 3
+    entries = {entry["path"]: entry["sha256"] for entry in inventory(root)["files"]}
+    assert entries["CLAUDE.md"] == entries["AGENTS.md"] == sha256(shared)
+    write(root, "AGENTS.md", "edited through the shared file\n")
+    assert verify_refusal(root)["details"]["findings"] == [
+        {"path": "AGENTS.md", "reason": "changed"},
+        {"path": "CLAUDE.md", "reason": "changed"},
+    ]
+    write(root, "AGENTS.md", shared)
+    verified(root)
+    write(root, "docs/other.md", "another target\n")
+    (root / "CLAUDE.md").unlink()
+    link(root, "CLAUDE.md", "docs/other.md")
+    assert verify_refusal(root)["details"]["findings"] == [
+        {"path": "CLAUDE.md", "reason": "changed"}
+    ]
+
+
+def test_link_resolving_through_another_link_to_a_different_file_is_refused(
+    sandbox: Path,
+) -> None:
+    root = scaffolded(sandbox / "workspace")
+    write(root, "docs/x.md", "the lexical target\n")
+    write(root, "other/x.md", "the file the kernel resolves\n")
+    (root / "other/deep").mkdir(mode=0o700)
+    link(root, "docs/sub", "../other/deep", directory=True)
+    (root / "CLAUDE.md").unlink()
+    link(root, "CLAUDE.md", "docs/sub/../x.md")
+    assert (root / "CLAUDE.md").read_text() == "the file the kernel resolves\n"
+    refusal = verify_refusal(root)
+    assert refusal["code"] == "REFUSE_INSTRUCTION_PATH"
+    assert refusal["details"] == {"path": "CLAUDE.md", "reason": "symlink"}
+
+
+def test_container_link_resolving_elsewhere_than_its_text_is_refused(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    (root / "docs").mkdir(mode=0o700)
+    (root / "other/deep").mkdir(parents=True, mode=0o700)
+    write(root, "other/x/SKILL.md", "---\nname: x\n---\nRead by tools through the link.\n")
+    link(root, "docs/sub", "../other/deep", directory=True)
+    link(root, ".claude/skills", "../docs/sub/..", directory=True)
+    assert (root / ".claude/skills/x/SKILL.md").is_file()
+    refusal = verify_refusal(root)
+    assert refusal["code"] == "REFUSE_INSTRUCTION_PATH"
+    assert refusal["details"] == {"path": ".claude/skills", "reason": "symlink"}
+
+
+def test_in_tree_links_that_expose_no_new_instruction_path_are_accepted(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    write(root, "archive/AGENTS.md", "archived rules\n")
+    link(root, "notes", "archive", directory=True)
+    write(root, "packages/pkg/CLAUDE.md", "package rules\n")
+    link(root, "node_modules/pkg", "../packages/pkg", directory=True)
+    (root / ".venv/lib/site").mkdir(parents=True, mode=0o700)
+    link(root, ".venv/lib64", "lib", directory=True)
+    link(root, ".venv/bin/python", "/nonexistent/python3")
+    link(root, ".github/workflows/ci.yml", "../../README.md")
+    link(root, ".claude/rules/notes.txt", str(sandbox / "outside.txt"))
+    link(root, "broken", "nowhere")
+    link(root, "loop", "loop")
+    link(root, "sub/up", "..", directory=True)
+    link(root, "a/b/top", "../..", directory=True)
+    planned = adopt(root)
+    assert {path for path, change in changes(planned).items() if change == "added"} == {
+        "archive/AGENTS.md",
+        "packages/pkg/CLAUDE.md",
+    }
+    assert verified(root)["instruction_files"] == 4
+    scanned = scan_instruction_files(root)
+    assert "notes/AGENTS.md" not in scanned
+    assert "node_modules/pkg/CLAUDE.md" not in scanned
+
+
+def test_in_tree_container_links_are_traversed_at_their_link_paths(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    write(root, "skills/deploy/SKILL.md", "---\nname: deploy\n---\nShared skill.\n")
+    write(root, "skills/deploy/scripts/run.sh", "echo run\n")
+    link(root, ".claude/skills", "../skills", directory=True)
+    link(root, ".cursor/skills", "../skills", directory=True)
+    write(root, "config/vscode/settings.json", "{}\n")
+    link(root, ".vscode", "config/vscode", directory=True)
+    skill = (root / "skills/deploy/SKILL.md").read_bytes()
+    planned = adopt(root)
+    review = {entry["path"]: entry for entry in planned["instruction_review"]["files"]}
+    assert review[".claude/skills/deploy/SKILL.md"]["change"] == "added"
+    assert review[".claude/skills/deploy/SKILL.md"]["sha256"] == sha256(skill)
+    assert review[".cursor/skills/deploy/SKILL.md"]["sha256"] == sha256(skill)
+    assert review[".vscode/settings.json"]["change"] == "added"
+    assert "skills/deploy/SKILL.md" not in review
+    assert verified(root)["instruction_files"] == 5
+    write(root, "skills/deploy/SKILL.md", "---\nname: deploy\n---\nInjected.\n")
+    assert verify_refusal(root)["details"]["findings"] == [
+        {"path": ".claude/skills/deploy/SKILL.md", "reason": "changed"},
+        {"path": ".cursor/skills/deploy/SKILL.md", "reason": "changed"},
+    ]
+
+
+@pytest.mark.parametrize(
+    ("relative", "target"),
+    [(".claude/skills/loop", ".."), (".claude", "."), (".cursor/rules", "..")],
+)
+def test_container_link_loops_are_refused(sandbox: Path, relative: str, target: str) -> None:
+    root = scaffolded(sandbox / "workspace")
+    link(root, relative, target, directory=True)
+    refusal = verify_refusal(root)
+    assert refusal["code"] == "REFUSE_INSTRUCTION_PATH"
+    assert refusal["details"] == {"path": relative, "reason": "symlink-loop"}
 
 
 def test_hardlinked_instruction_files_are_refused(sandbox: Path) -> None:
@@ -309,17 +544,6 @@ def test_non_regular_instruction_paths_are_refused(sandbox: Path) -> None:
     assert refusal["details"] == {"path": "AGENTS.md", "reason": "not-regular"}
 
 
-def test_unrelated_symlinks_are_not_followed_or_inventoried(sandbox: Path) -> None:
-    root = scaffolded(sandbox / "workspace")
-    write(sandbox, "outside/AGENTS.md", "outside the workspace tree\n")
-    (root / "data").symlink_to("../outside", target_is_directory=True)
-    (root / ".github/workflows").mkdir(mode=0o700)
-    (root / ".github/workflows/ci.yml").symlink_to("../../README.md")
-    subject = verified(root)
-    assert subject["instruction_files"] == 2
-    assert "data/AGENTS.md" not in scan_instruction_files(root)
-
-
 def test_git_directory_is_not_scanned(sandbox: Path) -> None:
     root = scaffolded(sandbox / "workspace")
     write(root, ".git/AGENTS.md", "version-control internals are not instructions\n")
@@ -339,6 +563,7 @@ def test_git_directory_is_not_scanned(sandbox: Path) -> None:
         "CLAUDE.md",
         "sub/CLAUDE.local.md",
         ".claude/CLAUDE.md",
+        ".claude/AGENTS.md",
         "GEMINI.md",
         "packages/web/GEMINI.md",
         ".cursorrules",
@@ -355,14 +580,35 @@ def test_git_directory_is_not_scanned(sandbox: Path) -> None:
         ".github/skills/deploy/SKILL.md",
         ".github/skills/group/deploy/SKILL.md",
         ".claude/skills/deploy/SKILL.md",
+        "apps/web/.claude/skills/deploy/SKILL.md",
         ".agents/skills/deploy/SKILL.md",
+        ".cursor/skills/deploy/SKILL.md",
+        ".cursor/skills/shipping/deploy/SKILL.md",
+        "apps/web/.cursor/skills/shipping/deploy/SKILL.md",
+        ".codex/skills/deploy/SKILL.md",
+        ".gemini/skills/deploy/SKILL.md",
         ".claude/rules/testing.md",
         ".claude/rules/frontend/react.md",
         ".claude/agents/reviewer.md",
+        ".claude/agents/review/deep.md",
         ".claude/commands/deploy.md",
         ".claude/commands/team/deploy.md",
+        ".claude/output-styles/teacher.md",
+        ".claude/settings.json",
+        ".claude/settings.local.json",
+        ".codex/config.toml",
+        ".codex/agents/reviewer.toml",
+        ".codex/agents/reviewer.md",
         ".cursor/rules/react.mdc",
         "packages/web/.cursor/rules/frontend/components.mdc",
+        ".cursor/commands/review.md",
+        ".cursor/agents/verifier.md",
+        ".cursor/BUGBOT.md",
+        "backend/.cursor/BUGBOT.md",
+        ".gemini/commands/git/commit.toml",
+        ".gemini/settings.json",
+        ".gemini/system.md",
+        ".vscode/settings.json",
         "docs/agents.md",
         "Claude.md",
         ".GitHub/Copilot-Instructions.md",
@@ -370,6 +616,17 @@ def test_git_directory_is_not_scanned(sandbox: Path) -> None:
         "AGENT\u017f.md",
         "\uff21GENTS.md",
         ".claude/s\u212aills/deploy/SKILL.md",
+        "AGENTS\u200c.md",
+        "CLAUDE\ufeff.md",
+        "GEMINI\u200d.md",
+        "AGENTS\u00ad.md",
+        "AGENTS\ufe0f.md",
+        "AGENTS\U000e0041.md",
+        ".cla\u200cude/rules/x.md",
+        ".g\u202eithub/copilot-instructions.md",
+        "meeting 10:30/AGENTS.md",
+        "back\\slash/CLAUDE.md",
+        "tab\tname/GEMINI.md",
     ],
 )
 def test_instruction_set_positive_vectors(path: str) -> None:
@@ -389,29 +646,82 @@ def test_instruction_set_positive_vectors(path: str) -> None:
         "copilot-instructions.md",
         "docs/copilot-instructions.md",
         ".github/workflows/ci.yml",
+        ".github/hooks/audit.json",
         ".github/instructions/readme.md",
         ".github/prompts/notes.md",
         ".github/skills/deploy/README.md",
         ".github/skills/deploy/scripts/run.py",
         ".cursor/rules/notes.md",
+        ".cursor/skills/deploy/README.md",
         ".cursor/settings.json",
-        ".claude/settings.json",
+        ".cursor/hooks.json",
+        ".cursor/mcp.json",
         ".claude/CLAUDE.txt",
+        ".claude/settings.backup.json",
+        ".claude/output-styles/teacher.txt",
+        ".codex/hooks.json",
+        ".codex/agents/notes.txt",
+        ".gemini/commands/git/commit.md",
+        ".gemini/.env",
+        ".gemini/policies/default.toml",
+        ".vscode/launch.json",
+        ".vscode/mcp.json",
+        ".mcp.json",
+        "settings.json",
+        "system.md",
+        "BUGBOT.md",
         "skills/deploy/SKILL.md",
         ".agents/SKILL.md",
         ".rapp-work/sdk.json",
         ".rapp-work/instructions.json",
         "rappid.json",
+        "AGENTS\u0600.md",
     ],
 )
 def test_instruction_set_negative_vectors(path: str) -> None:
     assert not is_instruction_path(path)
 
 
-@pytest.mark.parametrize("path", ["a:b/AGENTS.md", "../AGENTS.md", "/AGENTS.md", "a\\b/AGENTS.md"])
-def test_instruction_paths_outside_the_portable_grammar_are_refused(path: str) -> None:
+@pytest.mark.parametrize(
+    "path",
+    [
+        "../AGENTS.md",
+        "/AGENTS.md",
+        "a//AGENTS.md",
+        "./AGENTS.md",
+        "a/./AGENTS.md",
+        "AGENTS.md/",
+        "",
+        "nul\x00/AGENTS.md",
+        "\udcff/AGENTS.md",
+        "x" * (MAX_COMPONENT_BYTES + 1) + "/AGENTS.md",
+        "/".join(["d"] * (MAX_SCAN_DEPTH + 1)) + "/AGENTS.md",
+    ],
+)
+def test_instruction_paths_outside_the_recordable_grammar_are_refused(path: str) -> None:
     with pytest.raises(Refusal, match="REFUSE_INSTRUCTION_PATH"):
         is_instruction_path(path)
+
+
+def test_default_ignorable_code_points_are_removed_before_matching() -> None:
+    assert fold("AGENTS\u200c.md") == fold("AGENTS.md") == "agents.md"
+    assert fold(".g\u200cit") == ".git"
+    assert fold("\u00adCLAUDE\U000e01ef.md") == "claude.md"
+    assert fold("AGENTS\u0600.md") != "agents.md"
+
+
+def test_names_outside_the_portable_grammar_are_recorded_and_verified(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    names = ["meeting 10:30/AGENTS.md", "back\\slash/CLAUDE.md", "tab\tname/GEMINI.md", "AGENTS\u200c.md"]
+    for name in names:
+        write(root, name, f"rules in {name!r}\n")
+    planned = adopt(root)
+    assert {path for path, change in changes(planned).items() if change == "added"} == set(names)
+    assert verified(root)["instruction_files"] == 2 + len(names)
+    write(root, "meeting 10:30/AGENTS.md", "edited\n")
+    assert verify_refusal(root)["details"]["findings"] == [
+        {"path": "meeting 10:30/AGENTS.md", "reason": "changed"}
+    ]
 
 
 def test_nested_and_pattern_files_within_bounds_are_inventoried(sandbox: Path) -> None:
@@ -426,33 +736,51 @@ def test_nested_and_pattern_files_within_bounds_are_inventoried(sandbox: Path) -
         ".claude/agents/reviewer.md",
         ".claude/commands/team/deploy.md",
         ".claude/skills/deploy/SKILL.md",
+        ".claude/output-styles/teacher.md",
+        ".claude/settings.json",
+        ".claude/settings.local.json",
         ".agents/skills/deploy/SKILL.md",
+        ".codex/config.toml",
+        ".codex/agents/reviewer.toml",
+        ".codex/skills/deploy/SKILL.md",
+        ".cursor/skills/shipping/deploy/SKILL.md",
+        ".cursor/commands/review.md",
+        ".cursor/agents/verifier.md",
+        ".cursor/BUGBOT.md",
+        ".cursorrules",
+        ".cursor/rules/frontend/components.mdc",
+        ".gemini/commands/git/commit.toml",
+        ".gemini/skills/deploy/SKILL.md",
+        ".gemini/settings.json",
+        ".gemini/system.md",
         ".github/copilot-instructions.md",
         ".github/instructions/a/python.instructions.md",
         ".github/prompts/review.prompt.md",
         ".github/agents/reviewer.agent.md",
         ".github/chatmodes/plan.chatmode.md",
         ".github/skills/deploy/SKILL.md",
-        ".cursorrules",
-        ".cursor/rules/frontend/components.mdc",
+        ".vscode/settings.json",
         "docs/Agents.md",
         "/".join(["d"] * MAX_SCAN_DEPTH) + "/AGENTS.md",
     }
     ignored = {
         "docs/notes.md",
         ".github/workflows/ci.yml",
+        ".github/hooks/audit.json",
         ".github/skills/deploy/scripts/run.py",
         ".cursor/rules/notes.md",
-        ".claude/settings.json",
+        ".cursor/hooks.json",
+        ".gemini/.env",
+        ".mcp.json",
+        ".vscode/mcp.json",
     }
     for path in sorted(added | ignored):
         write(root, path, f"content of {path}\n")
     planned = planned_update(root)
-    review = planned["instruction_review"]
-    changes = {entry["path"]: entry["change"] for entry in review["files"]}
-    assert {path for path, change in changes.items() if change == "added"} == added
-    assert changes["CLAUDE.md"] == changes[SDK_SKILL_PATH] == "unchanged"
-    assert not ignored & set(changes)
+    review = changes(planned)
+    assert {path for path, change in review.items() if change == "added"} == added
+    assert review["CLAUDE.md"] == review[SDK_SKILL_PATH] == "unchanged"
+    assert not ignored & set(review)
     assert apply_update(root, planned)["status"] == "applied"
     assert verified(root)["instruction_files"] == len(added) + 2
     write(root, ".claude/rules/frontend/react.md", "changed\n")
@@ -481,6 +809,41 @@ def test_scan_entry_bound_is_refused(sandbox: Path, monkeypatch: pytest.MonkeyPa
     refusal = verify_refusal(root)
     assert refusal["code"] == "REFUSE_INSTRUCTION_SCAN_LIMIT"
     assert refusal["details"] == {"limit": 40, "reason": "entries"}
+
+
+def test_directory_listing_stops_at_the_entry_bound(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = scaffolded(sandbox / "workspace")
+    bulk = root / "bulk"
+    bulk.mkdir(mode=0o700)
+    for index in range(2_000):
+        (bulk / f"f{index:04d}").write_bytes(b"")
+    listed: list[str] = []
+    real_scandir = os.scandir
+
+    class Counting:
+        def __init__(self, descriptor: int) -> None:
+            self._iterator = real_scandir(descriptor)
+
+        def __enter__(self) -> Counting:
+            self._iterator.__enter__()
+            return self
+
+        def __exit__(self, *exc: object) -> None:
+            self._iterator.__exit__(*exc)
+
+        def __iter__(self) -> Iterator[os.DirEntry[str]]:
+            for entry in self._iterator:
+                listed.append(entry.name)
+                yield entry
+
+    monkeypatch.setattr(instructions_module, "MAX_SCAN_ENTRIES", 100)
+    monkeypatch.setattr(instructions_module, "_scandir", Counting)
+    refusal = verify_refusal(root)
+    assert refusal["details"] == {"limit": 100, "reason": "entries"}
+    assert len(listed) <= 101
 
 
 def test_instruction_file_byte_bound_is_refused(sandbox: Path) -> None:
@@ -515,6 +878,17 @@ def test_instruction_count_and_total_bounds_are_refused(
     assert refusal["details"] == {"limit": total + 2, "reason": "total-bytes"}
 
 
+@needs_permissions
+def test_unreadable_directory_is_refused_as_an_incomplete_scan(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    with unreadable(root / "pgdata"):
+        refusal = verify_refusal(root)
+        assert refusal["code"] == "REFUSE_INSTRUCTION_SCAN"
+        assert refusal["details"] == {"path": "pgdata", "reason": "unreadable"}
+        assert refusal_of(update({"root": str(root)}))["code"] == "REFUSE_INSTRUCTION_SCAN"
+    verified(root)
+
+
 # --- the only acceptance path: an exact-hash update plan -------------------------------
 
 
@@ -539,7 +913,8 @@ def test_update_reinventories_exact_bytes_and_requires_the_exact_plan_hash(sandb
     }
     review = planned["instruction_review"]
     assert review["schema"] == "rapp-work-instruction-review/1"
-    assert review["prior_inventory"] == "present"
+    assert review["prior_inventory"] == review["planned_inventory"] == "present"
+    assert review["scan_refusal"] is None
     by_path = {entry["path"]: entry for entry in review["files"]}
     prior_claude = next(entry for entry in prior["files"] if entry["path"] == "CLAUDE.md")
     assert by_path["CLAUDE.md"] == {
@@ -557,6 +932,7 @@ def test_update_reinventories_exact_bytes_and_requires_the_exact_plan_hash(sandb
     assert snapshot(root) == before
     applied = apply_update(root, planned)
     assert applied["status"] == "applied"
+    assert applied["result"]["status"] == "updated"
     assert applied["result"]["verification"]["instruction_files"] == 3
     assert (root / "CLAUDE.md").read_bytes() == edited
     assert (root / "docs/AGENTS.md").read_bytes() == added
@@ -597,35 +973,154 @@ def test_instruction_change_between_plan_and_apply_is_refused_before_writes(
     assert refusal["code"] == "REFUSE_PRECONDITION"
     assert refusal["details"]["findings"] == [expected]
     assert snapshot(root) == before
-    assert not (root / ".rapp-work/update-recovery.json").exists()
+    assert not (root / MARKER).exists()
 
 
-def test_resumed_update_rechecks_instruction_bytes_before_writing(
+def test_change_after_the_prewrite_rescan_is_reported_with_the_effects(
     sandbox: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = scaffolded(sandbox / "workspace")
     write(root, "CLAUDE.md", "reviewed edit\n")
     planned = planned_update(root)
-    replace = workspace_module.replace_owned
+    real_replace = workspace_module.replace_owned
 
-    def interrupted(*args: object, **kwargs: object) -> None:
-        raise RuntimeError("simulated interruption")
+    def racing(path: Path, *args: Any, **kwargs: Any) -> Any:
+        write(root, "AGENTS.md", "raced in after the pre-write rescan\n")
+        return real_replace(path, *args, **kwargs)
 
-    monkeypatch.setattr(workspace_module, "replace_owned", interrupted)
-    assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_RUNTIME"
-    assert (root / ".rapp-work/update-recovery.json").is_file()
-    monkeypatch.setattr(workspace_module, "replace_owned", replace)
-    write(root, "CLAUDE.md", "unreviewed edit during the interruption\n")
-    before = snapshot(root)
-    refusal = refusal_of(apply_update(root, planned))
-    assert refusal["code"] == "REFUSE_PRECONDITION"
-    assert refusal["details"]["findings"] == [{"path": "CLAUDE.md", "reason": "changed"}]
-    assert snapshot(root) == before
+    monkeypatch.setattr(workspace_module, "replace_owned", racing)
+    applied = apply_update(root, planned)
+    monkeypatch.setattr(workspace_module, "replace_owned", real_replace)
+    assert applied["status"] == "applied"
+    result = applied["result"]
+    assert result["effects"] is True
+    assert result["status"] == "updated-unverified"
+    assert result["verification"] is None
+    assert result["verification_refusal"]["code"] == "REFUSE_INSTRUCTION_DRIFT"
+    assert result["verification_refusal"]["details"]["findings"] == [
+        {"path": "AGENTS.md", "reason": "unlisted"}
+    ]
+    canonical_round_trip(applied)
+    assert not (root / MARKER).exists()
+    assert [entry["path"] for entry in inventory(root)["files"]] == [SDK_SKILL_PATH, "CLAUDE.md"]
+    assert verify_refusal(root)["details"]["findings"] == [{"path": "AGENTS.md", "reason": "unlisted"}]
+    assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_PRECONDITION"
+    adopt(root)
+    assert verified(root)["instruction_files"] == 3
+
+
+def test_resumed_update_completes_the_reviewed_writes_and_reports_later_edits(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = scaffolded(sandbox / "workspace")
     write(root, "CLAUDE.md", "reviewed edit\n")
+    planned = planned_update(root)
+    restore = interrupt_at(monkeypatch, MANAGED)
+    assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_RUNTIME"
+    restore()
+    assert (root / MARKER).is_file()
+    refusal = verify_refusal(root)
+    assert refusal["code"] == "REFUSE_MANAGED_DRIFT"
+    assert refusal["details"]["recovery_pending"] == MARKER
+    fresh = update({"root": str(root)})
+    assert refusal_of(fresh)["details"]["recovery_pending"] == MARKER
+    write(root, "CLAUDE.md", "unreviewed edit during the interruption\n")
     resumed = apply_update(root, planned)
     assert resumed["status"] == "applied"
-    assert not (root / ".rapp-work/update-recovery.json").exists()
+    assert resumed["result"]["status"] == "updated-unverified"
+    assert resumed["result"]["verification_refusal"]["details"]["findings"] == [
+        {"path": "CLAUDE.md", "reason": "changed"}
+    ]
+    assert not (root / MARKER).exists()
+    entries = {entry["path"]: entry["sha256"] for entry in inventory(root)["files"]}
+    assert entries["CLAUDE.md"] == sha256(b"reviewed edit\n")
+    replanned = adopt(root)
+    assert changes(replanned)["CLAUDE.md"] == "changed"
+    assert verified(root)["instruction_files"] == 2
+
+
+def test_resume_is_the_documented_way_out_and_a_foreign_plan_names_the_pending_one(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = scaffolded(sandbox / "workspace")
+    write(root, "CLAUDE.md", "reviewed edit\n")
+    planned = planned_update(root)
+    restore = interrupt_at(monkeypatch, INVENTORY)
+    assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_RUNTIME"
+    restore()
+    write(root, "AGENTS.md", "added during the interruption\n")
+    other = planned_update(root)
+    refusal = refusal_of(apply_update(root, other))
+    assert refusal["code"] == "REFUSE_RECOVERY_BINDING"
+    assert refusal["details"] == {"marker": MARKER, "pending_plan_sha256": planned["plan_sha256"]}
+    marker = strict_json_loads((root / MARKER).read_bytes())
+    resumed = apply_update(root, {"plan": marker["plan"], "plan_sha256": marker["plan_sha256"]})
+    assert resumed["result"]["status"] == "updated-unverified"
+    adopt(root)
+    assert verified(root)["instruction_files"] == 3
+
+
+def test_interrupted_adoption_of_a_1_0_0_workspace_resumes_after_an_edit(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = sandbox / "workspace"
+    sdk_1_0_0_layout(root)
+    planned = planned_update(root)
+    assert operations(planned) == {INVENTORY: "create", MANAGED: "replace"}
+    restore = interrupt_at(monkeypatch, MANAGED)
+    assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_RUNTIME"
+    restore()
+    assert (root / INVENTORY).is_file() and (root / MARKER).is_file()
+    write(root, "CLAUDE.md", "edited while the adoption was interrupted\n")
+    assert verified(root)["status"] == WEAK
+    collision = refusal_of(update({"root": str(root)}))
+    assert collision["code"] == "REFUSE_MANAGED_COLLISION"
+    assert collision["details"]["recovery_pending"] == MARKER
+    resumed = apply_update(root, planned)
+    assert resumed["result"]["status"] == "updated-unverified"
+    assert resumed["result"]["verification_refusal"]["code"] == "REFUSE_INSTRUCTION_DRIFT"
+    adopt(root)
+    assert verified(root, require_instruction_inventory=True)["instruction_files"] == 2
+
+
+def test_cli_resumes_from_the_recovery_marker(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = scaffolded(sandbox / "workspace")
+    write(root, "CLAUDE.md", "reviewed edit\n")
+    planned = planned_update(root)
+    restore = interrupt_at(monkeypatch, MANAGED)
+    assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_RUNTIME"
+    restore()
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "rapp_work",
+            "update",
+            "--root",
+            str(root),
+            "--apply",
+            "--plan",
+            str(root / MARKER),
+            "--plan-sha256",
+            planned["plan_sha256"],
+        ],
+        cwd=ROOT,
+        env={"LC_ALL": "C", "PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src")},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout
+    envelope = json.loads(completed.stdout)
+    assert envelope["status"] == "applied"
+    assert envelope["result"]["status"] == "updated"
     assert verified(root)["instruction_files"] == 2
 
 
@@ -655,6 +1150,28 @@ def test_forged_update_plan_inventory_is_refused(sandbox: Path) -> None:
     )
     assert refusal["code"] == "REFUSE_PRECONDITION"
     assert refusal["details"]["findings"] == [{"path": "AGENTS.md", "reason": "unlisted"}]
+
+
+def test_forged_plan_that_drops_the_inventory_is_refused(sandbox: Path) -> None:
+    root = sandbox / "workspace"
+    sdk_1_0_0_layout(root)
+    write(root, "AGENTS.md", "unreviewed\n")
+    planned = planned_update(root)
+    plan = json.loads(canonical_text(planned["plan"]))
+    plan["actions"] = [action for action in plan["actions"] if action["path"] != INVENTORY]
+    forged_plan = ReleasePlan.from_dict(plan)
+    refusal = refusal_of(
+        update(
+            {
+                "apply": True,
+                "plan": forged_plan.to_dict(),
+                "plan_sha256": forged_plan.sha256,
+                "root": str(root),
+            }
+        )
+    )
+    assert refusal["code"] in {"REFUSE_PLAN", "REFUSE_PRECONDITION"}
+    assert verified(root)["status"] == WEAK
 
 
 def test_sdk_owned_instruction_file_edit_has_no_acceptance_path(sandbox: Path) -> None:
@@ -692,6 +1209,7 @@ def test_consistent_rewrite_that_drops_an_entry_is_still_refused(sandbox: Path) 
     ("mutation", "code"),
     [
         ("non-instruction-path", "REFUSE_INSTRUCTION_INVENTORY"),
+        ("unrecordable-path", "REFUSE_INSTRUCTION_INVENTORY"),
         ("future-set", "REFUSE_INSTRUCTION_INVENTORY"),
         ("extra-key", "REFUSE_INPUT_KEYS"),
         ("non-canonical", "REFUSE_INSTRUCTION_INVENTORY"),
@@ -708,6 +1226,9 @@ def test_malformed_inventory_is_refused(sandbox: Path, mutation: str, code: str)
     if mutation == "non-instruction-path":
         record["files"].append({"bytes": 1, "path": "README.md", "sha256": "0" * 64})
         record["files"].sort(key=lambda entry: entry["path"])
+        raw = canonical_bytes(record)
+    elif mutation == "unrecordable-path":
+        record["files"].insert(0, {"bytes": 1, "path": "../AGENTS.md", "sha256": "0" * 64})
         raw = canonical_bytes(record)
     elif mutation == "future-set":
         record["instruction_set"] = "rapp-work-instruction-set/2"
@@ -745,7 +1266,107 @@ def test_verified_inventory_hash_exposes_a_consistent_rewrite(sandbox: Path) -> 
     assert verified(root)["instruction_inventory_sha256"] != pinned
 
 
-# --- legacy, SDK 1.0.0, Organization, and migration paths -------------------------------
+# --- compatibility: SDK 1.0.0 trees, legacy identities, Organizations ------------------
+
+
+def test_sdk_1_0_0_workspace_verifies_weakly_until_update_adds_the_inventory(sandbox: Path) -> None:
+    root = sandbox / "workspace"
+    sdk_1_0_0_layout(root)
+    write(root, "AGENTS.md", "unreviewed but not yet inventoried\n")
+    subject = verified(root)
+    assert subject["status"] == WEAK
+    assert subject["instruction_inventory"] == "absent"
+    assert not {"instruction_files", "instruction_inventory_sha256", "instruction_set"} & set(subject)
+    assert Workspace.load(root).verify()["status"] == WEAK
+    refusal = strict_refusal(root)
+    assert refusal["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
+    assert refusal["details"] == {"inventory": INVENTORY}
+    with pytest.raises(Refusal, match="REFUSE_INSTRUCTION_INVENTORY_ABSENT"):
+        Workspace.load(root).verify(require_instruction_inventory=True)
+    planned = planned_update(root)
+    assert operations(planned) == {INVENTORY: "create", MANAGED: "replace"}
+    review = planned["instruction_review"]
+    assert review["prior_inventory"] == "absent"
+    assert review["planned_inventory"] == "present"
+    assert set(changes(planned).values()) == {"added"}
+    assert apply_update(root, planned)["result"]["status"] == "updated"
+    subject = verified(root, require_instruction_inventory=True)
+    assert subject["status"] == "verified"
+    assert subject["instruction_files"] == 3
+    managed = json.loads((root / MANAGED).read_bytes())
+    assert managed["schema"] == "rapp-work-managed-files/1"
+    assert set(managed) == {"files", "profile", "schema", "sdk_version"}
+
+
+def test_unowned_inventory_file_carries_no_authority(sandbox: Path) -> None:
+    root = sandbox / "workspace"
+    planted = sdk_1_0_0_layout(root)
+    (root / INVENTORY).write_bytes(planted)
+    assert verified(root)["status"] == WEAK
+    assert strict_refusal(root)["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
+    planned = planned_update(root)
+    assert [action["path"] for action in planned["plan"]["actions"]] == [MANAGED]
+    assert apply_update(root, planned)["status"] == "applied"
+    assert verified(root)["instruction_files"] == 2
+    other = sandbox / "other"
+    sdk_1_0_0_layout(other)
+    (other / INVENTORY).write_bytes(planted + b" ")
+    assert refusal_of(update({"root": str(other)}))["code"] == "REFUSE_MANAGED_COLLISION"
+
+
+@pytest.mark.parametrize("layout", ["outside-link", "claude-shared-rules", "unreadable", "entries"])
+def test_trees_that_cannot_be_inventoried_keep_sdk_1_0_0_behaviour(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    layout: str,
+) -> None:
+    if layout == "unreadable" and hasattr(os, "geteuid") and os.geteuid() == 0:
+        pytest.skip("permission bits do not bind the superuser")
+    root = sandbox / "workspace"
+    sdk_1_0_0_layout(root)
+    protected = scaffolded(sandbox / "protected", slug="protected")
+    write(sandbox, "elsewhere/AGENTS.md", "outside\n")
+    locks: list[Path] = []
+    for tree in (root, protected):
+        if layout == "outside-link":
+            link(tree, "docs", "../elsewhere", directory=True)
+        elif layout == "claude-shared-rules":
+            link(tree, ".claude/rules/shared", "../../../elsewhere", directory=True)
+        elif layout == "unreadable":
+            (tree / "pgdata").mkdir(mode=0o700)
+            os.chmod(tree / "pgdata", 0)
+            locks.append(tree / "pgdata")
+        else:
+            monkeypatch.setattr(instructions_module, "MAX_SCAN_ENTRIES", 10)
+    try:
+        assert verified(root)["status"] == WEAK
+        planned = planned_update(root)
+        assert planned["plan"]["actions"] == []
+        review = planned["instruction_review"]
+        assert review["planned_inventory"] == review["prior_inventory"] == "absent"
+        assert review["files"] == []
+        assert review["scan_refusal"]["code"] in {
+            "REFUSE_INSTRUCTION_PATH",
+            "REFUSE_INSTRUCTION_SCAN",
+            "REFUSE_INSTRUCTION_SCAN_LIMIT",
+        }
+        unchanged = apply_update(root, planned)
+        assert unchanged["status"] == "ok"
+        assert unchanged["result"]["status"] == "unchanged"
+        assert unchanged["result"]["verification"]["status"] == WEAK
+        monkeypatch.setattr(workspace_module, "SDK_VERSION", "1.0.1")
+        assert verify_refusal(root)["code"] == "REFUSE_SDK_PROFILE"
+        bumped = planned_update(root)
+        assert operations(bumped) == {SDK_JSON: "replace", MANAGED: "replace"}
+        assert apply_update(root, bumped)["result"]["verification"]["status"] == WEAK
+        monkeypatch.setattr(workspace_module, "SDK_VERSION", "1.0.0")
+        adopted = protected
+        refusal = verify_refusal(adopted)
+        assert refusal["code"] == review["scan_refusal"]["code"]
+        assert refusal_of(update({"root": str(adopted)}))["code"] == refusal["code"]
+    finally:
+        for lock in locks:
+            os.chmod(lock, 0o700)
 
 
 def test_legacy_workspace_update_adopts_instruction_inventory(sandbox: Path) -> None:
@@ -761,8 +1382,7 @@ def test_legacy_workspace_update_adopts_instruction_inventory(sandbox: Path) -> 
         write(root, path, content)
     assert verify_refusal(root)["code"] == "REFUSE_SDK_PROFILE"
     planned = planned_update(root)
-    operations = {action["path"]: action["operation"] for action in planned["plan"]["actions"]}
-    assert operations == {
+    assert operations(planned) == {
         SDK_SKILL_PATH: "create",
         INVENTORY: "create",
         MANAGED: "create",
@@ -770,47 +1390,12 @@ def test_legacy_workspace_update_adopts_instruction_inventory(sandbox: Path) -> 
     }
     review = planned["instruction_review"]
     assert review["prior_inventory"] == "absent"
-    assert {entry["path"]: entry["change"] for entry in review["files"]} == {
-        path: "added" for path in [*legacy, SDK_SKILL_PATH]
-    }
+    assert changes(planned) == {path: "added" for path in [*legacy, SDK_SKILL_PATH]}
     assert apply_update(root, planned)["status"] == "applied"
-    assert verified(root)["instruction_files"] == 5
+    assert verified(root, require_instruction_inventory=True)["instruction_files"] == 5
     assert (root / "rappid.json").read_bytes() == identity
     for path, content in legacy.items():
         assert (root / path).read_text() == content
-
-
-def test_sdk_1_0_0_workspace_is_refused_until_update_adds_the_inventory(sandbox: Path) -> None:
-    root = sandbox / "workspace"
-    sdk_1_0_0_layout(root)
-    refusal = verify_refusal(root)
-    assert refusal["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
-    assert refusal["details"] == {"inventory": INVENTORY}
-    planned = planned_update(root)
-    operations = {action["path"]: action["operation"] for action in planned["plan"]["actions"]}
-    assert operations == {INVENTORY: "create", MANAGED: "replace"}
-    assert planned["instruction_review"]["prior_inventory"] == "absent"
-    assert {entry["change"] for entry in planned["instruction_review"]["files"]} == {"added"}
-    assert apply_update(root, planned)["status"] == "applied"
-    assert verified(root)["instruction_files"] == 2
-    managed = json.loads((root / MANAGED).read_bytes())
-    assert managed["schema"] == "rapp-work-managed-files/1"
-    assert set(managed) == {"files", "profile", "schema", "sdk_version"}
-
-
-def test_unowned_inventory_file_carries_no_authority(sandbox: Path) -> None:
-    root = sandbox / "workspace"
-    planted = sdk_1_0_0_layout(root)
-    (root / INVENTORY).write_bytes(planted)
-    assert verify_refusal(root)["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
-    planned = planned_update(root)
-    assert [action["path"] for action in planned["plan"]["actions"]] == [MANAGED]
-    assert apply_update(root, planned)["status"] == "applied"
-    assert verified(root)["instruction_files"] == 2
-    other = sandbox / "other"
-    sdk_1_0_0_layout(other)
-    (other / INVENTORY).write_bytes(planted + b" ")
-    assert refusal_of(update({"root": str(other)}))["code"] == "REFUSE_MANAGED_COLLISION"
 
 
 def test_minimal_legacy_identity_states_that_no_inventory_exists(sandbox: Path) -> None:
@@ -825,6 +1410,78 @@ def test_minimal_legacy_identity_states_that_no_inventory_exists(sandbox: Path) 
     subject = verified(root)
     assert subject["status"] == "verified-legacy-identity-only"
     assert subject["instruction_inventory"] == "absent"
+    assert strict_refusal(root)["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
+
+
+def test_source_estate_has_no_inventory_to_require() -> None:
+    assert verify({"root": str(ROOT)})["status"] == "ok"
+    refusal = refusal_of(verify({"require_instruction_inventory": True, "root": str(ROOT)}))
+    assert refusal["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
+
+
+@pytest.mark.parametrize("value", [1, "true", None])
+def test_the_strict_input_is_boolean(sandbox: Path, value: object) -> None:
+    root = scaffolded(sandbox / "workspace")
+    refusal = verify_refusal(root, require_instruction_inventory=value)
+    assert refusal["code"] == "REFUSE_INPUT_SHAPE"
+
+
+def test_cli_verify_accepts_the_strict_flag(sandbox: Path) -> None:
+    root = sandbox / "workspace"
+    sdk_1_0_0_layout(root)
+    environment = {"LC_ALL": "C", "PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src")}
+
+    def cli(*arguments: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-m", "rapp_work", "verify", "--root", str(root), *arguments],
+            cwd=ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    weak = cli()
+    assert weak.returncode == 0
+    assert json.loads(weak.stdout)["result"]["subject"]["status"] == WEAK
+    strict = cli("--require-instruction-inventory")
+    assert strict.returncode == 2
+    assert json.loads(strict.stdout)["refusal"]["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
+
+
+def test_sdk_1_0_0_and_bare_organizations_verify_weakly_and_adopt(sandbox: Path) -> None:
+    older = sandbox / "organization"
+    sdk_1_0_0_layout(older, kind="organization")
+    subject = verified(older)
+    assert subject["kind"] == "organization"
+    assert subject["status"] == WEAK
+    assert strict_refusal(older)["code"] == "REFUSE_INSTRUCTION_INVENTORY_ABSENT"
+    bare = sandbox / "bare"
+    bare.mkdir(mode=0o700)
+    for name in ("rappid.json", "organization.json", "workspaces.json"):
+        (bare / name).write_bytes((older / name).read_bytes())
+    subject = verified(bare)
+    assert subject["status"] == WEAK
+    assert subject["managed_files"] == 0
+    for root, expected in ((older, {INVENTORY: "create", MANAGED: "replace"}), (bare, None)):
+        planned = planned_update(root)
+        if expected is not None:
+            assert operations(planned) == expected
+        assert apply_update(root, planned)["result"]["status"] == "updated"
+        assert verified(root, require_instruction_inventory=True)["status"] == "verified"
+
+
+def test_organizations_do_not_check_the_sdk_record_but_workspaces_do(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    organization = sandbox / "organization"
+    sdk_1_0_0_layout(organization, kind="organization")
+    workspace = sandbox / "workspace"
+    sdk_1_0_0_layout(workspace)
+    monkeypatch.setattr(workspace_module, "SDK_VERSION", "1.0.1")
+    assert verified(organization)["status"] == WEAK
+    assert verify_refusal(workspace)["code"] == "REFUSE_SDK_PROFILE"
 
 
 def test_organization_inventories_only_its_own_tree(sandbox: Path) -> None:
@@ -882,7 +1539,7 @@ def test_migration_successor_carries_an_inventory(sandbox: Path) -> None:
     assert applied["status"] == "applied"
     managed = json.loads((target / MANAGED).read_bytes())
     assert INVENTORY in [entry["path"] for entry in managed["files"]]
-    assert verified(target)["instruction_files"] == 2
+    assert verified(target, require_instruction_inventory=True)["instruction_files"] == 2
 
 
 # --- canonical output ---------------------------------------------------------------------
@@ -896,10 +1553,23 @@ def test_instruction_outputs_are_canonical_i_json(sandbox: Path) -> None:
     planned = update({"root": str(root)})
     canonical_round_trip(planned)
     review = planned["result"]["instruction_review"]
-    assert set(review) == {"files", "instruction_set", "inventory", "prior_inventory", "schema"}
+    assert set(review) == {
+        "files",
+        "instruction_set",
+        "inventory",
+        "planned_inventory",
+        "prior_inventory",
+        "scan_refusal",
+        "schema",
+    }
     for entry in review["files"]:
         assert set(entry) == {"bytes", "change", "path", "prior_bytes", "prior_sha256", "sha256"}
     applied = apply_update(root, planned["result"])
     canonical_round_trip(applied)
     raw = (root / INVENTORY).read_bytes()
     assert raw == canonical_bytes(strict_json_loads(raw))
+    older = sandbox / "older"
+    sdk_1_0_0_layout(older)
+    link(older, "docs", "../elsewhere", directory=True)
+    canonical_round_trip(verify({"root": str(older)}))
+    canonical_round_trip(update({"root": str(older)}))

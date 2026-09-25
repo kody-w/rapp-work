@@ -5,7 +5,8 @@ import os
 import re
 import shutil
 import stat
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -30,9 +31,10 @@ from ._paths import (
 from .constants import SDK_VERSION
 from .errors import Refusal, require
 from .instructions import (
+    HEX64,
     INSTRUCTION_INVENTORY_PATH,
     INSTRUCTION_SET_ID,
-    Entries,
+    UNINVENTORIABLE,
     inventory_record,
     is_instruction_path,
     observed_entries,
@@ -47,6 +49,7 @@ from .rapp1 import mint_rappid, rappid_parts, rappid_valid
 LABEL = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 WORKSPACE_KINDS = {"workspace", "organization"}
 SDK_SKILL_PATH = ".github/skills/rapp-work-sdk/SKILL.md"
+UPDATE_RECOVERY_PATH = ".rapp-work/update-recovery.json"
 
 
 def _label(value: str, where: str, maximum: int = 64) -> str:
@@ -116,19 +119,32 @@ def _managed_record(files: dict[str, bytes]) -> dict[str, Any]:
     }
 
 
-def _integration_files(
-    identity: dict[str, Any],
-    instructions: Mapping[str, bytes],
-) -> dict[str, bytes]:
-    files = {
+def _sdk_files(identity: dict[str, Any]) -> dict[str, bytes]:
+    return {
         SDK_SKILL_PATH: _integration_skill(),
         ".rapp-work/sdk.json": _json_file(_sdk_record(identity)),
     }
-    # The inventory describes the post-apply tree: SDK-owned instruction files
-    # with the bytes the SDK writes, every other instruction file as observed.
-    reviewed = {path: content for path, content in instructions.items() if path not in files}
-    reviewed.update({path: content for path, content in files.items() if is_instruction_path(path)})
-    files[INSTRUCTION_INVENTORY_PATH] = _json_file(inventory_record(reviewed))
+
+
+def _reviewed_instructions(
+    identity: dict[str, Any],
+    observed: Mapping[str, bytes],
+) -> dict[str, bytes]:
+    """The post-apply instruction files: SDK-owned ones as the SDK writes them, others as observed."""
+    owned = _sdk_files(identity)
+    reviewed = {path: content for path, content in observed.items() if path not in owned}
+    reviewed.update({path: content for path, content in owned.items() if is_instruction_path(path)})
+    return reviewed
+
+
+def _planned_inventory(identity: dict[str, Any], observed: Mapping[str, bytes]) -> bytes:
+    return _json_file(inventory_record(_reviewed_instructions(identity, observed)))
+
+
+def _integration_files(identity: dict[str, Any], inventory: bytes | None) -> dict[str, bytes]:
+    files = _sdk_files(identity)
+    if inventory is not None:
+        files[INSTRUCTION_INVENTORY_PATH] = inventory
     files[".rapp-work/managed.json"] = _json_file(_managed_record(files))
     return files
 
@@ -151,12 +167,8 @@ def _workspace_files(identity: dict[str, Any]) -> dict[str, bytes]:
         "SPEC.md": _workspace_spec(identity["kind"]),
         "rappid.json": _json_file(identity),
     }
-    files.update(
-        _integration_files(
-            identity,
-            {path: content for path, content in files.items() if is_instruction_path(path)},
-        )
-    )
+    created = {path: content for path, content in files.items() if is_instruction_path(path)}
+    files.update(_integration_files(identity, _planned_inventory(identity, created)))
     return files
 
 
@@ -464,21 +476,41 @@ def _read_managed(root: Path) -> tuple[dict[str, bytes], str | None]:
     return files, file_sha256(path)
 
 
-def _prior_instructions(prior: Mapping[str, bytes]) -> Entries | None:
-    raw = prior.get(INSTRUCTION_INVENTORY_PATH)
-    return None if raw is None else parse_inventory(raw)
+@contextmanager
+def _recovery_hint(root: Path) -> Iterator[None]:
+    """Name a pending interrupted update, the usual cause of these refusals, without changing them."""
+    try:
+        yield
+    except Refusal as error:
+        marker = root / UPDATE_RECOVERY_PATH
+        if error.code not in {"REFUSE_MANAGED_COLLISION", "REFUSE_MANAGED_DRIFT"} or not (
+            marker.exists() or marker.is_symlink()
+        ):
+            raise
+        raise Refusal(
+            error.code,
+            f"{error.message}; an interrupted update is pending: apply its plan again to resume",
+            {**(error.details or {}), "recovery_pending": UPDATE_RECOVERY_PATH},
+        ) from error
 
 
-def _verify_instructions(root: Path, prior: Mapping[str, bytes]) -> dict[str, Any]:
+def _verify_instructions(
+    root: Path,
+    prior: Mapping[str, bytes],
+    *,
+    required: bool,
+) -> tuple[str, dict[str, Any]]:
+    """Return the subject status and instruction members, or refuse."""
     raw = prior.get(INSTRUCTION_INVENTORY_PATH)
-    require(
-        raw is not None,
-        "REFUSE_INSTRUCTION_INVENTORY_ABSENT",
-        "no SDK-owned instruction inventory; plan an update to review and record "
-        "the instruction files",
-        inventory=INSTRUCTION_INVENTORY_PATH,
-    )
-    assert raw is not None
+    if raw is None:
+        require(
+            not required,
+            "REFUSE_INSTRUCTION_INVENTORY_ABSENT",
+            "no SDK-owned instruction inventory; plan an update to review and record "
+            "the instruction files",
+            inventory=INSTRUCTION_INVENTORY_PATH,
+        )
+        return "verified-without-instruction-inventory", {"instruction_inventory": "absent"}
     recorded = parse_inventory(raw)
     require_no_drift(
         recorded,
@@ -486,8 +518,9 @@ def _verify_instructions(root: Path, prior: Mapping[str, bytes]) -> dict[str, An
         code="REFUSE_INSTRUCTION_DRIFT",
         message="instruction files differ from the reviewed instruction inventory",
     )
-    return {
+    return "verified", {
         "instruction_files": len(recorded),
+        "instruction_inventory": "verified",
         "instruction_inventory_sha256": hashlib.sha256(raw).hexdigest(),
         "instruction_set": INSTRUCTION_SET_ID,
     }
@@ -501,9 +534,26 @@ def plan_update_with_review(root: Path) -> tuple[ReleasePlan, dict[str, Any]]:
         "REFUSE_KIND",
         "only workspaces and pointer-only organizations can adopt the SDK profile",
     )
+    with _recovery_hint(root):
+        planned = _plan_update(root, identity)
+    return planned
+
+
+def _plan_update(root: Path, identity: dict[str, Any]) -> tuple[ReleasePlan, dict[str, Any]]:
     prior, managed_hash = _read_managed(root)
-    prior_instructions = _prior_instructions(prior)
-    desired = _integration_files(identity, scan_instruction_files(root))
+    prior_raw = prior.get(INSTRUCTION_INVENTORY_PATH)
+    prior_instructions = None if prior_raw is None else parse_inventory(prior_raw)
+    scan_refusal: Refusal | None = None
+    inventory: bytes | None
+    try:
+        inventory = _planned_inventory(identity, scan_instruction_files(root))
+    except Refusal as error:
+        # Without an SDK-owned inventory there is nothing to protect yet: plan the rest of the
+        # integration as SDK 1.0.0 would, and report why the tree cannot be inventoried.
+        if prior_raw is not None or error.code not in UNINVENTORIABLE:
+            raise
+        inventory, scan_refusal = None, error
+    desired = _integration_files(identity, inventory)
     actions: list[FileAction] = []
     for path, content in sorted(desired.items()):
         destination = root / path
@@ -579,7 +629,8 @@ def plan_update_with_review(root: Path) -> tuple[ReleasePlan, dict[str, Any]]:
         actions=tuple(actions),
         preconditions=preconditions,
     )
-    return plan, review(prior_instructions, parse_inventory(desired[INSTRUCTION_INVENTORY_PATH]))
+    planned = None if inventory is None else parse_inventory(inventory)
+    return plan, review(prior_instructions, planned, scan_refusal=scan_refusal)
 
 
 def plan_update(root: Path) -> ReleasePlan:
@@ -598,52 +649,80 @@ def _unlink_regular(path: Path) -> None:
         os.fsync(parent)
 
 
-def _require_reviewed_instructions(
+def _plan_inventory(
     plan: ReleasePlan,
     root: Path,
-    desired: Mapping[str, bytes],
-) -> None:
-    current = parse_inventory(desired[INSTRUCTION_INVENTORY_PATH])
-    planned_actions = [action for action in plan.actions if action.path == INSTRUCTION_INVENTORY_PATH]
-    if planned_actions:
+    managed_files: Mapping[str, str],
+) -> bytes | None:
+    """The inventory the plan leaves SDK-owned: the one it writes, keeps, or adopts, or none."""
+    actions = {action.path: action for action in plan.actions}
+    written = actions.get(INSTRUCTION_INVENTORY_PATH)
+    if written is not None:
         try:
-            reviewed = parse_inventory(planned_actions[0].content)
+            parse_inventory(written.content)
         except Refusal as error:
             raise Refusal(
                 "REFUSE_PLAN",
                 "update plan carries an unqualified instruction inventory",
                 {"cause": error.code},
             ) from error
-        require_no_drift(
-            reviewed,
-            current,
-            code="REFUSE_PRECONDITION",
-            message="instruction files changed after the update plan was built",
+        return written.content
+    managed = actions.get(".rapp-work/managed.json")
+    if managed is None:
+        listed = managed_files.get(INSTRUCTION_INVENTORY_PATH)
+    else:
+        record = strict_json_loads(managed.content, where="planned managed file inventory")
+        entries = record.get("files") if isinstance(record, dict) else None
+        require(
+            isinstance(entries, list) and all(isinstance(entry, dict) for entry in entries),
+            "REFUSE_PLAN",
+            "update plan carries an unqualified managed inventory",
         )
-        return
-    recorded = root / INSTRUCTION_INVENTORY_PATH
+        assert isinstance(entries, list)
+        listed = next(
+            (entry.get("sha256") for entry in entries if entry.get("path") == INSTRUCTION_INVENTORY_PATH),
+            None,
+        )
+    if listed is None:
+        return None
+    present = root / INSTRUCTION_INVENTORY_PATH
     require(
-        recorded.exists() or recorded.is_symlink(),
+        present.exists() or present.is_symlink(),
         "REFUSE_PRECONDITION",
         "instruction inventory disappeared after the update plan was built",
         path=INSTRUCTION_INVENTORY_PATH,
     )
-    raw = read_regular(recorded)
-    require_no_drift(
-        parse_inventory(raw),
-        current,
-        code="REFUSE_PRECONDITION",
-        message="instruction files changed after the update plan was built",
-    )
+    raw = read_regular(present)
     require(
-        raw == desired[INSTRUCTION_INVENTORY_PATH],
+        hashlib.sha256(raw).hexdigest() == listed,
         "REFUSE_PRECONDITION",
         "instruction inventory changed after the update plan was built",
         path=INSTRUCTION_INVENTORY_PATH,
     )
+    return raw
 
 
-def _validate_update_plan(plan: ReleasePlan, root: Path) -> dict[str, Any]:
+def _require_reviewed_instructions(
+    root: Path,
+    identity: dict[str, Any],
+    inventory: bytes | None,
+) -> None:
+    if inventory is None:
+        return
+    require_no_drift(
+        parse_inventory(inventory),
+        observed_entries(_reviewed_instructions(identity, scan_instruction_files(root))),
+        code="REFUSE_PRECONDITION",
+        message="instruction files changed after the update plan was built",
+    )
+
+
+def _validate_update_plan(
+    plan: ReleasePlan,
+    root: Path,
+    *,
+    resuming: bool = False,
+) -> dict[str, Any]:
     require(plan.operation == "update", "REFUSE_PLAN", "expected an update plan")
     require(plan.target == str(root), "REFUSE_PLAN_TARGET", "plan target differs from request")
     identity = load_identity(root)
@@ -708,8 +787,12 @@ def _validate_update_plan(plan: ReleasePlan, root: Path) -> dict[str, Any]:
         "REFUSE_PRECONDITION",
         "update identity or filesystem binding changed",
     )
-    desired = _integration_files(identity, scan_instruction_files(root))
-    _require_reviewed_instructions(plan, root, desired)
+    inventory = _plan_inventory(plan, root, managed_files)
+    desired = _integration_files(identity, inventory)
+    if not resuming:
+        # A resumed apply completes the reviewed writes; the verification that closes it
+        # reports any instruction change made meanwhile, and only a new plan accepts one.
+        _require_reviewed_instructions(root, identity, inventory)
     current_managed = root / ".rapp-work/managed.json"
     if current_managed.exists() or current_managed.is_symlink():
         current_managed_sha = file_sha256(current_managed)
@@ -764,8 +847,7 @@ def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str
         supplied=plan_sha256,
     )
     root = assert_no_symlinks(absolute_path(root))
-    _validate_update_plan(plan, root)
-    marker = root / ".rapp-work/update-recovery.json"
+    marker = root / UPDATE_RECOVERY_PATH
     marker_value = {
         "plan": plan.to_dict(),
         "plan_sha256": plan.sha256,
@@ -773,12 +855,22 @@ def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str
     }
     recovering = marker.exists() or marker.is_symlink()
     if recovering:
+        pending = strict_json_loads(read_regular(marker), where="update recovery marker")
+        pending_sha256 = pending.get("plan_sha256") if isinstance(pending, dict) else None
         require(
-            strict_json_loads(read_regular(marker), where="update recovery marker") == marker_value,
+            pending == marker_value,
             "REFUSE_RECOVERY_BINDING",
-            "update recovery belongs to another plan",
+            "update recovery belongs to another plan; apply the pending plan stored in the "
+            "marker to resume it",
+            marker=UPDATE_RECOVERY_PATH,
+            pending_plan_sha256=(
+                pending_sha256
+                if isinstance(pending_sha256, str) and HEX64.fullmatch(pending_sha256)
+                else None
+            ),
         )
-    else:
+    _validate_update_plan(plan, root, resuming=recovering)
+    if not recovering:
         current = plan_update(root)
         require(
             current.to_dict() == plan.to_dict(),
@@ -786,11 +878,7 @@ def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str
             "workspace changed after the update plan was built",
         )
         if not plan.actions:
-            verification = (
-                Workspace(root).verify()
-                if plan.subject["kind"] == "workspace"
-                else Organization(root).verify()
-            )
+            verification = _verify_updated(plan, root)
             return {
                 "effects": False,
                 "plan_sha256": plan.sha256,
@@ -842,14 +930,35 @@ def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str
             path=action.path,
         )
     _unlink_regular(marker)
-    verification = Workspace(root).verify() if plan.subject["kind"] == "workspace" else Organization(root).verify()
+    effects = bool(plan.actions)
+    try:
+        verification = _verify_updated(plan, root)
+    except Refusal as error:
+        if not effects:
+            raise
+        # The reviewed writes are durable; report them, and the refusal, rather than
+        # a refusal that would imply nothing happened.
+        return {
+            "effects": True,
+            "plan_sha256": plan.sha256,
+            "root": str(root),
+            "status": "updated-unverified",
+            "verification": None,
+            "verification_refusal": error.as_dict(),
+        }
     return {
-        "effects": bool(plan.actions),
+        "effects": effects,
         "plan_sha256": plan.sha256,
         "root": str(root),
-        "status": "updated" if plan.actions else "unchanged",
+        "status": "updated" if effects else "unchanged",
         "verification": verification,
     }
+
+
+def _verify_updated(plan: ReleasePlan, root: Path) -> dict[str, Any]:
+    if plan.subject["kind"] == "workspace":
+        return Workspace(root).verify()
+    return Organization(root).verify()
 
 
 @dataclass(frozen=True)
@@ -894,9 +1003,10 @@ class Workspace:
     def plan_update(self) -> ReleasePlan:
         return plan_update(self.root)
 
-    def verify(self) -> dict[str, Any]:
+    def verify(self, *, require_instruction_inventory: bool = False) -> dict[str, Any]:
         identity = self.identity
-        prior, _ = _read_managed(self.root)
+        with _recovery_hint(self.root):
+            prior, _ = _read_managed(self.root)
         sdk = strict_json_loads(
             read_regular(self.root / ".rapp-work/sdk.json"),
             where="SDK integration",
@@ -906,14 +1016,18 @@ class Workspace:
             "REFUSE_SDK_PROFILE",
             "workspace SDK integration record differs from the qualified profile",
         )
-        instructions = _verify_instructions(self.root, prior)
+        status, instructions = _verify_instructions(
+            self.root,
+            prior,
+            required=require_instruction_inventory,
+        )
         return {
             "kind": "workspace",
             "managed_files": len(prior),
             "profile": identity.get("workspace_spec"),
             "rappid": identity["rappid"],
             "root": str(self.root),
-            "status": "verified",
+            "status": status,
             "world_id": identity.get("world_id"),
             **instructions,
         }
@@ -1096,9 +1210,10 @@ class Organization:
             "workspace_rappid": workspace.identity["rappid"],
         }
 
-    def verify(self) -> dict[str, Any]:
+    def verify(self, *, require_instruction_inventory: bool = False) -> dict[str, Any]:
         identity = self.identity
-        managed, _ = _read_managed(self.root)
+        with _recovery_hint(self.root):
+            managed, _ = _read_managed(self.root)
         descriptor = strict_json_loads(
             read_regular(self.root / "organization.json"),
             where="organization descriptor",
@@ -1116,14 +1231,18 @@ class Organization:
             "organization descriptor differs from the pointer-only template",
         )
         pointers = self.pointers()
-        instructions = _verify_instructions(self.root, managed)
+        status, instructions = _verify_instructions(
+            self.root,
+            managed,
+            required=require_instruction_inventory,
+        )
         return {
             "kind": "organization",
             "managed_files": len(managed),
             "pointers": len(pointers),
             "rappid": identity["rappid"],
             "root": str(self.root),
-            "status": "verified",
+            "status": status,
             "world_id": identity["world_id"],
             **instructions,
         }

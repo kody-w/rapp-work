@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from ._json import closed_object, strict_json_loads
 from ._paths import absolute_path, assert_no_symlinks, read_regular
@@ -111,14 +111,40 @@ def _status(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _require_inventory_input(item: dict[str, Any]) -> bool:
+    required = item.get("require_instruction_inventory", False)
+    require(
+        type(required) is bool,
+        "REFUSE_INPUT_SHAPE",
+        "verify require_instruction_inventory must be Boolean",
+    )
+    return cast(bool, required)
+
+
+def _no_inventory(required: bool) -> None:
+    require(
+        not required,
+        "REFUSE_INSTRUCTION_INVENTORY_ABSENT",
+        "verification target has no SDK-owned instruction inventory",
+        inventory=".rapp-work/instructions.json",
+    )
+
+
 def _verify(inputs: dict[str, Any]) -> dict[str, Any]:
-    item = closed_object(inputs, required=set(), optional={"root"}, where="verify input")
+    item = closed_object(
+        inputs,
+        required=set(),
+        optional={"require_instruction_inventory", "root"},
+        where="verify input",
+    )
+    required = _require_inventory_input(item)
     root = _root_input(item.get("root", str(Path.cwd())))
     root = assert_no_symlinks(root)
     profile_result = ProfileRegistry.default().verify()
     subject: dict[str, Any]
     if (root / "RAPP1_PIN.json").is_file() and (root / "registry.json").is_file():
         subject = verify_source_estate(root)
+        _no_inventory(required)
     elif (root / "rappid.json").is_file():
         try:
             identity = load_identity(root)
@@ -130,6 +156,7 @@ def _verify(inputs: dict[str, Any]) -> dict[str, Any]:
                 "unrecognized legacy workspace identity",
             )
             assert legacy is not None
+            _no_inventory(required)
             subject = {
                 **legacy,
                 "instruction_inventory": "absent",
@@ -148,10 +175,11 @@ def _verify(inputs: dict[str, Any]) -> dict[str, Any]:
                 "REFUSE_SDK_PROFILE",
                 "workspace has no qualified SDK integration; run update planning first",
             )
-            subject = Workspace.load(root).verify()
+            subject = Workspace.load(root).verify(require_instruction_inventory=required)
         elif identity["kind"] == "organization":
-            subject = Organization.load(root).verify()
+            subject = Organization.load(root).verify(require_instruction_inventory=required)
         else:
+            _no_inventory(required)
             subject = {
                 "kind": identity["kind"],
                 "rappid": identity["rappid"],

@@ -8,15 +8,25 @@
   record, `.rapp-work/instructions.json` (`rapp-work-instruction-inventory/1`),
   covers the closed `rapp-work-instruction-set/1` and is listed in the
   unchanged `rapp-work-managed-files/1` inventory.
-- Workspace and Organization verification refuses an edited, missing, new,
-  symlinked, hard-linked, or non-regular instruction file, an exceeded scan
-  bound, and a workspace without an inventory. It reports paths and reasons,
-  never file content.
+- A Workspace or Organization that owns the record is verified against it: an
+  edited, missing, new, hard-linked, or non-regular instruction file, a link
+  that exposes content the bounded no-follow scan cannot see, an incomplete
+  scan, and an exceeded bound are refused, with paths and reasons, never file
+  content. In-tree links are recorded with the bytes read through them.
+- A tree without the record (for example one integrated by SDK 1.0.0) is not
+  refused: it verifies as `verified-without-instruction-inventory` with
+  `instruction_inventory: "absent"`. The new optional `verify` input
+  `require_instruction_inventory` (CLI `--require-instruction-inventory`)
+  refuses it with `REFUSE_INSTRUCTION_INVENTORY_ABSENT`.
 - The only acceptance path is a reviewed `update` plan, with a derived
-  `rapp-work-instruction-review/1`, applied with its exact SHA-256. Apply,
-  including a resumed apply, rescans before the first write.
+  `rapp-work-instruction-review/1`, applied with its exact SHA-256. A fresh
+  apply rescans before its first write; a resumed apply completes the reviewed
+  writes and reports later changes. An apply whose closing verification
+  refuses reports `updated-unverified` with the refusal instead of hiding its
+  effects. A tree without the record that cannot be inventoried is updated as
+  SDK 1.0.0 would, and the review says why.
 - Scaffold and migration plans gain the inventory, so their canonical hashes
-  differ for new plans; applied workspaces are unaffected until verified.
+  differ for new plans.
 - Intended release 1.1.0. Not accepted; the owner decides. `SDK_VERSION` is
   unchanged.
 

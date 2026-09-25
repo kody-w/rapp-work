@@ -23,6 +23,7 @@
       "default": "verify",
       "required_inputs": [],
       "optional_inputs": [
+        "require_instruction_inventory",
         "root"
       ]
     },
@@ -91,6 +92,7 @@
     "symlink or hardlink authority paths",
     "unreviewed plan hashes",
     "plugin, skill, or neuron execution",
-    "parent authority mutation"
+    "parent authority mutation",
+    "unreviewed AI instruction-file changes in an inventoried workspace"
   ]
 }

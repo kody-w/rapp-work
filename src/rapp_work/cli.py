@@ -26,6 +26,8 @@ def parser() -> JSONArgumentParser:
     for name in ("status", "verify"):
         command = commands.add_parser(name)
         command.add_argument("--root", default=str(Path.cwd()))
+        if name == "verify":
+            command.add_argument("--require-instruction-inventory", action="store_true")
 
     discover = commands.add_parser("discover")
     discover.add_argument("--root", action="append", dest="roots", required=True)
@@ -65,6 +67,12 @@ def _plan(path: Path | None) -> dict[str, Any] | None:
         result = value.get("result")
         if isinstance(result, dict) and isinstance(result.get("plan"), dict):
             return cast(dict[str, Any], result["plan"])
+    if (
+        isinstance(value, dict)
+        and value.get("schema") == "rapp-work-update-recovery/1"
+        and isinstance(value.get("plan"), dict)
+    ):
+        return cast(dict[str, Any], value["plan"])
     if isinstance(value, dict):
         return cast(dict[str, Any], value)
     raise Refusal("REFUSE_PLAN", "plan file must contain a plan object or plan result envelope")
@@ -72,6 +80,8 @@ def _plan(path: Path | None) -> dict[str, Any] | None:
 
 def _inputs(args: argparse.Namespace) -> dict[str, Any]:
     operation = args.operation
+    if operation == "verify" and args.require_instruction_inventory:
+        return {"require_instruction_inventory": True, "root": args.root}
     if operation in {"status", "verify"}:
         return {"root": args.root}
     if operation == "discover":

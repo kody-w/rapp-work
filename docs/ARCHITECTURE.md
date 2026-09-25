@@ -103,15 +103,20 @@ refuse rather than silently falling back to a race-prone path API.
 ## Instruction inventory
 
 AI instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
-`.github/copilot-instructions.md`, skill and rule files, and the rest of the
-closed `rapp-work-instruction-set/1`) steer every AI that opens a workspace.
-The SDK-owned `.rapp-work/instructions.json`
+`.github/copilot-instructions.md`, skill, rule, prompt, command, and agent
+files, the project settings files that can name instruction files, and the
+rest of the closed `rapp-work-instruction-set/1`) steer every AI that opens a
+workspace. The SDK-owned `.rapp-work/instructions.json`
 (`rapp-work-instruction-inventory/1`) records each one's path, byte length,
-and SHA-256. Verification rescans the tree with bounded, descriptor-relative,
-no-follow directory walks and refuses an edited, missing, unlisted, linked, or
-non-regular instruction file. The only acceptance path is a reviewed `update`
-plan applied with its exact SHA-256; the SDK never rewrites an owner's
-instruction file.
+and SHA-256. Verification of a tree that owns that record rescans it with
+bounded, descriptor-relative, no-follow directory walks and refuses an edited,
+missing, unlisted, or non-regular instruction file and any link that exposes
+content the scan cannot see; an in-tree link is recorded with the bytes read
+through it. A tree without the record, such as one integrated by SDK 1.0.0,
+is reported as `verified-without-instruction-inventory` unless the caller
+requires the inventory. The only acceptance path is a reviewed `update` plan
+applied with its exact SHA-256; the SDK never rewrites an owner's instruction
+file.
 
 ## Transport model
 

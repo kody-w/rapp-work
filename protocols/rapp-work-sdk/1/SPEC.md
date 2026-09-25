@@ -59,13 +59,15 @@ operations. Symlinks, hardlinked authority files, path traversal, device
 entries, FIFOs, sockets, unmanaged collisions, and changed preconditions are
 refused.
 
+Instruction files (§7.1) are not SDK authority: the SDK hashes them and never
+interprets them. They are read only by the bounded instruction scan of §7.2,
+which applies its own link rules and never opens or lists anything through a
+symbolic link. SDK updates never create, replace, or delete an instruction
+file that is not SDK-owned.
+
 Create-only means no existing destination is replaced. SDK updates may replace
 only files named in the prior SDK-owned inventory and only when their exact
 current SHA-256 equals the plan precondition.
-
-Instruction files (§7.1) are authority-bearing. They are read only through the
-bounded no-follow instruction scan of §7.2. SDK updates never create, replace,
-or delete an instruction file that is not SDK-owned.
 
 ## 5. RAPP/1 wrapper
 
@@ -106,69 +108,120 @@ stores.
 
 ### 7.1 Instruction files
 
-An instruction file is a file that an AI tool reads as instructions or context
-because of where it is. Instruction files steer every AI that opens a Workspace
-or Organization, so an unreviewed edit or a newly placed instruction file is a
-prompt-injection path into private (GODD) data.
+An instruction file is a file that an AI coding tool loads, because of where it
+is, into a model's context as instructions, rules, prompts, agents, or skills,
+or a project configuration file of such a tool that can itself hold instruction
+text or name other instruction files. Instruction files steer every AI that
+opens a Workspace or Organization, so an unreviewed edit or a newly placed
+instruction file is a prompt-injection path into private (GODD) data.
 
 `rapp-work-instruction-set/1` is the closed set of instruction paths. Paths are
 relative to the Workspace or Organization root and use `/` separators. Each
-path component is compared after the fold `NFKC(casefold(NFKC(component)))`
-(Unicode normalization form NFKC and full case folding), so case, width, and
-canonical-equivalence variants that a case-insensitive or
-normalization-insensitive filesystem may resolve to an instruction name are
-covered. A path is an instruction path when at least one of these holds:
+path component is compared after the fold
+`strip(NFKC(casefold(NFKC(strip(component)))))`, where `NFKC` is Unicode
+normalization form NFKC, `casefold` is full Unicode case folding, and `strip`
+removes every code point that has the `Default_Ignorable_Code_Point` property
+in `DerivedCoreProperties.txt` of Unicode 16.0.0. Case, width,
+canonical-equivalence, and ignorable-code-point variants that a
+case-insensitive, normalization-insensitive, or ignorable-insensitive
+filesystem may resolve to an instruction name are therefore covered. Table
+entries below are written unfolded and compared folded. A path is an
+instruction path when at least one of these holds:
 
 1. its final component is `AGENTS.md`, `AGENTS.override.md`, `CLAUDE.md`,
    `CLAUDE.local.md`, `GEMINI.md`, or `.cursorrules`;
-2. its final component is `copilot-instructions.md` and the component before
-   it is `.github`; or
+2. its final component and the component before it are one of these pairs:
+
+   | Directory | Final component |
+   |---|---|
+   | `.github` | `copilot-instructions.md` |
+   | `.cursor` | `BUGBOT.md` |
+   | `.gemini` | `system.md` or `settings.json` |
+   | `.claude` | `settings.json` or `settings.local.json` |
+   | `.codex` | `config.toml` |
+   | `.vscode` | `settings.json` |
+
 3. two consecutive directory components above the final component form one of
    these containers, and the final component satisfies the container's rule:
 
-| Container | Final component |
-|---|---|
-| `.github/instructions` | ends with `.instructions.md` |
-| `.github/prompts` | ends with `.prompt.md` |
-| `.github/agents` | ends with `.md` |
-| `.github/chatmodes` | ends with `.chatmode.md` |
-| `.github/skills`, `.claude/skills`, `.agents/skills` | is `SKILL.md` |
-| `.claude/rules`, `.claude/agents`, `.claude/commands` | ends with `.md` |
-| `.cursor/rules` | ends with `.mdc` |
+   | Container | Final component |
+   |---|---|
+   | `.github/instructions` | ends with `.instructions.md` |
+   | `.github/prompts` | ends with `.prompt.md` |
+   | `.github/agents` | ends with `.md` |
+   | `.github/chatmodes` | ends with `.chatmode.md` |
+   | `.github/skills`, `.claude/skills`, `.agents/skills`, `.cursor/skills`, `.codex/skills`, `.gemini/skills` | is `SKILL.md` |
+   | `.claude/rules`, `.claude/agents`, `.claude/commands`, `.claude/output-styles` | ends with `.md` |
+   | `.cursor/rules` | ends with `.mdc` |
+   | `.cursor/agents`, `.cursor/commands` | ends with `.md` |
+   | `.codex/agents` | ends with `.md` or `.toml` |
+   | `.gemini/commands` | ends with `.toml` |
 
-The rules apply at every depth of the scanned tree. Files reached only by
-reference from an instruction file (imports, links, skill resources) and tool
-configuration (settings, hooks, MCP server lists) are not instruction paths in
-this set. The meaning of `rapp-work-instruction-set/1` never changes; a wider
-set is a new token.
+The rules apply at every depth of the scanned tree. These are not instruction
+paths in this set: files reached only by reference (imports, links written in
+instruction text, skill resources and scripts, and files that a configuration
+file names), environment files, and configuration that only runs commands or
+connects tools (hook files and MCP server lists). The meaning of
+`rapp-work-instruction-set/1` never changes; a wider set is a new token.
 
 ### 7.2 Instruction scan
 
 The instruction scan walks the Workspace or Organization root with
-descriptor-relative, no-follow directory operations. It never follows a
-symbolic link and never descends into an entry named `.git`. It descends into
-every other directory, including a Workspace nested inside the tree. It is
-bounded:
+descriptor-relative, no-follow directory operations, listing each directory in
+name order. It never opens or lists anything through a symbolic link and never
+descends into an entry named `.git`. It descends into every other directory,
+including a Workspace nested inside the tree. It is bounded:
 
 - at most 32 directory levels below the root;
-- at most 100,000 directory entries observed;
+- at most 100,000 directory entries listed, counted while listing, so listing
+  stops at the first entry over the bound;
 - at most 1,024 instruction files; and
 - at most 1 MiB per instruction file and 16 MiB for all instruction files.
 
-Exceeding a bound is refused with `REFUSE_INSTRUCTION_SCAN_LIMIT`; the scan
-never truncates. The scan refuses with `REFUSE_INSTRUCTION_PATH`:
+Exceeding a bound is refused with `REFUSE_INSTRUCTION_SCAN_LIMIT` (details
+`limit`, `reason` `depth`, `entries`, `files`, `file-bytes`, or `total-bytes`,
+and `path` where one applies); the scan never truncates. A directory that
+cannot be opened or listed, or an entry or link that cannot be inspected, is
+refused with `REFUSE_INSTRUCTION_SCAN` (details `path` and `reason`
+`unreadable` or `uninspectable`), because an incomplete scan cannot show that
+no instruction file is there. An entry that changes identity while it is
+scanned is refused with `REFUSE_FILE_RACE`.
 
-- an instruction path that is a symbolic link, a hard-linked file, a
-  directory, or any other non-regular entry;
-- a symbolic link or other non-regular, non-directory entry named `.github`,
-  `.claude`, `.agents`, or `.cursor`, or located at or below a §7.1 container;
-  and
-- an instruction path that is not valid UTF-8 or does not satisfy the portable
-  relative-path grammar (at most 512 characters; no empty, `.`, or `..`
-  component; no control character, backslash, or colon).
+A path is recordable when it is valid UTF-8, has at most 33 components, and
+none of its components is empty, `.`, or `..`, contains NUL, or exceeds 1,024
+bytes. The portable path grammar of other SDK records does not apply to
+instruction paths.
 
-Other symbolic links and non-regular entries are neither followed nor
-inventoried.
+An instruction file is a regular file with exactly one link, read with a
+no-follow read bound to the device and inode of the entry the scan listed. For
+a symbolic link, the scan may read the link's text and inspect, without opening
+it, what the link resolves to. Its target is *in the tree* when the text is
+relative, resolves lexically against the link's directory without climbing
+above the root and without a component that folds to `.git`, and names an
+existing entry that the scan reaches from the root by no-follow steps and that
+has the device and inode the link resolves to. Then:
+
+1. A link at an instruction path is recorded, at the link's path, with the
+   bytes of its target when the target is an in-tree regular file with exactly
+   one link. Any other link at an instruction path is refused.
+2. A link that resolves to a directory is refused unless its target is in the
+   tree. When the link's final component folds to `.github`, `.claude`,
+   `.agents`, `.cursor`, `.codex`, `.gemini`, or `.vscode`, or two consecutive
+   folded components of its path form a container of §7.1, the scan lists the
+   target directory as if it were at the link's path and records the
+   instruction files found there at those paths; a target that is already being
+   listed on the current path is refused as a loop. Other directory links are not listed through: their
+   targets are scanned where they are, and a path through such a link is an
+   instruction path only where the target's own path is one.
+3. Any other link, including one that resolves to nothing, is neither followed
+   nor recorded.
+
+The scan refuses with `REFUSE_INSTRUCTION_PATH`, with details `path` and a
+`reason`: `symlink` when a link rule above refuses; `symlink-loop` for a loop;
+`hardlink` for an instruction file with more than one link; `not-regular` for a
+directory, FIFO, socket, or device at an instruction path; `path-grammar` for
+an instruction path that is not recordable; and `unreadable` for an instruction
+file that cannot be read without following links.
 
 ### 7.3 Instruction inventory
 
@@ -188,76 +241,118 @@ exactly these members:
 }
 ```
 
-`files` lists every instruction file of the scanned tree exactly once, in path
-order (ascending Unicode code point order of the path, which is also the byte
-order of its UTF-8 encoding), each entry with exactly `bytes`, `path`, and
-`sha256` of the file's exact bytes. `sdk_version` names the SDK release that wrote the record. The
-inventory never contains file content. An SDK-owned instruction file appears
-with the bytes the SDK writes. Scaffold and migration create the inventory
-together with the files they create, so the canonical hash of a new scaffold or
-migration plan differs from an earlier SDK's plan.
+`files` lists every instruction file that the §7.2 scan records exactly once,
+in path order (ascending Unicode code point order of the path, which is also
+the byte order of its UTF-8 encoding), each entry with exactly `bytes`, `path`,
+and `sha256` of the exact bytes a tool reads at that path, including a path
+recorded through a link. `sdk_version` names the SDK release that wrote the
+record. The inventory never contains file content. An SDK-owned instruction
+file appears with the bytes the SDK writes. Scaffold and migration create the
+inventory together with the files they create, so the canonical hash of a new
+scaffold or migration plan differs from an earlier SDK's plan.
 
 ### 7.4 Verification
 
-Workspace and Organization verification reads the SDK-owned inventory, runs
-the §7.2 scan, and refuses:
+Workspace and Organization verification (`verify`, `Workspace.verify()`, and
+`Organization.verify()`) first performs every check it performed without this
+section. Then:
 
-- `REFUSE_INSTRUCTION_INVENTORY_ABSENT` when no SDK-owned inventory exists;
-- `REFUSE_INSTRUCTION_INVENTORY` when the inventory is not canonical, not
-  closed, not path sorted and unique, over a §7.2 bound, or lists a path that
-  is not an instruction path;
-- `REFUSE_INSTRUCTION_DRIFT` when an inventoried file's bytes differ
-  (`changed`), an inventoried file is absent (`missing`), or an instruction
-  file is not inventoried (`unlisted`); and
-- the §7.2 refusals.
+- When `.rapp-work/instructions.json` is listed in the SDK-owned inventory,
+  verification reads it, runs the §7.2 scan, and refuses:
+  `REFUSE_INSTRUCTION_INVENTORY` when the inventory is not canonical, not
+  closed, not path sorted and unique, over a §7.2 bound, or lists a path that is
+  not a recordable instruction path; `REFUSE_INSTRUCTION_DRIFT` when a recorded
+  file's bytes differ (`changed`), a recorded path is absent (`missing`), or an
+  instruction file is not recorded (`unlisted`); and the §7.2 refusals. A
+  verified subject has `status` `verified`, `instruction_inventory`
+  `verified`, `instruction_files`, `instruction_set`, and
+  `instruction_inventory_sha256`, the SHA-256 of the inventory bytes, so an
+  owner or another observer can pin the reviewed inventory outside the tree.
+- When it is not listed, including in every Workspace and Organization
+  integrated before this section and when an unowned file is at that path,
+  verification does not scan. The subject has `status`
+  `verified-without-instruction-inventory` and `instruction_inventory`
+  `absent`, never `verified`, because no instruction file was checked. A legacy
+  identity that verification can check only as an identity
+  (`verified-legacy-identity-only`) also has `instruction_inventory` `absent`.
+
+`verify` accepts one more optional input member,
+`require_instruction_inventory`, a Boolean that defaults to `false`. When it
+is `true`, verification refuses with `REFUSE_INSTRUCTION_INVENTORY_ABSENT`
+(details `inventory`) unless the subject's instruction inventory is verified:
+a Workspace or Organization without an SDK-owned inventory, a legacy or other
+identity, and a source estate are refused. An SDK without this section refuses
+the member as unknown input, so a consumer that requires the check never
+receives a success without it. `Workspace.verify()` and
+`Organization.verify()` accept the same keyword argument.
 
 A drift refusal names every affected path and its reason in path order, at
-most 64 of them, with the total count. No refusal echoes file content. A
-verified result reports the instruction file count, the instruction set, and
-the SHA-256 of the inventory bytes, so an owner or another observer can pin
-the reviewed inventory outside the Workspace.
+most 64 of them, with the total count. No refusal or review echoes file
+content.
 
 ### 7.5 Accepting an instruction change
 
 `update` is the only operation that changes the inventory. Its plan records
-the exact instruction bytes observed at planning time: it adds the inventory
-when none is SDK-owned, or replaces it with the prior inventory's exact SHA-256
-as the `managed_files` precondition, and it replaces the managed inventory. An
-unowned file already at `.rapp-work/instructions.json` carries no authority: it
-is adopted only when its bytes are exactly the planned bytes, and is otherwise
-refused as an unmanaged collision. The planned result also carries a derived
-`rapp-work-instruction-review/1` object with exactly `files`,
-`instruction_set`, `inventory` (the inventory path), `prior_inventory`
-(`present` or `absent`), and `schema`. `files` lists every path of the prior
-and planned inventories once, in path order, with exactly `path`, `change`
-(`added`, `changed`, `removed`, or `unchanged`), `bytes`, `sha256`,
-`prior_bytes`, and `prior_sha256`; a side without the path is `null`. The
-review is for the person reviewing the plan; the plan and its SHA-256 remain
-the only authority.
+the exact instruction bytes observed at planning time: it creates the
+inventory when none is SDK-owned, or replaces it with the prior inventory's
+exact SHA-256 as the `managed_files` precondition, and it replaces the managed
+inventory. An unowned file already at `.rapp-work/instructions.json` carries no
+authority: it is adopted only when its bytes are exactly the planned bytes, and
+is otherwise refused as an unmanaged collision.
+
+When no inventory is SDK-owned and the §7.2 scan is refused with
+`REFUSE_INSTRUCTION_PATH`, `REFUSE_INSTRUCTION_SCAN`, or
+`REFUSE_INSTRUCTION_SCAN_LIMIT`, the plan is built without an inventory, as an
+SDK without this section builds it. When an inventory is SDK-owned, those
+refusals refuse the plan.
+
+The planned result carries a derived `rapp-work-instruction-review/1` object
+with exactly `files`, `instruction_set`, `inventory` (the inventory path),
+`planned_inventory` and `prior_inventory` (each `present` or `absent`),
+`scan_refusal` (`null`, or the `code`, `details`, and `message` of the scan
+refusal that left the plan without an inventory), and `schema`. `files` lists
+every path of the prior and planned inventories once, in path order, with
+exactly `path`, `change` (`added`, `changed`, `removed`, or `unchanged`),
+`bytes`, `sha256`, `prior_bytes`, and `prior_sha256`; a side without the path
+is `null`. The review is for the person reviewing the plan; the plan and its
+SHA-256 remain the only authority.
 
 Apply requires the explicit request, the complete plan, and its exact SHA-256
-(§2). Before the first write, including when resuming an interrupted apply, the
-implementation rescans and refuses with `REFUSE_PRECONDITION`, naming each
-path, if the instruction files differ from the reviewed plan. An edit to an
-SDK-owned instruction file is SDK-owned drift and is never accepted. There is
-no other acceptance path: no additional operation, flag, or automatic
-acceptance.
+(§2). Before its first write, an apply that is not resuming rescans and refuses
+with `REFUSE_PRECONDITION`, naming each path, if the instruction files differ
+from the inventory that the plan leaves SDK-owned. An apply that resumes an
+interrupted apply of the same plan (its `rapp-work-update-recovery/1` marker
+exists) completes the reviewed writes without that rescan: it records nothing
+that was not reviewed, and the verification that closes it reports an
+instruction change made during the interruption. While a marker exists, a
+refused apply of another plan (`REFUSE_RECOVERY_BINDING`) names the marker and
+the pending plan's SHA-256 (`pending_plan_sha256`), and `REFUSE_MANAGED_DRIFT`
+and `REFUSE_MANAGED_COLLISION` name the marker as `recovery_pending`.
 
-### 7.6 Organizations, earlier Workspaces, and compatibility wrappers
+Every apply with effects ends with verification. When that verification
+refuses, for example because an instruction file changed after the pre-write
+rescan, the result still reports the completed effects: `effects` `true`,
+`status` `updated-unverified`, `verification` `null`, and
+`verification_refusal` with the refusal's `code`, `details`, and `message`.
+Verification keeps refusing until a new reviewed plan accepts the change.
+
+An edit to an SDK-owned instruction file is SDK-owned drift and is never
+accepted. There is no other acceptance path: no other operation and no
+automatic acceptance.
+
+### 7.6 Organizations, earlier trees, and compatibility wrappers
 
 An Organization's inventory covers its own directory tree only. A Workspace
 placed inside that tree is part of it for §7.2, so Workspaces SHOULD be placed
 beside, not inside, an Organization. The pointer registry never carries
-instruction data.
+instruction data. Organization verification continues not to read
+`.rapp-work/sdk.json` or require `.rapp-work/managed.json`.
 
-A Workspace or Organization without an SDK-owned inventory, including one
-integrated by an earlier SDK release, is refused by verification until a
-reviewed update adds the inventory. A legacy Workspace without SDK integration
-receives the integration files and the inventory in one update plan. A legacy
-identity that verification can check only as an identity reports
-`instruction_inventory: "absent"`; migration creates an inventoried successor.
-The deprecated compatibility wrappers keep their historical behavior and never
-write an inventory; a workspace they create is a legacy Workspace.
+A Workspace or Organization integrated by an earlier SDK, or a legacy
+Workspace, receives the inventory from its next reviewed update plan together
+with any other integration change. The deprecated compatibility wrappers keep
+their historical behavior and never write an inventory; a workspace they
+create is a legacy Workspace.
 
 ## 8. Hive vectors
 
@@ -314,7 +409,10 @@ legacy paths. Those wrappers do not broaden their profile claims.
 
 ## 12. Refusals
 
+Unreviewed instruction-file changes in a Workspace or Organization whose
+instruction inventory is SDK-owned are explicit refusals (§7.4).
+
 Unsupported sharing, public Git, credential inheritance, implicit apply,
 unknown JSON members, parent-authority changes, plugin execution, neuron
-execution, source deletion, owner rotation, unverified Hive rollback/fork
-acceptance, and unreviewed instruction-file changes are explicit refusals.
+execution, source deletion, owner rotation, and unverified Hive rollback/fork
+acceptance are explicit refusals.

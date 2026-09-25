@@ -153,10 +153,14 @@ See [the exact API surface](docs/API.md).
   symlinks, hardlinked authority files, unsafe types, stale preconditions, and
   unmanaged collisions.
 - Verification inventories AI instruction files (`AGENTS.md`, `CLAUDE.md`,
-  `GEMINI.md`, `.github/copilot-instructions.md`, skills, rules, and the rest
-  of `rapp-work-instruction-set/1`) and refuses an edited, missing, new,
-  linked, or non-regular one. A change is accepted only through a reviewed
-  `update` plan applied with its exact SHA-256.
+  `GEMINI.md`, `.github/copilot-instructions.md`, skills, rules, prompts,
+  agents, the settings files that name instruction files, and the rest of
+  `rapp-work-instruction-set/1`) and refuses an edited, missing, new, or
+  non-regular one, or a link that exposes content it cannot see. A change is
+  accepted only through a reviewed `update` plan applied with its exact
+  SHA-256. A workspace integrated before the inventory existed verifies as
+  `verified-without-instruction-inventory` until an update adds it;
+  `--require-instruction-inventory` refuses it instead.
 - Ambient Git, shell, cloud, SSH-agent, and provider credentials are not
   inherited.
 - DOGG remains PII-free. GODD remains private. Transport is evidence, never

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import hashlib
 import os
 import re
@@ -7,7 +8,7 @@ import stat
 import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from typing import Any, NoReturn
 
 from ._json import canonical_bytes, closed_object, strict_json_loads
@@ -17,7 +18,6 @@ from ._paths import (
     assert_no_symlinks,
     directory_fd,
     read_regular_at,
-    safe_relative,
 )
 from .constants import SDK_VERSION, WORKSPACE_PROFILE_ID
 from .errors import Refusal, require
@@ -32,10 +32,16 @@ MAX_SCAN_DEPTH = 32
 MAX_INSTRUCTION_FILES = 1_024
 MAX_INSTRUCTION_FILE_BYTES = 1024 * 1024
 MAX_INSTRUCTION_TOTAL_BYTES = 16 * 1024 * 1024
+MAX_COMPONENT_BYTES = 1_024
 MAX_REPORTED_FINDINGS = 64
 
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 SEMVER = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+
+# Refusals meaning "this tree cannot be inventoried as it stands"; races are not among them.
+UNINVENTORIABLE = frozenset(
+    {"REFUSE_INSTRUCTION_PATH", "REFUSE_INSTRUCTION_SCAN", "REFUSE_INSTRUCTION_SCAN_LIMIT"}
+)
 
 # rapp-work-instruction-set/1. Every value is already folded; never edit in place.
 EXCLUDED_NAMES = frozenset({".git"})
@@ -49,33 +55,95 @@ INSTRUCTION_NAMES = frozenset(
         "gemini.md",
     }
 )
-PARENT_FILES = frozenset({(".github", "copilot-instructions.md")})
+PARENT_FILES = frozenset(
+    {
+        (".claude", "settings.json"),
+        (".claude", "settings.local.json"),
+        (".codex", "config.toml"),
+        (".cursor", "bugbot.md"),
+        (".gemini", "settings.json"),
+        (".gemini", "system.md"),
+        (".github", "copilot-instructions.md"),
+        (".vscode", "settings.json"),
+    }
+)
 CONTAINERS: tuple[tuple[str, str, str, str], ...] = (
     (".agents", "skills", "name", "skill.md"),
     (".claude", "agents", "suffix", ".md"),
     (".claude", "commands", "suffix", ".md"),
+    (".claude", "output-styles", "suffix", ".md"),
     (".claude", "rules", "suffix", ".md"),
     (".claude", "skills", "name", "skill.md"),
+    (".codex", "agents", "suffix", ".md"),
+    (".codex", "agents", "suffix", ".toml"),
+    (".codex", "skills", "name", "skill.md"),
+    (".cursor", "agents", "suffix", ".md"),
+    (".cursor", "commands", "suffix", ".md"),
     (".cursor", "rules", "suffix", ".mdc"),
+    (".cursor", "skills", "name", "skill.md"),
+    (".gemini", "commands", "suffix", ".toml"),
+    (".gemini", "skills", "name", "skill.md"),
     (".github", "agents", "suffix", ".md"),
     (".github", "chatmodes", "suffix", ".chatmode.md"),
     (".github", "instructions", "suffix", ".instructions.md"),
     (".github", "prompts", "suffix", ".prompt.md"),
     (".github", "skills", "name", "skill.md"),
 )
-CONTAINER_PAIRS = frozenset((first, second) for first, second, _, _ in CONTAINERS)
-CONTAINER_ROOTS = frozenset(first for first, _ in CONTAINER_PAIRS) | frozenset(
+
+
+def _container_rules() -> dict[tuple[str, str], tuple[tuple[str, str], ...]]:
+    rules: dict[tuple[str, str], tuple[tuple[str, str], ...]] = {}
+    for first, second, kind, value in CONTAINERS:
+        rules[(first, second)] = (*rules.get((first, second), ()), (kind, value))
+    return rules
+
+
+CONTAINER_RULES = _container_rules()
+CONTAINER_ROOTS = frozenset(first for first, _ in CONTAINER_RULES) | frozenset(
     parent for parent, _ in PARENT_FILES
 )
 
+# Unicode 16.0.0 Default_Ignorable_Code_Point (DerivedCoreProperties.txt), merged ranges.
+DEFAULT_IGNORABLE: tuple[tuple[int, int], ...] = (
+    (0x00AD, 0x00AD),
+    (0x034F, 0x034F),
+    (0x061C, 0x061C),
+    (0x115F, 0x1160),
+    (0x17B4, 0x17B5),
+    (0x180B, 0x180F),
+    (0x200B, 0x200F),
+    (0x202A, 0x202E),
+    (0x2060, 0x206F),
+    (0x3164, 0x3164),
+    (0xFE00, 0xFE0F),
+    (0xFEFF, 0xFEFF),
+    (0xFFA0, 0xFFA0),
+    (0xFFF0, 0xFFF8),
+    (0x1BCA0, 0x1BCA3),
+    (0x1D173, 0x1D17A),
+    (0xE0000, 0xE0FFF),
+)
+
 Entries = dict[str, tuple[int, str]]
+Parts = tuple[str, ...]
+_scandir = os.scandir
+
+
+def _ignorable(character: str) -> bool:
+    code = ord(character)
+    return code >= 0x00AD and any(low <= code <= high for low, high in DEFAULT_IGNORABLE)
+
+
+def _strip_ignorable(value: str) -> str:
+    return "".join(character for character in value if not _ignorable(character))
 
 
 def fold(value: str) -> str:
-    return unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", value).casefold())
+    folded = unicodedata.normalize("NFKC", _strip_ignorable(value)).casefold()
+    return _strip_ignorable(unicodedata.normalize("NFKC", folded))
 
 
-def _matches_folded(folded: tuple[str, ...]) -> bool:
+def _matches_folded(folded: Parts) -> bool:
     name = folded[-1]
     if name in INSTRUCTION_NAMES:
         return True
@@ -83,23 +151,16 @@ def _matches_folded(folded: tuple[str, ...]) -> bool:
         return True
     ancestors = folded[:-1]
     for index in range(len(ancestors) - 1):
-        pair = (ancestors[index], ancestors[index + 1])
-        for first, second, kind, value in CONTAINERS:
-            if pair == (first, second) and (
-                name == value if kind == "name" else name.endswith(value)
-            ):
+        for kind, value in CONTAINER_RULES.get((ancestors[index], ancestors[index + 1]), ()):
+            if name == value if kind == "name" else name.endswith(value):
                 return True
     return False
 
 
-def _exposes_instructions(folded: tuple[str, ...]) -> bool:
-    return (
-        _matches_folded(folded)
-        or folded[-1] in CONTAINER_ROOTS
-        or any(
-            (folded[index], folded[index + 1]) in CONTAINER_PAIRS
-            for index in range(len(folded) - 1)
-        )
+def _exposes_container(folded: Parts) -> bool:
+    """A link here could make a path below it an instruction path its target path is not."""
+    return folded[-1] in CONTAINER_ROOTS or any(
+        (folded[index], folded[index + 1]) in CONTAINER_RULES for index in range(len(folded) - 1)
     )
 
 
@@ -111,30 +172,50 @@ def _display(relative: str) -> str:
     return relative
 
 
-def _recordable(relative: str) -> bool:
+def _recordable(relative: Any) -> bool:
+    if not isinstance(relative, str) or not relative:
+        return False
     try:
         relative.encode("utf-8")
-        return safe_relative(relative) == relative
-    except (Refusal, UnicodeEncodeError):
+    except UnicodeEncodeError:
         return False
+    parts = relative.split("/")
+    return len(parts) <= MAX_SCAN_DEPTH + 1 and all(
+        part not in {"", ".", ".."}
+        and "\x00" not in part
+        and len(part.encode("utf-8")) <= MAX_COMPONENT_BYTES
+        for part in parts
+    )
+
+
+def _folded_parts(relative: str) -> Parts:
+    return tuple(fold(part) for part in relative.split("/"))
 
 
 def is_instruction_path(relative: str) -> bool:
     require(
         _recordable(relative),
         "REFUSE_INSTRUCTION_PATH",
-        "instruction path is outside the portable relative path grammar",
-        path=_display(relative),
+        "instruction path is outside the recordable path grammar",
+        path=_display(relative) if isinstance(relative, str) else None,
         reason="path-grammar",
     )
-    return _matches_folded(tuple(fold(part) for part in PurePosixPath(relative).parts))
+    return _matches_folded(_folded_parts(relative))
 
 
 def _refuse_path(relative: str, reason: str) -> NoReturn:
     raise Refusal(
         "REFUSE_INSTRUCTION_PATH",
-        "instruction paths must be regular, single-link files reached without links",
+        "instruction paths must be recordable regular files reached as section 7.2 allows",
         {"path": _display(relative), "reason": reason},
+    )
+
+
+def _refuse_scan(relative: str, reason: str, message: str) -> NoReturn:
+    raise Refusal(
+        "REFUSE_INSTRUCTION_SCAN",
+        message,
+        {"path": _display(relative or "."), "reason": reason},
     )
 
 
@@ -151,12 +232,13 @@ def _refuse_limit(reason: str, limit: int, relative: str | None = None) -> NoRet
 
 @dataclass
 class _Scan:
+    root: int
     entries: int = 0
     total_bytes: int = 0
     files: dict[str, bytes] = field(default_factory=dict)
 
 
-def _record(descriptor: int, name: str, relative: str, info: os.stat_result, scan: _Scan) -> None:
+def _record(parent: int, name: str, relative: str, info: os.stat_result, scan: _Scan) -> None:
     if not _recordable(relative):
         _refuse_path(relative, "path-grammar")
     if info.st_nlink != 1:
@@ -167,10 +249,11 @@ def _record(descriptor: int, name: str, relative: str, info: os.stat_result, sca
         _refuse_limit("files", MAX_INSTRUCTION_FILES)
     try:
         content = read_regular_at(
-            descriptor,
+            parent,
             name,
             display=relative,
             limit=MAX_INSTRUCTION_FILE_BYTES,
+            identity=(info.st_dev, info.st_ino),
         )
     except OSError as error:
         raise Refusal(
@@ -184,73 +267,235 @@ def _record(descriptor: int, name: str, relative: str, info: os.stat_result, sca
     scan.files[relative] = content
 
 
-def _scan_directory(
-    descriptor: int,
-    parts: tuple[str, ...],
-    folded_parts: tuple[str, ...],
-    scan: _Scan,
-) -> None:
-    depth = len(parts)
+def _list(descriptor: int, relative: str, scan: _Scan) -> list[os.DirEntry[str]]:
+    listed: list[os.DirEntry[str]] = []
     try:
-        with os.scandir(descriptor) as iterator:
-            entries = sorted(iterator, key=lambda entry: entry.name)
+        with _scandir(descriptor) as iterator:
+            for entry in iterator:
+                scan.entries += 1
+                if scan.entries > MAX_SCAN_ENTRIES:
+                    _refuse_limit("entries", MAX_SCAN_ENTRIES)
+                listed.append(entry)
     except OSError as error:
         raise Refusal(
             "REFUSE_INSTRUCTION_SCAN",
             "instruction scan could not list a directory",
-            {"path": _display("/".join(parts) or ".")},
+            {"path": _display(relative or "."), "reason": "unreadable"},
         ) from error
-    for entry in entries:
-        scan.entries += 1
-        if scan.entries > MAX_SCAN_ENTRIES:
-            _refuse_limit("entries", MAX_SCAN_ENTRIES)
-        if entry.name in EXCLUDED_NAMES:
+    listed.sort(key=lambda entry: entry.name)
+    return listed
+
+
+def _open_directory(parent: int, name: str, relative: str, expected: os.stat_result) -> int:
+    try:
+        descriptor = os.open(name, _nofollow_flags(directory=True), dir_fd=parent)
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_INSTRUCTION_SCAN",
+            "instruction scan could not open a directory without following links",
+            {"path": _display(relative), "reason": "unreadable"},
+        ) from error
+    try:
+        opened = os.fstat(descriptor)
+    except OSError:
+        os.close(descriptor)
+        raise
+    if not (
+        stat.S_ISDIR(opened.st_mode)
+        and (opened.st_dev, opened.st_ino) == (expected.st_dev, expected.st_ino)
+    ):
+        os.close(descriptor)
+        raise Refusal(
+            "REFUSE_FILE_RACE",
+            "directory changed during the instruction scan",
+            {"path": _display(relative)},
+        )
+    return descriptor
+
+
+def _lexical_target(parent: Parts, text: str) -> Parts | None:
+    """Resolve a relative link text inside the root, or None outside it or through `.git`."""
+    if not text or text.startswith("/"):
+        return None
+    parts = list(parent)
+    for component in text.split("/"):
+        if component in {"", "."}:
             continue
-        child = (*parts, entry.name)
-        folded = (*folded_parts, fold(entry.name))
-        relative = "/".join(child)
+        if component == "..":
+            if not parts:
+                return None
+            parts.pop()
+        else:
+            parts.append(component)
+    if any(fold(part) == ".git" for part in parts):
+        return None
+    return tuple(parts)
+
+
+def _open_in_tree(root: int, parts: Parts) -> int | None:
+    """Open a directory below the root by no-follow steps, or None if any step is not one."""
+    flags = _nofollow_flags(directory=True)
+    try:
+        descriptor = os.open(".", flags, dir_fd=root)
+    except OSError:
+        return None
+    for part in parts:
+        try:
+            child = os.open(part, flags, dir_fd=descriptor)
+        except OSError:
+            os.close(descriptor)
+            return None
+        os.close(descriptor)
+        descriptor = child
+    return descriptor
+
+
+def _link_target_stat(parent: int, name: str, relative: str) -> os.stat_result | None:
+    """Stat what a link resolves to without opening it; None when it resolves to nothing."""
+    try:
+        return os.stat(name, dir_fd=parent, follow_symlinks=True)
+    except OSError as error:
+        if error.errno in {errno.ENOENT, errno.ENOTDIR, errno.ELOOP}:
+            return None
+        raise Refusal(
+            "REFUSE_INSTRUCTION_SCAN",
+            "instruction scan could not inspect a link target",
+            {"path": _display(relative), "reason": "uninspectable"},
+        ) from error
+
+
+def _record_link_target(scan: _Scan, parent: int, name: str, relative: str, real: Parts) -> None:
+    """A link at an instruction path: record the bytes a tool reads through it."""
+    try:
+        text = os.readlink(name, dir_fd=parent)
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_INSTRUCTION_SCAN",
+            "instruction scan could not read a link",
+            {"path": _display(relative), "reason": "uninspectable"},
+        ) from error
+    target = _lexical_target(real[:-1], text)
+    resolved = _link_target_stat(parent, name, relative)
+    if not target or resolved is None or not stat.S_ISREG(resolved.st_mode):
+        _refuse_path(relative, "symlink")
+    directory = _open_in_tree(scan.root, target[:-1])
+    if directory is None:
+        _refuse_path(relative, "symlink")
+    try:
+        try:
+            final: os.stat_result | None = os.stat(
+                target[-1], dir_fd=directory, follow_symlinks=False
+            )
+        except OSError:
+            final = None
+        if (
+            final is None
+            or not stat.S_ISREG(final.st_mode)
+            or (final.st_dev, final.st_ino) != (resolved.st_dev, resolved.st_ino)
+        ):
+            _refuse_path(relative, "symlink")
+        _record(directory, target[-1], relative, final, scan)
+    finally:
+        os.close(directory)
+
+
+def _follow_directory_link(
+    scan: _Scan,
+    parent: int,
+    name: str,
+    real: Parts,
+    logical: Parts,
+    folded: Parts,
+    stack: frozenset[tuple[int, int]],
+) -> None:
+    relative = "/".join(logical)
+    resolved = _link_target_stat(parent, name, relative)
+    if resolved is None or not stat.S_ISDIR(resolved.st_mode):
+        return
+    try:
+        text = os.readlink(name, dir_fd=parent)
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_INSTRUCTION_SCAN",
+            "instruction scan could not read a link",
+            {"path": _display(relative), "reason": "uninspectable"},
+        ) from error
+    target = _lexical_target(real[:-1], text)
+    if target is None:
+        _refuse_path(relative, "symlink")
+    directory = _open_in_tree(scan.root, target)
+    if directory is None:
+        _refuse_path(relative, "symlink")
+    try:
+        opened = os.fstat(directory)
+        key = (opened.st_dev, opened.st_ino)
+        if key != (resolved.st_dev, resolved.st_ino):
+            _refuse_path(relative, "symlink")
+        if not _exposes_container(folded):
+            return
+        if len(logical) > MAX_SCAN_DEPTH:
+            _refuse_limit("depth", MAX_SCAN_DEPTH, relative)
+        if key in stack:
+            _refuse_path(relative, "symlink-loop")
+        _walk(scan, directory, target, logical, folded, stack | {key})
+    finally:
+        os.close(directory)
+
+
+def _walk(
+    scan: _Scan,
+    descriptor: int,
+    real: Parts,
+    logical: Parts,
+    folded: Parts,
+    stack: frozenset[tuple[int, int]],
+) -> None:
+    """List one real directory, classifying each entry at its logical (tool-visible) path."""
+    for entry in _list(descriptor, "/".join(logical), scan):
+        name = entry.name
+        if name in EXCLUDED_NAMES:
+            continue
+        child_real = (*real, name)
+        child_logical = (*logical, name)
+        child_folded = (*folded, fold(name))
+        relative = "/".join(child_logical)
         try:
             info = entry.stat(follow_symlinks=False)
         except OSError as error:
             raise Refusal(
                 "REFUSE_INSTRUCTION_SCAN",
                 "instruction scan could not inspect an entry",
-                {"path": _display(relative)},
+                {"path": _display(relative), "reason": "uninspectable"},
             ) from error
         if stat.S_ISDIR(info.st_mode):
-            if _matches_folded(folded):
+            if _matches_folded(child_folded):
                 _refuse_path(relative, "not-regular")
-            if depth + 1 > MAX_SCAN_DEPTH:
+            if len(child_logical) > MAX_SCAN_DEPTH:
                 _refuse_limit("depth", MAX_SCAN_DEPTH, relative)
+            child = _open_directory(descriptor, name, relative, info)
             try:
-                child_descriptor = os.open(
-                    entry.name,
-                    _nofollow_flags(directory=True),
-                    dir_fd=descriptor,
+                _walk(
+                    scan,
+                    child,
+                    child_real,
+                    child_logical,
+                    child_folded,
+                    stack | {(info.st_dev, info.st_ino)},
                 )
-            except OSError as error:
-                raise Refusal(
-                    "REFUSE_INSTRUCTION_SCAN",
-                    "instruction scan could not open a directory without following links",
-                    {"path": _display(relative)},
-                ) from error
-            try:
-                opened = os.fstat(child_descriptor)
-                require(
-                    stat.S_ISDIR(opened.st_mode)
-                    and (opened.st_dev, opened.st_ino) == (info.st_dev, info.st_ino),
-                    "REFUSE_FILE_RACE",
-                    "directory changed during the instruction scan",
-                    path=_display(relative),
-                )
-                _scan_directory(child_descriptor, child, folded, scan)
             finally:
-                os.close(child_descriptor)
+                os.close(child)
         elif stat.S_ISREG(info.st_mode):
-            if _matches_folded(folded):
-                _record(descriptor, entry.name, relative, info, scan)
-        elif _exposes_instructions(folded):
-            _refuse_path(relative, "symlink" if stat.S_ISLNK(info.st_mode) else "not-regular")
+            if _matches_folded(child_folded):
+                _record(descriptor, name, relative, info, scan)
+        elif stat.S_ISLNK(info.st_mode):
+            if _matches_folded(child_folded):
+                _record_link_target(scan, descriptor, name, relative, child_real)
+            else:
+                _follow_directory_link(
+                    scan, descriptor, name, child_real, child_logical, child_folded, stack
+                )
+        elif _matches_folded(child_folded):
+            _refuse_path(relative, "not-regular")
 
 
 def scan_instruction_files(root: Path) -> dict[str, bytes]:
@@ -260,9 +505,10 @@ def scan_instruction_files(root: Path) -> dict[str, bytes]:
         "REFUSE_PLATFORM",
         "descriptor-relative directory listing is unavailable",
     )
-    scan = _Scan()
     with directory_fd(root) as descriptor:
-        _scan_directory(descriptor, (), (), scan)
+        info = os.fstat(descriptor)
+        scan = _Scan(root=descriptor)
+        _walk(scan, descriptor, (), (), (), frozenset({(info.st_dev, info.st_ino)}))
     return dict(sorted(scan.files.items()))
 
 
@@ -326,9 +572,8 @@ def parse_inventory(raw: bytes) -> Entries:
         )
         path = entry["path"]
         require(
-            isinstance(path, str)
-            and _recordable(path)
-            and _matches_folded(tuple(fold(part) for part in PurePosixPath(path).parts))
+            _recordable(path)
+            and _matches_folded(_folded_parts(path))
             and type(entry["bytes"]) is int
             and 0 <= entry["bytes"] <= MAX_INSTRUCTION_FILE_BYTES
             and isinstance(entry["sha256"], str)
@@ -388,12 +633,18 @@ def require_no_drift(
         )
 
 
-def review(prior: Entries | None, planned: Entries) -> dict[str, Any]:
+def review(
+    prior: Entries | None,
+    planned: Entries | None,
+    *,
+    scan_refusal: Refusal | None = None,
+) -> dict[str, Any]:
     before = prior or {}
+    after = planned or {}
     files: list[dict[str, Any]] = []
-    for path in sorted(set(before) | set(planned)):
+    for path in sorted(set(before) | set(after)):
         old = before.get(path)
-        new = planned.get(path)
+        new = after.get(path)
         if old is None:
             change = "added"
         elif new is None:
@@ -414,6 +665,8 @@ def review(prior: Entries | None, planned: Entries) -> dict[str, Any]:
         "files": files,
         "instruction_set": INSTRUCTION_SET_ID,
         "inventory": INSTRUCTION_INVENTORY_PATH,
+        "planned_inventory": "absent" if planned is None else "present",
         "prior_inventory": "absent" if prior is None else "present",
+        "scan_refusal": None if scan_refusal is None else scan_refusal.as_dict(),
         "schema": INSTRUCTION_REVIEW_SCHEMA,
     }

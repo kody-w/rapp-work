@@ -31,7 +31,7 @@ migrate(inputs)
 | Operation | Required | Optional |
 |---|---|---|
 | `status` | — | `root` |
-| `verify` | — | `root` |
+| `verify` | — | `root`, `require_instruction_inventory` |
 | `discover` | `roots` | `max_entries` |
 | `scaffold` | `root`, `kind`, `owner_label`, `slug`, `world_id`, `mode` | `apply`, `plan`, `plan_sha256` |
 | `update` | `root` | `apply`, `plan`, `plan_sha256` |
@@ -42,20 +42,33 @@ requires both the complete plan object and its exact canonical SHA-256.
 
 ### Instruction files
 
-`verify` on a Workspace or Organization also checks the SDK-owned instruction
-inventory (`rapp-work-sdk/1` §7). A verified subject adds
-`instruction_files`, `instruction_set`, and `instruction_inventory_sha256`.
-Refusals are `REFUSE_INSTRUCTION_INVENTORY_ABSENT`,
+`verify` on a Workspace or Organization whose SDK-owned inventory lists
+`.rapp-work/instructions.json` also scans the tree for AI instruction files
+(`rapp-work-sdk/1` §7). A verified subject has `status: "verified"`,
+`instruction_inventory: "verified"`, `instruction_files`, `instruction_set`,
+and `instruction_inventory_sha256`. Refusals are
 `REFUSE_INSTRUCTION_INVENTORY`, `REFUSE_INSTRUCTION_DRIFT` (with `findings`
-of `path` and `reason`: `changed`, `missing`, or `unlisted`),
-`REFUSE_INSTRUCTION_PATH`, and `REFUSE_INSTRUCTION_SCAN_LIMIT`; none echoes
-file content.
+of `path` and `reason`: `changed`, `missing`, or `unlisted`, at most 64, and
+`total`), `REFUSE_INSTRUCTION_PATH`, `REFUSE_INSTRUCTION_SCAN`, and
+`REFUSE_INSTRUCTION_SCAN_LIMIT`; none echoes file content.
+
+A Workspace or Organization without that inventory, such as one integrated by
+SDK 1.0.0, is not scanned: its subject has
+`status: "verified-without-instruction-inventory"` and
+`instruction_inventory: "absent"`. Pass `require_instruction_inventory: true`
+(CLI `--require-instruction-inventory`) to refuse such a subject, and any
+other subject without a verified inventory, with
+`REFUSE_INSTRUCTION_INVENTORY_ABSENT`. SDK 1.0.0 refuses that member as
+unknown input.
 
 A planned `update` result adds `instruction_review`
 (`rapp-work-instruction-review/1`), listing each instruction path as `added`,
 `changed`, `removed`, or `unchanged` with prior and new byte lengths and
-SHA-256 values. It is derived from the plan for review; only the plan and its
-SHA-256 authorize an apply.
+SHA-256 values, whether an inventory is planned, and the scan refusal when a
+tree without an inventory cannot be inventoried. It is derived from the plan
+for review; only the plan and its SHA-256 authorize an apply. An applied update
+whose closing verification refuses reports `effects: true`,
+`status: "updated-unverified"`, and `verification_refusal`.
 
 ## Typed models
 

@@ -113,8 +113,12 @@ def read_regular_at(
     display: str,
     limit: int = MAX_FILE_BYTES,
     require_private: bool = False,
+    identity: tuple[int, int] | None = None,
 ) -> bytes:
-    """Read one regular, single-link file relative to an open directory, never following links."""
+    """Read one regular, single-link file relative to an open directory, never following links.
+
+    ``identity`` optionally binds the read to the (device, inode) the caller already inspected.
+    """
     descriptor = os.open(
         name,
         _nofollow_flags(nonblock=True),
@@ -126,6 +130,12 @@ def read_regular_at(
             stat.S_ISREG(info.st_mode) and info.st_nlink == 1,
             "REFUSE_PATH_TYPE",
             "regular, non-hardlinked file required",
+            path=display,
+        )
+        require(
+            identity is None or (info.st_dev, info.st_ino) == identity,
+            "REFUSE_FILE_RACE",
+            "file was replaced before it was read",
             path=display,
         )
         if require_private and os.name != "nt":
