@@ -14,7 +14,7 @@ phases:
   - "Switch it on: estate owner"
   - "Graduate and freeze: engineering"
 steps:
-  - "1: merge RAPP proposal 0001 (G18)"
+  - "1: merge RAPP proposal 0001 (G18), a documentation fix only: it is yours because RAPP reserves constitution merges for the maintainer (Articles XXVIII.4 and XXX.2)"
   - "1: decide Tier 2 loader parity (G19)"
   - "1: ratify the RAPP Work Constitution and its Part V (G8, G9)"
   - "1: choose which experimental parts are in the lock: Folder Hive and its public copy, References, Hub cards, Brainstem app"

@@ -818,9 +818,7 @@ LOCK_CSS = """.lock { background: #fff; border-color: #495057; } .lock.done { ba
 .lockin h1 { font-size: 17pt; } .lockin .panel { font-size: 8.2pt; } .lockin .panel h2 { font-size: 10pt; }
 .decide { border: 2px solid #e67700; background: #fff4e6; border-radius: 9px; padding: 5px 10px 6px 10px; }
 .decide h2 { font-size: 10pt; margin: 0 0 3px 0; }
-.decide ol { margin: 0; padding-left: 16px; display: grid; grid-template-columns: max-content 1fr; grid-auto-flow: column;
-             column-gap: 0.6in; font-size: 8.6pt; }
-.decide li { display: list-item; margin: 0 0 2px 0; }
+.decide ol { margin: 0; padding-left: 16px; font-size: 8.6pt; } .decide li { margin: 0 0 2px 0; }
 .two { display: grid; grid-template-columns: 1fr 1.25fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
@@ -967,7 +965,7 @@ def pages(t):
     the_lock = f"""<div class="page lockin">
 {head.format(e(lock["name"]), e(smart("What we need to do to lock in a full RAPP/1: five phases, in order, with the owner's decisions first.")))}
 <section class="decide"><h2>Your decisions first \u00b7 phase {one["n"]}, {e(one["title"])} \u00b7 {who(one)}</h2>
-<ol style="grid-template-rows: repeat({(len(one["steps"]) + 1) // 2}, auto)">{steps(one)}</ol></section>
+<ol>{steps(one)}</ol></section>
 <section class="two">
 <div class="panel"><h2>RAPP/1 is locked when</h2><ul>{"".join(f"<li>{inline(item)}</li>" for item in lock["locked_when"])}</ul></div>
 <div class="panel"><h2>Lock status by layer, top to bottom</h2><table class="status">{status_rows}</table></div>

@@ -188,7 +188,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | [G15](gaps/G15.md) | No estate declares the Brainstem's kernel | open |
 | [G16](gaps/G16.md) | No estate has activated canonical `rapp-work/1` | open |
 | [G17](gaps/G17.md) | The Brainstem does not call the RAPP Work SDK | idea |
-| [G18](gaps/G18.md) | RAPP's Constitution said agents load from every folder | proposed |
+| [G18](gaps/G18.md) | RAPP's Constitution describes a two-day experiment | proposed |
 | [G19](gaps/G19.md) | The cloud Brainstem loads agents differently | open |
 | [G20](gaps/G20.md) | The Brainstem app's path to the production ring | open |
 | [G22](gaps/G22.md) | “Workspace” names two things | idea |
