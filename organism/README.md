@@ -13,7 +13,7 @@ It also says what it takes to lock RAPP/1, the one LTS release of the whole stac
 | `parts/` | Parts inside a layer, and parts beside the stack |
 | `crossings/` | How anything moves between layers, one crossing per file |
 | `journeys/` | E1 to E7: end to end, through every layer |
-| `gaps/` | One file per gap, G01 to G22: what is still open, and which lock-in phase closes each. A dropped gap leaves its number unused (G21). |
+| `gaps/` | One file per gap, G01 to G23: what is still open, and which lock-in phase closes each. A dropped gap leaves its number unused (G21). |
 | `invariants.md` | What holds everywhere |
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
 | `health.md` | The health words every `health` and `status` starts with |
@@ -49,7 +49,7 @@ Each of these gets you this folder from the `experimental/rapp-work-constitution
 
 - Open `views/one-page.html` in a browser. It prints on one US Letter landscape page.
 - Open `views/lock-in.html` for what it takes to lock RAPP/1 LTS: the owner's decisions first, what RAPP/1 pins, five phases, each layer's status and every gap. `views/rapp-lock-in.pdf` holds both pages.
-- In every view, plain boxes in force are RAPP/1, and striped boxes (in the text graph, the word `newest`) are not in RAPP/1 yet.
+- In every view, plain boxes in force are RAPP/1, and striped boxes (in the text graph, the word `newest`) are not in RAPP/1 yet. Inside each layer the RAPP/1 cells come first and the newest cells after them, so newest parts read as their own lane. You and outside knowledge ship in neither, and are drawn dotted and white. Square chips say what each layer still needs to graduate.
 - Read `views/graph.txt` in a terminal, or `ORGANISM.md` for the graph with every table.
 - Open `views/organism.svg` for the drawing, or load `views/organism.excalidraw` in [Excalidraw](https://excalidraw.com).
 
@@ -102,6 +102,7 @@ The builder refuses with the file and the fix when something is wrong: an unknow
 - `color` is an Open Color family: gray, orange, green, blue or purple.
 - `column` is in, out or across. `beside` and `layer` are layer numbers.
 - `arrow` is down, up or both inside the stack; in, out or both beside it. It must point from `from` to `to`, so every arrow reads like its row.
+- Inside a layer, RAPP/1 cells come first and newest cells after them; `order` sorts the parts within each lane.
 - `span` sets how much of its layer's width a part inside it takes (default 1). A layer with parts and its own `lines` is drawn as one more cell; its `span` sizes that cell.
 - A part's channel follows its health, and is never set by hand: RAPP/1 (the LTS release) when it is in force; newest, not in RAPP/1 yet, for any other word; outside knowledge (own shape) ships in neither.
 - `phase` is the lock-in phase that closes a gap, 1 to 5, and `who` acts on it: you, engineering, spec owner or estate owner. `blocks` names the layer or part the gap holds back. Each layer's status is `in RAPP/1`, `N to graduate` (those gaps, plus its newest parts that no gap covers) or `nothing to graduate`.

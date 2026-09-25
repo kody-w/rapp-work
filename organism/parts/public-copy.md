@@ -12,5 +12,5 @@ lines:
 ---
 A public copy is a separate repository. It holds exactly the files the members approved, plus `PUBLISHED.md`.
 
-- Anyone can run `check-public` to verify it.
+- Anyone can run `check-public` to check that it holds exactly the files `PUBLISHED.md` lists. With `--hive`, a member also checks the signers and the approved manifest.
 - The Hive itself never becomes public.

@@ -2,7 +2,7 @@
 name: Private Hive
 layer: 3
 order: 2
-role: "The `rapp-hive/1` Private Hive: the organization's one Hive today (one `hive_rappid`), with one owner"
+role: "The `rapp-hive/1` Private Hive: the only kind of Hive an organization can bind (one `hive_rappid`), with one owner"
 home: "[`rapp-hive/1`](https://github.com/kody-w/rapp-work/blob/main/protocols/rapp-hive/1/SPEC.md)"
 health: in force
 check:

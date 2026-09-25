@@ -43,8 +43,23 @@ def test_rapp1_holds_only_what_is_in_force() -> None:
         assert (build.channel(box) == "RAPP/1") == (build.status(box["health"]) == "in force"), box["where"]
         assert build.channel(box) != "RAPP/1" or "experimental" not in box["health"], box["where"]
     lanes = {box["name"]: build.channel(box) for box in build.boxes(tree)}
-    assert lanes["Brainstem app"] == "newest" and lanes["Workspaces"] == "RAPP/1"
+    assert lanes["Brainstem app"] == "newest" and lanes["Private Hive"] == "RAPP/1"
     assert lanes["Outside knowledge"] == "outside" and lanes["You"] is None
+    for cells in tree["row"].values():  # every view draws a layer's RAPP/1 cells first, then its newest lane
+        newest = [build.channel(cell) == "newest" for cell in cells]
+        assert newest == sorted(newest), [cell["name"] for cell in cells]
+
+
+def test_every_crossing_is_drawn_with_its_words() -> None:
+    build = builder()
+    tree = build.load(ORGANISM)
+    graph, (_, the_map), svg = build.graph_txt(tree), build.pages(tree)[0], build.svg(build.drawing(tree))
+    flat = " ".join(graph.split())
+    for crossing in tree["crossing"]:
+        words = build.plain(crossing["label"])
+        assert build.html.escape(build.smart(words)) in the_map, crossing["where"]
+        assert build.html.escape(build.smart(words)).split()[0] in svg, crossing["where"]
+        assert words.split()[0] in flat, crossing["where"]
 
 
 @pytest.mark.parametrize(
@@ -58,7 +73,7 @@ def test_rapp1_holds_only_what_is_in_force() -> None:
         ("lock.md", '  - "1: accept or refuse RAPP proposal 0002 (G19), Tier 2 loading: a draft on '
          '`experimental/proposal-0002-tier2-parity`"\n', "", "no phase 1 step in lock.md names G19"),
         ("lock.md", "Public copy, the Brainstem app", "the Brainstem app", "Public copy is not in RAPP/1 yet"),
-        ("parts/workspaces.md", "health: in force", "health: in force; its migration is experimental",
+        ("parts/private-hive.md", "health: in force", "health: in force; its migration is experimental",
          "where nothing is experimental"),
         ("clean-pull.md", '"RAR: 50"', '"RAR: fifty"', "each `mentions` item reads"),
         ("clean-pull.md", "phase: 2", "phase: 3", "no phase 3 step in lock.md says"),

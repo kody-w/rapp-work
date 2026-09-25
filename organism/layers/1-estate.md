@@ -15,6 +15,6 @@ lines:
 An estate is one owner's signed list of what is theirs.
 
 - It says which keys may sign as whom, which protocols are pinned, and which Grail kernel each release scope pins.
-- It lives in the owner's own repository and only grows, one signed entry at a time.
+- It lives where its owner publishes it, usually the owner's own repository, and only grows: each signed version appends entries and raises `registry_seq`.
 - An organization's owner gets their authority from here.
-- No estate declares the Brainstem's kernel yet. RAPP's unsigned `KERNEL_PIN.json` pins its LTS channel at `kody-w/rapp-installer@brainstem-v0.6.9`; the newest release, `brainstem-v0.6.16`, is tracked separately (G15).
+- No estate declares the Brainstem's kernel yet. RAPP's unsigned `KERNEL_PIN.json` pins its LTS channel at `kody-w/rapp-installer@brainstem-v0.6.9`; the newest release, `brainstem-v0.6.16`, is what the installer's `main` ships, and nothing pins it yet (G15).

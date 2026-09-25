@@ -9,9 +9,9 @@ tree:
   - "shared/organism/gaps/: one file per gap"
   - "(your device): references: every estate repo, read-only"
 loop:
-  - "Canon: one fact, once, from its repo"
-  - "Sweep: rapp_check.py, not in the Hive"
-  - "Record: one verdict per repo, signed"
+  - "Canon: one fact, from its repo"
+  - "Sweep: rapp-1's own check"
+  - "Record: one signed verdict"
   - "Fix upstream: the next sweep flips it"
 ---
-**Built locally; public copy: `kody-w/rapp-hive-public`.** Its first sweep ran rapp-1's own `rapp_check.py` over 10 public estate repos: 7 were compliant or clean and 3 showed drift (non-conformant eggs in RAPP and RAR; frozen frames in rapp-model-hive's main that cannot be signature-checked, gap G8). Each verdict is one signed file. **How it scales:** the same one agent and the same rules run the 6-person Contoso model; the sweep covers 317 public RAPP repos.
+**Built locally; public copy: `kody-w/rapp-hive-public`.** Its first sweep ran rapp-1's own `rapp_check.py` over 10 public estate repos: 7 were compliant or clean, and 3 drifted (non-conformant eggs in RAPP and RAR; in rapp-model-hive, frames with no trusted anchor (G8) and four duplicate positions). Each verdict is one file in a signed commit. **How it scales:** one agent and the same rules run the 6-person Contoso model and a 317-repo sweep.

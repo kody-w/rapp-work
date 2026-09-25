@@ -3,7 +3,7 @@ from: folder-hive
 to: organization
 what: “The organization accepted this Hive state”
 authorized_by: "Nothing yet (idea: the owner notarizes the accepted head; G5, G10)"
-home: Canonical `rapp-work/1` §4
+home: Canonical `rapp-work/1` §§1, 4
 health: gap (G10)
 arrow: down
 label: idea (G5, G10)

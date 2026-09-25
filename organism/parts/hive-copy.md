@@ -1,7 +1,7 @@
 ---
 name: Hive copy
 layer: 4
-order: 2
+order: 3
 role: Your copy of each Hive; its `members/<you>/` is shared, and every member can read it
 home: The Hive agent's private state (`<hive>/.git/rapp-hive/`)
 health: experimental

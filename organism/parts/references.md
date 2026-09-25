@@ -1,7 +1,7 @@
 ---
 name: References
 layer: 4
-order: 1
+order: 2
 role: Read-only pointers to outside knowledge, never run, synced or changed
 home: Hive folder convention, “References”
 health: experimental
