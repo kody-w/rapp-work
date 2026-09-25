@@ -4,7 +4,7 @@ to: folder-hive
 what: One signed copy stamped with `brought_from` and `brought_sha256`
 authorized_by: Your signature; the plan says it will be visible to the Hive's members
 home: Hive folder convention
-health: experimental; building, not yet in HIVE-MD.md
+health: experimental
 arrow: down
 label: "bring: one signed copy + provenance"
 ---

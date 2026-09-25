@@ -9,3 +9,4 @@ upstream: Changes to canonical bytes need an upstream revision in `kody-w/rapp-1
 - **Propose, confirm, apply.** Every change is proposed, confirmed in a later turn, and applied as one exact step (a signed commit, inside a Hive).
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
 - **The Brainstem is the one surface you talk to.** Every other layer is plumbing.
+- **Only top-level `agents/*_agent.py` files are live.** Every folder is organization: loading or unloading an agent is a file move, a drag and drop. The Grail kernel's `load_agents()` is a flat glob (`kody-w/rapp-installer` `rapp_brainstem/brainstem.py`, lines 1202–1205 at `brainstem-v0.6.9`).

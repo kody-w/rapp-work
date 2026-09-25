@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1400" viewBox="0 0 1500 1400" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1628" height="1440" viewBox="0 0 1628 1440" font-family="Helvetica, Arial, sans-serif">
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker>
 <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c92a2a"/></marker>
 <marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#868e96"/></marker>
 </defs>
-<rect x="0" y="0" width="1500" height="1400" fill="#ffffff"/>
-<text x="30" y="52" font-size="30" font-weight="700">The RAPP/1 organism, bottom to top</text>
-<text x="30" y="84" font-size="15">Center: the layers, from bytes (0, bottom) to you (6, top). Left: what comes in. Right: what goes out or across.</text>
+<rect x="0" y="0" width="1628" height="1440" fill="#ffffff"/>
+<text x="30" y="52" font-size="30" font-weight="700">The RAPP/1 organism, top to bottom</text>
+<text x="30" y="84" font-size="15">Center: the layers, from you (6, top) down to bytes (0, bottom). Left: what comes in. Right: what goes out or across.</text>
 <rect x="990" y="18" width="90" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
 <text x="1035" y="33" font-size="12" text-anchor="middle">in force</text>
 <rect x="1087" y="18" width="90" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
@@ -38,139 +38,166 @@
 <text x="384" y="186" font-size="13.5">Talk to your Brainstem. Every change is shown to you in plain words first.</text>
 <text x="384" y="206" font-size="13.5">Nothing applies until you confirm the exact plan in a later turn.</text>
 <text x="384" y="226" font-size="13.5">“Give me my Brainstem.”</text>
-<rect x="370" y="312" width="760" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
+<rect x="362" y="304" width="776" height="174" rx="14" fill="none" stroke="#e67700" stroke-width="2" stroke-dasharray="6 4"/>
 <circle cx="348" cy="342" r="14" fill="#e67700"/>
 <text x="348" y="347" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">5</text>
-<text x="384" y="340" font-size="17" font-weight="700">Brainstem — the one surface you talk to</text>
-<text x="384" y="366" font-size="13.5">Your own AI: frozen Grail kernel · hot-loaded agents (the Hive agent is one file) · soul · memory</text>
-<text x="384" y="386" font-size="13.5">It proposes; you decide. A Hive is never its agents folder or its soul.</text>
-<text x="384" y="406" font-size="13.5">Home: kody-w/RAPP, with the kernel pinned to kody-w/rapp-installer@brainstem-v0.6.9</text>
+<rect x="370" y="312" width="240" height="158" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
+<text x="384" y="340" font-size="17" font-weight="700">Brainstem app</text>
+<text x="384" y="366" font-size="13.5">drag agents in and out of the top of</text>
+<text x="384" y="386" font-size="13.5">agents/</text>
+<text x="384" y="406" font-size="13.5">agent and memory cards</text>
+<text x="384" y="426" font-size="13.5">your Brainstem’s chat</text>
+<rect x="495" y="438" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="548" y="453" font-size="12" text-anchor="middle">experimental</text>
+<rect x="630" y="312" width="500" height="158" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
+<text x="644" y="340" font-size="17" font-weight="700">Brainstem — the one surface you talk to</text>
+<text x="644" y="366" font-size="13.5">Your own AI: frozen Grail kernel · hot-loaded agents · soul · memory</text>
+<text x="644" y="386" font-size="13.5">only top-level agents/*_agent.py are live</text>
+<text x="644" y="406" font-size="13.5">It proposes; you decide. A Hive is never its agents folder or soul.</text>
+<text x="644" y="426" font-size="13.5">Home: kody-w/RAPP, with the kernel pinned to</text>
+<text x="644" y="446" font-size="13.5">kody-w/rapp-installer@brainstem-v0.6.9</text>
 <rect x="1045" y="322" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
 <text x="1082" y="337" font-size="12" text-anchor="middle">in force</text>
-<rect x="362" y="484" width="776" height="134" rx="14" fill="none" stroke="#e67700" stroke-width="2" stroke-dasharray="6 4"/>
-<circle cx="348" cy="522" r="14" fill="#e67700"/>
-<text x="348" y="527" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">4</text>
-<rect x="370" y="492" width="240" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
-<text x="384" y="520" font-size="17" font-weight="700">References</text>
-<text x="384" y="546" font-size="13.5">read-only pointers</text>
-<text x="384" y="566" font-size="13.5">never run</text>
-<text x="384" y="586" font-size="13.5">read as data</text>
-<rect x="495" y="502" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
-<text x="548" y="517" font-size="12" text-anchor="middle">experimental</text>
-<rect x="630" y="492" width="240" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
-<text x="644" y="520" font-size="17" font-weight="700">Hive copy</text>
-<text x="644" y="546" font-size="13.5">your copy of each Hive</text>
-<text x="644" y="566" font-size="13.5">your space is shared</text>
-<text x="644" y="586" font-size="13.5">one key per device</text>
-<rect x="755" y="502" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
-<text x="808" y="517" font-size="12" text-anchor="middle">experimental</text>
-<rect x="890" y="492" width="240" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
-<text x="904" y="520" font-size="17" font-weight="700">Workspaces</text>
-<text x="904" y="546" font-size="13.5">private GODD</text>
-<text x="904" y="566" font-size="13.5">local-first</text>
-<text x="904" y="586" font-size="13.5">SDK plans</text>
-<rect x="1045" y="502" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
-<text x="1082" y="517" font-size="12" text-anchor="middle">in force</text>
-<rect x="362" y="664" width="776" height="134" rx="14" fill="none" stroke="#2f9e44" stroke-width="2" stroke-dasharray="6 4"/>
-<circle cx="348" cy="702" r="14" fill="#2f9e44"/>
-<text x="348" y="707" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">3</text>
-<rect x="370" y="672" width="500" height="118" rx="10" fill="#d3f9d8" stroke="#2f9e44" stroke-width="2"/>
-<text x="384" y="700" font-size="17" font-weight="700">Folder Hive</text>
-<text x="384" y="726" font-size="13.5">HIVE.md · members/ · requests/ · shared/ · former/ · no owner inside</text>
-<text x="384" y="746" font-size="13.5">new Hives start at 2 approvals · not bindable yet (G10)</text>
-<rect x="755" y="682" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
-<text x="808" y="697" font-size="12" text-anchor="middle">experimental</text>
-<rect x="890" y="672" width="240" height="118" rx="10" fill="#d3f9d8" stroke="#2f9e44" stroke-width="2"/>
-<text x="904" y="700" font-size="17" font-weight="700">Private Hive</text>
-<text x="904" y="726" font-size="13.5">rapp-hive/1</text>
-<text x="904" y="746" font-size="13.5">one owner</text>
-<text x="904" y="766" font-size="13.5">bound by hive_rappid</text>
-<rect x="1045" y="682" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
-<text x="1082" y="697" font-size="12" text-anchor="middle">in force</text>
-<rect x="370" y="852" width="760" height="118" rx="10" fill="#d0ebff" stroke="#1864ab" stroke-width="2"/>
-<circle cx="348" cy="882" r="14" fill="#1864ab"/>
-<text x="348" y="887" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">2</text>
-<text x="384" y="880" font-size="17" font-weight="700">Organization — the accountable body</text>
-<text x="384" y="906" font-size="13.5">One owner · one world · one policy · one release scope · exactly one Hive</text>
-<text x="384" y="926" font-size="13.5">Body stream: catalog · vector · migration · receipt · observation · rollback</text>
-<text x="384" y="946" font-size="13.5">Home: Canonical rapp-work/1 §§1–9 (pinned by RAPP_WORK_PIN.json)</text>
-<rect x="1037" y="862" width="83" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
-<text x="1078" y="877" font-size="12" text-anchor="middle">specified</text>
-<rect x="370" y="1032" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
-<circle cx="348" cy="1062" r="14" fill="#862e9c"/>
-<text x="348" y="1067" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">1</text>
-<text x="384" y="1060" font-size="17" font-weight="700">Estate — an owner’s signed registry</text>
-<text x="384" y="1086" font-size="13.5">Who may sign as whom · which protocols are pinned · which Grail kernel each release scope pins</text>
-<text x="384" y="1106" font-size="13.5">Append-only · rappid.json · registry.json · owner-anchor.json</text>
-<text x="384" y="1126" font-size="13.5">Home: Each owner’s repository (rappid.json, registry.json)</text>
-<rect x="1045" y="1042" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
-<text x="1082" y="1057" font-size="12" text-anchor="middle">in force</text>
-<rect x="370" y="1212" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
-<circle cx="348" cy="1242" r="14" fill="#862e9c"/>
-<text x="348" y="1247" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">0</text>
-<text x="384" y="1240" font-size="17" font-weight="700">RAPP/1 — bytes and identity</text>
-<text x="384" y="1266" font-size="13.5">RAPPIDs · the eleven-key frame · hashes · Ed25519 (or ES256) signatures · eggs · registries</text>
-<text x="384" y="1286" font-size="13.5">Frozen forms</text>
-<text x="384" y="1306" font-size="13.5">Home: kody-w/rapp-1 SPEC.md</text>
-<rect x="1045" y="1222" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
-<text x="1082" y="1237" font-size="12" text-anchor="middle">in force</text>
-<line x1="750" y1="250" x2="750" y2="312" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
-<text x="762" y="285" font-size="12.5">ask · propose · confirm the exact plan</text>
-<line x1="420" y1="430" x2="420" y2="484" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="432" y="465" font-size="12.5">operates your Hive copies and references</text>
-<line x1="940" y1="430" x2="940" y2="492" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
-<text x="952" y="456" font-size="12.5">SDK operations (not wired to the</text>
-<text x="952" y="474" font-size="12.5">Brainstem yet, G17)</text>
-<line x1="420" y1="610" x2="420" y2="672" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="432" y="645" font-size="12.5">bring: one signed copy + provenance</text>
-<line x1="680" y1="610" x2="680" y2="672" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
-<text x="692" y="645" font-size="12.5">signed commits, verified before checkout</text>
-<line x1="420" y1="790" x2="420" y2="852" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#ahr)"/>
-<text x="432" y="825" font-size="12.5">idea (G5, G10)</text>
-<line x1="940" y1="790" x2="940" y2="852" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="952" y="816" font-size="12.5">work.vector: the accepted Hive</text>
-<text x="952" y="834" font-size="12.5">checkpoint</text>
-<line x1="750" y1="1032" x2="750" y2="970" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="762" y="1005" font-size="12.5">authorizes the owner (estate registry)</text>
-<line x1="750" y1="1212" x2="750" y2="1150" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="762" y="1185" font-size="12.5">RAPP/1 frames · RAPPIDs · registry entries</text>
+<rect x="362" y="524" width="776" height="134" rx="14" fill="none" stroke="#e67700" stroke-width="2" stroke-dasharray="6 4"/>
+<circle cx="348" cy="562" r="14" fill="#e67700"/>
+<text x="348" y="567" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">4</text>
+<rect x="370" y="532" width="240" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
+<text x="384" y="560" font-size="17" font-weight="700">References</text>
+<text x="384" y="586" font-size="13.5">read-only pointers</text>
+<text x="384" y="606" font-size="13.5">never run</text>
+<text x="384" y="626" font-size="13.5">read as data</text>
+<rect x="495" y="542" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="548" y="557" font-size="12" text-anchor="middle">experimental</text>
+<rect x="630" y="532" width="240" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
+<text x="644" y="560" font-size="17" font-weight="700">Hive copy</text>
+<text x="644" y="586" font-size="13.5">your copy of each Hive</text>
+<text x="644" y="606" font-size="13.5">your space is shared</text>
+<text x="644" y="626" font-size="13.5">one key per device</text>
+<rect x="755" y="542" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="808" y="557" font-size="12" text-anchor="middle">experimental</text>
+<rect x="890" y="532" width="240" height="118" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
+<text x="904" y="560" font-size="17" font-weight="700">Workspaces</text>
+<text x="904" y="586" font-size="13.5">private GODD</text>
+<text x="904" y="606" font-size="13.5">local-first</text>
+<text x="904" y="626" font-size="13.5">SDK plans</text>
+<rect x="1045" y="542" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
+<text x="1082" y="557" font-size="12" text-anchor="middle">in force</text>
+<rect x="362" y="704" width="776" height="134" rx="14" fill="none" stroke="#2f9e44" stroke-width="2" stroke-dasharray="6 4"/>
+<circle cx="348" cy="742" r="14" fill="#2f9e44"/>
+<text x="348" y="747" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">3</text>
+<rect x="370" y="712" width="500" height="118" rx="10" fill="#d3f9d8" stroke="#2f9e44" stroke-width="2"/>
+<text x="384" y="740" font-size="17" font-weight="700">Folder Hive</text>
+<text x="384" y="766" font-size="13.5">HIVE.md · members/ · requests/ · shared/ · former/ · no owner inside</text>
+<text x="384" y="786" font-size="13.5">new Hives start at 2 approvals · not bindable yet (G10)</text>
+<rect x="755" y="722" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="808" y="737" font-size="12" text-anchor="middle">experimental</text>
+<rect x="890" y="712" width="240" height="118" rx="10" fill="#d3f9d8" stroke="#2f9e44" stroke-width="2"/>
+<text x="904" y="740" font-size="17" font-weight="700">Private Hive</text>
+<text x="904" y="766" font-size="13.5">rapp-hive/1</text>
+<text x="904" y="786" font-size="13.5">one owner</text>
+<text x="904" y="806" font-size="13.5">bound by hive_rappid</text>
+<rect x="1045" y="722" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
+<text x="1082" y="737" font-size="12" text-anchor="middle">in force</text>
+<rect x="370" y="892" width="760" height="118" rx="10" fill="#d0ebff" stroke="#1864ab" stroke-width="2"/>
+<circle cx="348" cy="922" r="14" fill="#1864ab"/>
+<text x="348" y="927" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">2</text>
+<text x="384" y="920" font-size="17" font-weight="700">Organization — the accountable body</text>
+<text x="384" y="946" font-size="13.5">One owner · one world · one policy · one release scope · exactly one Hive</text>
+<text x="384" y="966" font-size="13.5">Body stream: catalog · vector · migration · receipt · observation · rollback</text>
+<text x="384" y="986" font-size="13.5">Home: Canonical rapp-work/1 §§1–9 (pinned by RAPP_WORK_PIN.json)</text>
+<rect x="1037" y="902" width="83" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
+<text x="1078" y="917" font-size="12" text-anchor="middle">specified</text>
+<rect x="370" y="1072" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
+<circle cx="348" cy="1102" r="14" fill="#862e9c"/>
+<text x="348" y="1107" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">1</text>
+<text x="384" y="1100" font-size="17" font-weight="700">Estate — an owner’s signed registry</text>
+<text x="384" y="1126" font-size="13.5">Who may sign as whom · which protocols are pinned · which Grail kernel each release scope pins</text>
+<text x="384" y="1146" font-size="13.5">Append-only · rappid.json · registry.json · owner-anchor.json</text>
+<text x="384" y="1166" font-size="13.5">Home: Each owner’s repository (rappid.json, registry.json)</text>
+<rect x="1045" y="1082" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
+<text x="1082" y="1097" font-size="12" text-anchor="middle">in force</text>
+<rect x="370" y="1252" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
+<circle cx="348" cy="1282" r="14" fill="#862e9c"/>
+<text x="348" y="1287" font-size="14" font-weight="700" text-anchor="middle" fill="#ffffff">0</text>
+<text x="384" y="1280" font-size="17" font-weight="700">RAPP/1 — bytes and identity</text>
+<text x="384" y="1306" font-size="13.5">RAPPIDs · the eleven-key frame · hashes · Ed25519 (or ES256) signatures · eggs · registries</text>
+<text x="384" y="1326" font-size="13.5">Frozen forms</text>
+<text x="384" y="1346" font-size="13.5">Home: kody-w/rapp-1 SPEC.md</text>
+<rect x="1045" y="1262" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
+<text x="1082" y="1277" font-size="12" text-anchor="middle">in force</text>
+<rect x="1492" y="1299" width="106" height="24" rx="12" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="1545" y="1315" font-size="12.5" text-anchor="middle">in force</text>
+<rect x="1492" y="1119" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
+<text x="1545" y="1135" font-size="12.5" font-weight="700" text-anchor="middle">1 to lock</text>
+<rect x="1492" y="939" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
+<text x="1545" y="955" font-size="12.5" font-weight="700" text-anchor="middle">4 to lock</text>
+<rect x="1492" y="759" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
+<text x="1545" y="775" font-size="12.5" font-weight="700" text-anchor="middle">6 to lock</text>
+<rect x="1492" y="579" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
+<text x="1545" y="595" font-size="12.5" font-weight="700" text-anchor="middle">7 to lock</text>
+<rect x="1492" y="379" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
+<text x="1545" y="395" font-size="12.5" font-weight="700" text-anchor="middle">5 to lock</text>
+<rect x="1492" y="179" width="106" height="24" rx="12" fill="#e9ecef" stroke="#868e96" stroke-width="1.5"/>
+<text x="1545" y="195" font-size="12.5" text-anchor="middle">nothing to lock</text>
+<text x="1545" y="118" font-size="12.5" text-anchor="middle" fill="#495057">to lock RAPP/1</text>
+<line x1="680" y1="250" x2="680" y2="312" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text x="692" y="285" font-size="12.5">ask · propose · confirm the exact plan</text>
+<line x1="680" y1="470" x2="680" y2="524" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="692" y="496" font-size="12.5">operates your Hive copies and</text>
+<text x="692" y="514" font-size="12.5">references</text>
+<line x1="940" y1="470" x2="940" y2="532" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text x="952" y="496" font-size="12.5">SDK operations (not wired to the</text>
+<text x="952" y="514" font-size="12.5">Brainstem yet, G17)</text>
+<line x1="420" y1="650" x2="420" y2="712" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="432" y="685" font-size="12.5">bring: one signed copy + provenance</text>
+<line x1="680" y1="650" x2="680" y2="712" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
+<text x="692" y="685" font-size="12.5">signed commits, verified before checkout</text>
+<line x1="420" y1="830" x2="420" y2="892" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#ahr)"/>
+<text x="432" y="865" font-size="12.5">idea (G5, G10)</text>
+<line x1="940" y1="830" x2="940" y2="892" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="952" y="856" font-size="12.5">work.vector: the accepted Hive</text>
+<text x="952" y="874" font-size="12.5">checkpoint</text>
+<line x1="750" y1="1072" x2="750" y2="1010" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="762" y="1045" font-size="12.5">authorizes the owner (estate registry)</text>
+<line x1="750" y1="1252" x2="750" y2="1190" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="762" y="1225" font-size="12.5">RAPP/1 frames · RAPPIDs · registry entries</text>
 <rect x="30" y="312" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
 <text x="44" y="340" font-size="17" font-weight="700">RAR</text>
 <text x="44" y="366" font-size="13.5">one-file agents, read first</text>
 <text x="44" y="386" font-size="13.5">you copy one into agents/</text>
 <rect x="245" y="322" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
 <text x="282" y="337" font-size="12" text-anchor="middle">in force</text>
-<rect x="30" y="492" width="300" height="270" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
-<text x="44" y="520" font-size="17" font-weight="700">Outside knowledge</text>
-<text x="44" y="546" font-size="13.5">old Hives · second brains · wikis</text>
-<text x="44" y="566" font-size="13.5">vaults · docs · other AI tools</text>
-<rect x="237" y="502" width="83" height="22" rx="11" fill="#dee2e6" stroke="#495057" stroke-width="1"/>
-<text x="278" y="517" font-size="12" text-anchor="middle">own shape</text>
-<rect x="1170" y="623" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
-<text x="1184" y="651" font-size="17" font-weight="700">Public copy</text>
-<text x="1184" y="677" font-size="13.5">exactly the approved files</text>
-<text x="1184" y="697" font-size="13.5">PUBLISHED.md · check-public</text>
-<rect x="1355" y="633" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
-<text x="1408" y="648" font-size="12" text-anchor="middle">experimental</text>
-<rect x="1170" y="741" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
-<text x="1184" y="769" font-size="17" font-weight="700">Hive Mind</text>
-<text x="1184" y="795" font-size="13.5">other organizations’ Hives, by agreement only</text>
-<text x="1184" y="815" font-size="13.5">rapp-federation/1 · Hive Hub cards</text>
-<rect x="1377" y="751" width="83" height="22" rx="11" fill="#fff3bf" stroke="#f08c00" stroke-width="1"/>
-<text x="1418" y="766" font-size="12" text-anchor="middle">candidate</text>
-<rect x="1170" y="859" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
-<text x="1184" y="887" font-size="17" font-weight="700">Release rings</text>
-<text x="1184" y="913" font-size="13.5">canary → nightly → alpha → beta → grail</text>
-<text x="1184" y="933" font-size="13.5">rapp-cicd/1 · rapp-deploy/1</text>
-<rect x="1377" y="869" width="83" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
-<text x="1418" y="884" font-size="12" text-anchor="middle">specified</text>
-<line x1="330" y1="380" x2="370" y2="380" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<line x1="330" y1="588" x2="362" y2="588" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="287" y="583" font-size="11" fill="#495057">pinned</text>
-<line x1="1138" y1="692" x2="1170" y2="692" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<line x1="330" y1="732" x2="370" y2="732" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="206" y="727" font-size="11" fill="#495057">carried signed requests</text>
-<line x1="1130" y1="765" x2="1170" y2="765" stroke="#868e96" stroke-width="2.5" stroke-dasharray="5 5" marker-start="url(#ahg)" marker-end="url(#ahg)"/>
-<line x1="1170" y1="908" x2="1130" y2="908" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="30" y="1370" font-size="12.5" fill="#495057">Drawn from the organism/ tree by tools/build.py · the tree is the source; this picture is a view · health words: health.md · experimental</text>
+<rect x="30" y="532" width="300" height="270" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="44" y="560" font-size="17" font-weight="700">Outside knowledge</text>
+<text x="44" y="586" font-size="13.5">old Hives · second brains · wikis</text>
+<text x="44" y="606" font-size="13.5">vaults · docs · other AI tools</text>
+<rect x="237" y="542" width="83" height="22" rx="11" fill="#dee2e6" stroke="#495057" stroke-width="1"/>
+<text x="278" y="557" font-size="12" text-anchor="middle">own shape</text>
+<rect x="1170" y="663" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1184" y="691" font-size="17" font-weight="700">Public copy</text>
+<text x="1184" y="717" font-size="13.5">exactly the approved files</text>
+<text x="1184" y="737" font-size="13.5">PUBLISHED.md · check-public</text>
+<rect x="1355" y="673" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="1408" y="688" font-size="12" text-anchor="middle">experimental</text>
+<rect x="1170" y="781" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1184" y="809" font-size="17" font-weight="700">Hive Mind</text>
+<text x="1184" y="835" font-size="13.5">other organizations’ Hives, by agreement only</text>
+<text x="1184" y="855" font-size="13.5">rapp-federation/1 · Hive Hub cards</text>
+<rect x="1377" y="791" width="83" height="22" rx="11" fill="#fff3bf" stroke="#f08c00" stroke-width="1"/>
+<text x="1418" y="806" font-size="12" text-anchor="middle">candidate</text>
+<rect x="1170" y="899" width="300" height="98" rx="10" fill="#e9ecef" stroke="#495057" stroke-width="2"/>
+<text x="1184" y="927" font-size="17" font-weight="700">Release rings</text>
+<text x="1184" y="953" font-size="13.5">canary → nightly → alpha → beta → grail</text>
+<text x="1184" y="973" font-size="13.5">rapp-cicd/1 · rapp-deploy/1</text>
+<rect x="1377" y="909" width="83" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
+<text x="1418" y="924" font-size="12" text-anchor="middle">specified</text>
+<line x1="330" y1="380" x2="362" y2="380" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<line x1="330" y1="628" x2="362" y2="628" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="287" y="623" font-size="11" fill="#495057">pinned</text>
+<line x1="1138" y1="732" x2="1170" y2="732" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<line x1="330" y1="772" x2="370" y2="772" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="206" y="767" font-size="11" fill="#495057">carried signed requests</text>
+<line x1="1130" y1="805" x2="1170" y2="805" stroke="#868e96" stroke-width="2.5" stroke-dasharray="5 5" marker-start="url(#ahg)" marker-end="url(#ahg)"/>
+<line x1="1170" y1="948" x2="1130" y2="948" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="30" y="1410" font-size="12.5" fill="#495057">Drawn from the organism/ tree by tools/build.py · the tree is the source; this picture is a view · health words: health.md · experimental</text>
 </svg>

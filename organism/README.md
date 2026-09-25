@@ -11,12 +11,13 @@ It is experimental. Specifications decide; the organism only points at them.
 | `parts/` | Parts inside a layer, and parts beside the stack |
 | `crossings/` | How anything moves between layers, one crossing per file |
 | `journeys/` | E1 to E7: end to end, through every layer |
-| `gaps/` | G01 to G17: what is still open |
+| `gaps/` | G01 to G22: what is still open, and which lock-in phase closes each |
 | `invariants.md` | What holds everywhere |
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
 | `health.md` | The health words every `health` and `status` starts with |
 | `glossary.md` | The other words this map uses, one per line |
-| `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html` and `one-page.pdf` |
+| `lock.md` | The path to a locked RAPP/1: what locked means, and five phases of steps |
+| `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html`, `lock-in.html`, and their printed `one-page.pdf`, `lock-in.pdf` and `rapp-lock-in.pdf` (both pages) |
 | `tools/build.py` | The builder: Python 3.10 or newer, standard library only |
 
 ## Pull a fresh copy
@@ -44,6 +45,7 @@ Each of these gets you this folder from the `experimental/rapp-work-constitution
 ## View it
 
 - Open `views/one-page.html` in a browser. It prints on one US Letter landscape page.
+- Open `views/lock-in.html` for the path to a locked RAPP/1: the owner's decisions first, then five phases, each layer's lock status and every gap. `views/rapp-lock-in.pdf` holds both pages.
 - Read `views/graph.txt` in a terminal, or `ORGANISM.md` for the graph with every table.
 - Open `views/organism.svg` for the drawing, or load `views/organism.excalidraw` in [Excalidraw](https://excalidraw.com).
 
@@ -74,27 +76,30 @@ A public copy is a separate repository. It holds exactly the files the members a
 
   ```bash
   python3 tools/build.py          # writes ORGANISM.md and views/
-  python3 tools/build.py --pdf    # also prints views/one-page.pdf, when Chrome or Chromium is installed
+  python3 tools/build.py --pdf    # also prints the PDFs in views/, when Chrome or Chromium is installed
   ```
 
-The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, or a value that would break the frontmatter.
+The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, a gap with a bad `phase`, `who` or `blocks`, a gap that no `lock.md` step of its phase names, a page that prints on more than one sheet, or a value that would break the frontmatter.
 
 | File | Fields (optional ones in brackets) |
 |---|---|
-| `layers/<n>-<id>.md` | `layer`, `name`, `role`, `decides`, `signed_with`, `home`, `health`, `color`, [`lines`, `check`] |
+| `layers/<n>-<id>.md` | `layer`, `name`, `role`, `decides`, `signed_with`, `home`, `health`, `color`, [`span`, `lines`, `check`] |
 | `parts/<id>.md` | `name`, `role`, `home`, `health`, and either `layer` or `column` with `beside`; [`order`, `span`, `lines`, `check`] |
 | `crossings/<id>.md` | `from`, `to`, `what`, `authorized_by`, `home`, `health`, `arrow`, `label` |
-| `gaps/G<nn>.md` | `id`, `gap`, `home`, `fix`, `status` |
+| `gaps/G<nn>.md` | `id`, `gap`, `home`, `fix`, `status`, `phase`, `who`, `blocks` |
 | `journeys/E<n>.md` | `id`, `title`; the steps are the body's `- ` lines |
 | `invariants.md` | `healthy`, `upstream`; each rule is a body line `- **Lead.** More words.` |
 | `dogfood.md` | `name`, `health`, `tree`, `loop` |
 | `health.md`, `glossary.md` | `name`; each word is a body line `- **word:** meaning` |
+| `lock.md` | `name`, `locked_when`, `phases` (`Title: who` or `Title: who, note`), `steps` (`<phase>: words`) |
 
 - `health` and `status` start with a word from `health.md`: in force, specified, experimental, candidate, planned, gap, idea, open, proposed or own shape. Words after it are notes. `—` means none.
 - `color` is an Open Color family: gray, orange, green, blue or purple.
 - `column` is in, out or across. `beside` and `layer` are layer numbers.
 - `arrow` is down, up or both inside the stack; in, out or both beside it. It must point from `from` to `to`, so every arrow reads like its row.
-- `span` sets how much of its layer's width a part inside it takes (default 1).
+- `span` sets how much of its layer's width a part inside it takes (default 1). A layer with parts and its own `lines` is drawn as one more cell; its `span` sizes that cell.
+- `phase` is the lock-in phase that closes a gap, 1 to 5, and `who` acts on it: you, engineering, spec owner or estate owner. `blocks` names the layer or part the gap holds back. Each layer's lock status counts those gaps, plus its parts not in force that no gap covers.
+- Every gap must be named by a `lock.md` step of its own phase, and every phase needs a step.
 - `lines` are the words drawn in a box. A layer `role` that starts with a short phrase and a colon gives the box its title.
 - Wrap a value in double quotes when it holds `: ` or starts with a sign such as `` ` ``, `[` or `"`, so the frontmatter stays valid YAML.
 
@@ -104,7 +109,7 @@ The builder refuses with the file and the fix when something is wrong: an unknow
 python3 tools/build.py --check
 ```
 
-It rebuilds every view in memory and exits 1 if any generated file differs from the tree. The PDF is left out, because Chrome stamps the time into it.
+It rebuilds every view in memory and exits 1 if any generated file differs from the tree. The PDFs are left out, because Chrome stamps the time into them. `--pdf` checks their page counts instead: one sheet for each page.
 
 Inside `kody-w/rapp-work`, the builder also keeps `../ECOSYSTEM.md`, the long-form map, generated from the same tree. It touches that file only when it already starts with the generated-file marker, so a copy anywhere else never writes outside its own folder.
 

@@ -9,6 +9,8 @@
 - Added `organism/`, a pullable template of that organism: one markdown file per fact and a
   standard-library builder that generates `ECOSYSTEM.md`, the genome `organism/ORGANISM.md` and
   every view (the graph moved from `docs/ecosystem.*` to `organism/views/`).
+- The organism shows the path to a locked RAPP/1: each layer's lock status, five phases
+  with who acts, and a printable lock-in page (`organism/views/lock-in.html`).
 
 ## 1.0.0 — 2026-09-18
 

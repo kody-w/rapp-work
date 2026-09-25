@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The path to a locked RAPP/1</title>
+<!-- Generated from organism/ by tools/build.py. Edit the part files and rebuild. -->
+<style>
+@page { size: 11in 8.5in; margin: 0.28in; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; font-size: 7.4pt; line-height: 1.2;
+       -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width: 10.44in; min-height: 7.9in; display: flex; flex-direction: column; gap: 0.06in; }
+header { display: flex; align-items: flex-end; justify-content: space-between; }
+h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
+.sub { font-size: 8.2pt; color: #333; margin-top: 2px; }
+.legend { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; font-size: 7pt; white-space: nowrap; }
+.chip { display: inline-block; border: 1px solid; border-radius: 9px; padding: 0 6px; font-size: 6.4pt; line-height: 1.45;
+        white-space: nowrap; font-weight: 600; }
+.dash { display: inline-block; width: 18px; border-top: 2px dashed #868e96; vertical-align: middle; margin: 0 2px 0 4px; }
+.dash.red { border-top-color: #c92a2a; }
+.org { display: grid; grid-template-columns: 1.9in 1fr 2.3in; column-gap: 0.13in; }
+.layer, .side, .cell { position: relative; }
+.layer { border: 1.6px solid var(--s); background: var(--f); border-radius: 7px; padding: 2px 7px 3px 7px; }
+.h { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
+.h .chip { flex: none; margin-top: 1px; }
+.t { font-weight: 700; font-size: 7.9pt; } .layer .t, .device .t { font-size: 8.4pt; }
+.n { display: inline-block; width: 14px; height: 14px; border-radius: 50%; color: #fff; background: var(--s);
+     text-align: center; font-size: 7.2pt; line-height: 14px; margin-right: 5px; font-weight: 700; }
+.device { border: 1.6px dashed var(--s); border-radius: 8px; padding: 2px 5px 4px 5px; }
+.cells { display: grid; gap: 5px; margin-top: 2px; }
+.cell { background: var(--f); border: 1.4px solid var(--s); border-radius: 6px; padding: 2px 6px 3px 6px; }
+.conn { font-size: 6.9pt; color: #222; min-height: 0.14in; display: flex; align-items: center; justify-content: center;
+        gap: 0.4in; }
+.conn b { font-size: 8.6pt; color: #343a40; margin-right: 3px; }
+.conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; }
+.side { border: 1.4px solid #495057; background: #f1f3f5; border-radius: 7px; padding: 2px 7px 3px 7px; font-size: 7.1pt; }
+.side[data-a]::after { content: attr(data-a); position: absolute; top: 34%; font-size: 12pt; color: #343a40; font-weight: 700; }
+.side.in[data-a]::after { right: -0.145in; } .side.out[data-a]::after { left: -0.155in; }
+.bottom { display: grid; grid-template-columns: 1.62fr 1fr 0.9fr; gap: 0.1in; flex: 1; }
+.panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
+.panel h2 { font-size: 9pt; margin: 0 0 3px 0; display: flex; align-items: center; justify-content: space-between; }
+pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt; line-height: 1.25; margin: 2px 0 4px 0;
+           background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 3px 5px; white-space: pre; }
+.loop { display: flex; align-items: stretch; gap: 2px; margin: 3px 0; }
+.step { flex: 1; border: 1.3px solid #2f9e44; background: #ebfbee; border-radius: 6px; padding: 2px 3px; font-size: 6.4pt; }
+.step b { display: block; font-size: 7pt; }
+.loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; }
+code { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 94%; }
+ul.inv { margin: 0; padding-left: 12px; font-size: 7.1pt; } ul.inv li { margin: 0 0 2px 0; }
+footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-between; gap: 0.3in; }
+.lock { background: #fff; border-color: #495057; } .lock.done { background: #b2f2bb; border-color: #2f9e44; }
+.lock.none { background: #e9ecef; border-color: #868e96; font-weight: 500; }
+.h .chips { display: flex; gap: 3px; flex: none; }
+.plan .ph { padding: 2px 4px 1px 4px; border-bottom: 1px solid #edf0f2; } .plan .ph.you { background: #fff4e6; }
+.plan .who { color: #495057; } .plan .gs { display: inline-block; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
+.g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
+     font-weight: 700; margin: 0 1px 1px 0; }
+.lockin h1 { font-size: 17pt; } .lockin .panel { font-size: 8.2pt; } .lockin .panel h2 { font-size: 10pt; }
+.decide { border: 2px solid #e67700; background: #fff4e6; border-radius: 9px; padding: 5px 10px 6px 10px; }
+.decide h2 { font-size: 10pt; margin: 0 0 3px 0; }
+.decide ol { margin: 0; padding-left: 16px; display: grid; grid-template-columns: max-content 1fr; grid-auto-flow: column;
+             column-gap: 0.6in; font-size: 8.6pt; }
+.decide li { display: list-item; margin: 0 0 2px 0; }
+.two { display: grid; grid-template-columns: 1fr 1.25fr; gap: 0.12in; }
+.two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
+table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
+table.status td { padding: 1.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.status td:first-child { width: 1.25in; white-space: nowrap; } table.status td:nth-child(2) { width: 0.85in; }
+.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.1in; }
+.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px 5px 8px; background: #fcfcfd; font-size: 8.4pt; }
+.phase h3 { font-size: 10pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
+.phase ul { margin: 0 0 3px 0; padding-left: 12px; } .phase li { margin: 0 0 1.5px 0; }
+.register { display: grid; grid-template-columns: 1.12fr 1fr; column-gap: 0.25in; align-items: start; }
+table.reg { border-collapse: collapse; width: 100%; font-size: 7.7pt; line-height: 1.2; }
+table.reg td { padding: 2px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.reg td:first-child { font-weight: 700; width: 28px; } table.reg td:nth-child(3) { width: 66px; }
+table.reg td:last-child { text-align: right; white-space: nowrap; width: 90px; color: #343a40; }
+table.reg .chip { font-size: 6.2pt; line-height: 1.25; }
+.s-in-force { background: #b2f2bb; border-color: #2f9e44; }
+.s-specified { background: #c5f6fa; border-color: #0c8599; }
+.s-experimental { background: #ffe8cc; border-color: #e67700; }
+.s-candidate { background: #fff3bf; border-color: #f08c00; }
+.s-planned { background: #e5dbff; border-color: #6741d9; }
+.s-gap { background: #ffc9c9; border-color: #c92a2a; }
+.s-idea { background: #ffdeeb; border-color: #a61e4d; }
+.s-open { background: #e9ecef; border-color: #868e96; }
+.s-proposed { background: #dbe4ff; border-color: #3b5bdb; }
+.s-own-shape { background: #dee2e6; border-color: #495057; }
+.f-gray { --s: #495057; --f: #e9ecef; }
+.f-orange { --s: #e67700; --f: #fff3bf; }
+.f-green { --s: #2f9e44; --f: #d3f9d8; }
+.f-blue { --s: #1864ab; --f: #d0ebff; }
+.f-purple { --s: #862e9c; --f: #f3d9fa; }
+.page + .page { break-before: page; }
+</style>
+</head>
+<body>
+<div class="page lockin">
+<header><div><h1>The path to a locked RAPP/1</h1><div class="sub">What we need to do to lock in a full RAPP/1: five phases, in order, with the owner’s decisions first.</div></div><div class="legend"><div><span class="chip s-in-force">in force</span> <span class="chip s-specified">specified</span> <span class="chip s-experimental">experimental</span> <span class="dash"></span><span class="chip s-candidate">candidate</span> <span class="chip s-planned">planned</span></div><div><span class="dash red"></span><span class="chip s-gap">gap</span> <span class="chip s-idea">idea</span> <span class="chip s-open">open</span> <span class="chip s-proposed">proposed</span> <span class="chip s-own-shape">own shape</span></div></div></header>
+<section class="decide"><h2>Your decisions first · phase 1, Decide · you, about an hour</h2>
+<ol style="grid-template-rows: repeat(3, auto)"><li>merge RAPP proposal 0001 (G18)</li><li>pick the kernel to lock (G21)</li><li>decide Tier 2 loader parity (G19)</li><li>ratify the RAPP Work Constitution, with its Part V proposals (G8, G9)</li><li>choose the experimental parts in the lock: Folder Hive and its public copy, References, Hub cards, Brainstem app</li></ol></section>
+<section class="two">
+<div class="panel"><h2>RAPP/1 is locked when</h2><ul><li>every normative specification in the stack is frozen at a version and pinned in one signed estate registry</li><li>each one is in force</li><li>the estate sweep shows zero drift</li><li>every gap is closed, or deferred to a later RAPP with the owner’s sign-off</li><li>the Constitutions are ratified</li><li>every experimental part has graduated through the rings, or is marked as outside the lock</li></ul></div>
+<div class="panel"><h2>Lock status by layer, top to bottom</h2><table class="status"><tr><td><b>6 You</b></td><td><span class="chip lock none">nothing to lock</span></td><td></td></tr><tr><td><b>5 Brainstem</b></td><td><span class="chip lock">5 to lock</span></td><td><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G17</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G18</span><span class="g" style="background:#e9ecef;border-color:#868e96">G19</span><span class="g" style="background:#e9ecef;border-color:#868e96">G20</span><span class="g" style="background:#e9ecef;border-color:#868e96">G21</span></td></tr><tr><td><b>4 Your device</b></td><td><span class="chip lock">7 to lock</span></td><td><span class="g" style="background:#e9ecef;border-color:#868e96">G2</span><span class="g" style="background:#e9ecef;border-color:#868e96">G3</span><span class="g" style="background:#e9ecef;border-color:#868e96">G4</span><span class="g" style="background:#e9ecef;border-color:#868e96">G7</span><span class="g" style="background:#ffe8cc;border-color:#e67700">G13</span><span class="g" style="background:#e9ecef;border-color:#868e96">G14</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G22</span></td></tr><tr><td><b>3 Hive</b></td><td><span class="chip lock">6 to lock</span></td><td><span class="g" style="background:#e9ecef;border-color:#868e96">G1</span><span class="g" style="background:#e9ecef;border-color:#868e96">G6</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G8</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G9</span><span class="g" style="background:#ffe8cc;border-color:#e67700">G12</span><span class="g" style="background:#ffe8cc;border-color:#e67700">Public copy</span></td></tr><tr><td><b>2 Organization</b></td><td><span class="chip lock">4 to lock</span></td><td><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G5</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G10</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G11</span><span class="g" style="background:#e9ecef;border-color:#868e96">G16</span></td></tr><tr><td><b>1 Estate</b></td><td><span class="chip lock">1 to lock</span></td><td><span class="g" style="background:#e9ecef;border-color:#868e96">G15</span></td></tr><tr><td><b>0 RAPP/1</b></td><td><span class="chip lock done">in force</span></td><td></td></tr></table></div>
+</section>
+<section class="phases"><div class="phase"><h3>2 · Zero drift</h3><div class="who">engineering</div><ul><li>fix RAPP’s and RAR’s non-conformant eggs, and RAR’s bounded scan</li><li>give rapp-model-hive’s frames a trusted anchor</li><li>re-sweep until all 10 repos are clean (the dogfood)</li></ul><div></div></div><div class="phase"><h3>3 · Close the specification gaps</h3><div class="who">spec owner</div><ul><li>rapp-hive/1 (G1, G6)</li><li>rapp-work-sdk/1 (G2, G3, G4, G7)</li><li>rapp-work/1 (G5, G10, G11, G22)</li></ul><div><span class="g" style="background:#e9ecef;border-color:#868e96">G1</span><span class="g" style="background:#e9ecef;border-color:#868e96">G2</span><span class="g" style="background:#e9ecef;border-color:#868e96">G3</span><span class="g" style="background:#e9ecef;border-color:#868e96">G4</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G5</span><span class="g" style="background:#e9ecef;border-color:#868e96">G6</span><span class="g" style="background:#e9ecef;border-color:#868e96">G7</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G10</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G11</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G22</span></div></div><div class="phase"><h3>4 · Switch it on</h3><div class="who">estate owner</div><ul><li>sign the <code>grail-kernel</code> entry (G15)</li><li>activate rapp-work/1 and its pins, release rings included (G16)</li><li>give the Brainstem an SDK agent (G17)</li></ul><div><span class="g" style="background:#e9ecef;border-color:#868e96">G15</span><span class="g" style="background:#e9ecef;border-color:#868e96">G16</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G17</span></div></div><div class="phase"><h3>5 · Graduate and freeze</h3><div class="who">engineering</div><ul><li>a real team’s week for the Hive agent (G14) and the Brainstem app (G20), then the rings</li><li>graduate Hub cards (G12) and References (G13), or mark them outside the lock</li><li>merge the experimental branches</li><li>tag the lock across repositories</li><li>run the drift sweep on a schedule</li></ul><div><span class="g" style="background:#ffe8cc;border-color:#e67700">G12</span><span class="g" style="background:#ffe8cc;border-color:#e67700">G13</span><span class="g" style="background:#e9ecef;border-color:#868e96">G14</span><span class="g" style="background:#e9ecef;border-color:#868e96">G20</span></div></div></section>
+<section class="panel"><h2>Gap register: each gap, its phase and who acts</h2>
+<div class="register"><table class="reg"><tr><td>G1</td><td>A <code>rapp-hive/1</code> roster can never change</td><td><span class="chip s-open">open</span></td><td>3 · spec owner</td></tr><tr><td>G2</td><td>SDK plans cannot move a file</td><td><span class="chip s-open">open</span></td><td>3 · spec owner</td></tr><tr><td>G3</td><td>SDK discovery misses <code>*_agent.py</code></td><td><span class="chip s-open">open</span></td><td>3 · spec owner</td></tr><tr><td>G4</td><td>SDK migration refuses repository-seeded Hives and long world ids</td><td><span class="chip s-open">open</span></td><td>3 · spec owner</td></tr><tr><td>G5</td><td>One owner only, so co-equal groups do not fit</td><td><span class="chip s-idea">idea</span></td><td>3 · spec owner</td></tr><tr><td>G6</td><td>Implementations refuse owner succession</td><td><span class="chip s-open">open</span></td><td>3 · spec owner</td></tr><tr><td>G7</td><td>SDK verification accepts an edited instruction file</td><td><span class="chip s-open">open</span></td><td>3 · spec owner</td></tr><tr><td>G8</td><td>Hive members are names bound to keys, not RAPPIDs</td><td><span class="chip s-proposed">proposed</span></td><td>1 · you</td></tr><tr><td>G9</td><td>A git commit is not authority in canonical <code>rapp-work/1</code></td><td><span class="chip s-proposed">proposed</span></td><td>1 · you</td></tr><tr><td>G10</td><td>An organization cannot bind a folder Hive</td><td><span class="chip s-idea">idea</span></td><td>3 · spec owner</td></tr><tr><td>G11</td><td>“Organization” means two things</td><td><span class="chip s-idea">idea</span></td><td>3 · spec owner</td></tr></table><table class="reg"><tr><td>G12</td><td>Hive Hub dial records did not describe folder Hives</td><td><span class="chip s-experimental">experimental</span></td><td>5 · engineering</td></tr><tr><td>G13</td><td>Outside knowledge had no way in</td><td><span class="chip s-experimental">experimental</span></td><td>5 · engineering</td></tr><tr><td>G14</td><td>The Hive agent’s path to the production ring</td><td><span class="chip s-open">open</span></td><td>5 · engineering</td></tr><tr><td>G15</td><td>No estate declares the Brainstem’s kernel</td><td><span class="chip s-open">open</span></td><td>4 · estate owner</td></tr><tr><td>G16</td><td>No estate has activated canonical <code>rapp-work/1</code></td><td><span class="chip s-open">open</span></td><td>4 · estate owner</td></tr><tr><td>G17</td><td>The Brainstem does not call the RAPP Work SDK</td><td><span class="chip s-idea">idea</span></td><td>4 · estate owner</td></tr><tr><td>G18</td><td>RAPP’s Constitution said agents load from every folder</td><td><span class="chip s-proposed">proposed</span></td><td>1 · you</td></tr><tr><td>G19</td><td>The cloud Brainstem loads agents differently</td><td><span class="chip s-open">open</span></td><td>1 · you</td></tr><tr><td>G20</td><td>The Brainstem app’s path to the production ring</td><td><span class="chip s-open">open</span></td><td>5 · engineering</td></tr><tr><td>G21</td><td>RAPP’s kernel pin lags the Grail kernel’s newest release</td><td><span class="chip s-open">open</span></td><td>1 · you</td></tr><tr><td>G22</td><td>“Workspace” names two things</td><td><span class="chip s-idea">idea</span></td><td>3 · spec owner</td></tr></table></div></section>
+<footer><span>Experimental map, generated from organism/ · details: ECOSYSTEM.md and CONSTITUTION.md in kody-w/rapp-work, branch experimental/rapp-work-constitution</span><span>Specifications decide; these pages only point at them.</span></footer>
+</div>
+</body>
+</html>

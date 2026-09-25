@@ -187,7 +187,7 @@ helper, and SSH-agent state is not inherited.
 - [`CONSTITUTION.md`](CONSTITUTION.md) — experimental RAPP Work Constitution:
   lessons and pending amendments; not in force until ratified.
 - [`ECOSYSTEM.md`](ECOSYSTEM.md) — experimental map of the RAPP/1 organism,
-  layer by layer, with its graph and gap register.
+  layer by layer, with its graph, gap register and the path to a locked RAPP/1.
 - [`organism/`](organism/) — that organism as a pullable template: a tree of
   markdown files, one fact per file, whose builder generates `ECOSYSTEM.md` and every view.
 

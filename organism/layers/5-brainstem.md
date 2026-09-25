@@ -7,10 +7,12 @@ signed_with: "Nothing by itself: it proposes, you confirm"
 home: "[`kody-w/RAPP`](https://github.com/kody-w/RAPP), with the kernel pinned to `kody-w/rapp-installer@brainstem-v0.6.9`"
 health: in force
 color: orange
+span: 2
 check: Each repository's own test suite and runner
 lines:
-  - "Your own AI: frozen Grail kernel · hot-loaded agents (the Hive agent is one file) · soul · memory"
-  - It proposes; you decide. A Hive is never its agents folder or its soul.
+  - "Your own AI: frozen Grail kernel · hot-loaded agents · soul · memory"
+  - only top-level agents/*_agent.py are live
+  - It proposes; you decide. A Hive is never its agents folder or soul.
 ---
 The Brainstem is your own AI, and the one surface you talk to. Every other layer is plumbing.
 
