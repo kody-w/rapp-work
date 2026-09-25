@@ -11,7 +11,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                                  ▲ ask · propose · confirm the exact plan
                                                  ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ RAR             │           │ 5 · BRAINSTEM                  [4 to lock] │
+│ RAR             │           │ 5 · BRAINSTEM              [4 to graduate] │
 │ one-file        │           │ the one surface you talk to                │
 │ agents, read    │           ├──────────────┬─────────────────────────────┤
 │ first           │─copy in──►│ BRAINSTEM    │ BRAINSTEM                   │
@@ -25,73 +25,77 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                               │ your         │ It proposes; you decide. A  │
                               │ Brainstem's  │ Hive is never its agents    │
                               │ chat         │ folder or soul.             │
-                              │ [exp]        │ [in force]                  │
+                              │ [exp] newest │ [in force]                  │
                               └──────────────┴───┬─────────────────────────┘
                                                  │ operates     ▲ SDK operations (not wired to the
                                                  │ your Hive    │ Brainstem yet, G17)
                                                  │ copies and   │
                                                  ▼ references   ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ OUTSIDE         │           │ 4 · YOUR DEVICE                [7 to lock] │
+│ OUTSIDE         │           │ 4 · YOUR DEVICE            [7 to graduate] │
 │ KNOWLEDGE       │           ├──────────────┬──────────────┬──────────────┤
 │ old Hives ·     │           │ REFERENCES   │ HIVE COPY    │ WORKSPACES   │
 │ second brains · │           │ read-only    │ your copy of │ private GODD │
 │ wikis           │           │ pointers     │ each Hive    │ local-first  │
 │ vaults · docs · │─pinned───►│ never run    │ your space   │ SDK plans    │
 │ other AI tools  │           │ read as data │ is shared    │ [in force]   │
-│ [own shape]     │           │ [exp]        │ one key per  │              │
+│ [own shape]     │           │ [exp] newest │ one key per  │              │
 │                 │           │              │ device       │              │
-│                 │           │              │ [exp]        │              │
+│                 │           │              │ [exp] newest │              │
 │                 │           └───┬──────────┴───┬──────────┴──────────────┘
 │                 │               │ bring: one   ▲ signed commits, verified before checkout
 │                 │               │ signed copy  │
 │  carried signed │               ▼ + provenance ▼
 │        requests │           ┌────────────────────────────────────────────┐  ┌───────────────────┐
-│                 │──────────►│ 3 · HIVE                       [6 to lock] │  │ PUBLIC COPY       │
+│                 │──────────►│ 3 · HIVE                   [6 to graduate] │  │ PUBLIC COPY       │
 └─────────────────┘           │ where the members share work               │  │ exactly the       │
                               ├─────────────────────────────┬──────────────┤  │ approved files    │
                               │ FOLDER HIVE                 │ PRIVATE HIVE │─►│ PUBLISHED.md ·    │
                               │ HIVE.md · members/ ·        │ rapp-hive/1  │  │ check-public      │
-                              │ requests/ · shared/ ·       │ one owner    │  │ [exp]             │
+                              │ requests/ · shared/ ·       │ one owner    │  │ [exp] newest      │
                               │ former/ · no owner inside   │ bound by     │  └───────────────────┘
                               │ new Hives start at 2        │ hive_rappid  │  ┌───────────────────┐
                               │ approvals · not bindable    │ [in force]   │  │ HIVE MIND         │
                               │ yet (G10)                   │              │◄►│ other             │
-                              │ [exp]                       │              │  │ organizations'    │
+                              │ [exp] newest                │              │  │ organizations'    │
                               └───┬─────────────────────────┴──┬───────────┘  │ Hives, by         │
                                   ┊ idea (G5, G10)             │ work.vector: │ agreement only    │
                                   ┊                            │ the accepted │ rapp-federation/1 │
                                   ┊                            │ Hive         │ · Hive Hub cards  │
                                   ▼                            ▼ checkpoint   │ [candidate]       │
-                              ┌────────────────────────────────────────────┐  └───────────────────┘
-                              │ 2 · ORGANIZATION   [specified] [4 to lock] │
-                              │ the accountable body                       │  ┌───────────────────┐
-                              │ One owner · one world · one policy · one   │  │ RELEASE RINGS     │
-                              │ release scope · exactly one Hive           │  │ canary → nightly  │
-                              │ Body stream: catalog · vector ·            │◄─│ → alpha → beta →  │
-                              │ migration · receipt · observation ·        │  │ grail             │
-                              │ rollback                                   │  │ rapp-cicd/1 ·     │
+                              ┌────────────────────────────────────────────┐  │ newest            │
+                              │ 2 · ORGANIZATION           [4 to graduate] │  └───────────────────┘
+                              │ the accountable body                       │
+                              │ One owner · one world · one policy · one   │  ┌───────────────────┐
+                              │ release scope · exactly one Hive           │  │ RELEASE RINGS     │
+                              │ Body stream: catalog · vector ·            │  │ canary → nightly  │
+                              │ migration · receipt · observation ·        │◄─│ → alpha → beta →  │
+                              │ rollback                                   │  │ grail             │
+                              │ [specified] newest                         │  │ rapp-cicd/1 ·     │
                               └────────────────────────────────────────────┘  │ rapp-deploy/1     │
                                                      ▲ authorizes the owner   │ [specified]       │
-                                                     │ (estate registry)      └───────────────────┘
-                              ┌────────────────────────────────────────────┐
-                              │ 1 · ESTATE          [in force] [1 to lock] │
+                                                     │ (estate registry)      │ newest            │
+                              ┌────────────────────────────────────────────┐  └───────────────────┘
+                              │ 1 · ESTATE                 [1 to graduate] │
                               │ an owner's signed registry                 │
                               │ Who may sign as whom · which protocols are │
                               │ pinned · which Grail kernel each release   │
                               │ scope pins                                 │
                               │ Append-only · rappid.json ·                │
                               │ registry.json · owner-anchor.json          │
+                              │ [in force]                                 │
                               └────────────────────────────────────────────┘
                                                      ▲ RAPP/1 frames · RAPPIDs · registry entries
                                                      │
                               ┌────────────────────────────────────────────┐
-                              │ 0 · RAPP/1, bytes and identity  [in force] │
+                              │ 0 · RAPP/1, bytes and identity [in RAPP/1] │
                               │ RAPPIDs · the eleven-key frame · hashes ·  │
                               │ Ed25519 (or ES256) signatures · eggs ·     │
                               │ registries                                 │
                               │ Frozen forms                               │
+                              │ [in force]                                 │
                               └────────────────────────────────────────────┘
 
 health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 [exp] = experimental   ┊ gap: no specification allows it   ╎ candidate   words: health.md
+[in force] = RAPP/1 (LTS) · newest = not in RAPP/1 yet · [N to graduate] = the gaps and parts left

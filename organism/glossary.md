@@ -1,6 +1,8 @@
 ---
 name: Words this map uses
 ---
+- **RAPP/1 (LTS):** the one release people pull; everything in it is in force. One estate release scope pins every component, and it never moves (RAPP/1 §11.1).
+- **Newest:** successor releases, where experiments live until they graduate. Each has its own `release_scope`.
 - **DOGG:** public-safe data: PII-free, and safe to publish anywhere (`rapp-hive/1` §2).
 - **GODD:** private data. It stays local unless its owner selects it (`rapp-hive/1` §2).
 - **frontier track:** the release track where new, experimental agents and profiles start.
@@ -12,6 +14,6 @@ name: Words this map uses
 - **`work.vector`:** the signed `rapp-work/1` frame that records which authenticated `rapp-hive/1` checkpoint an organization accepted.
 - **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
 - **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
-- **LTS and newest:** the Brainstem kernel's two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest release is tracked separately.
+- **LTS and newest kernels:** the Brainstem kernel has the same two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest release is tracked separately.
 - **Grail and grail:** the Grail is the Brainstem's frozen kernel, pinned by its `grail_id` (RAPP/1 §11.1). Lowercase grail is this project's name for a track's production ring.
 - **organism:** RAPP/1 uses it for one running Brainstem with a lasting identity (RAPP/1 §3). This map uses it for the whole ecosystem.

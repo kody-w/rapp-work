@@ -36,9 +36,10 @@ KINDS = {  # where: (kind, required fields, optional fields)
     "dogfood.md": ("dogfood", "name health tree loop", ""),
     "health.md": ("health", "name", ""),
     "glossary.md": ("glossary", "name", ""),
-    "lock.md": ("lock", "name locked_when phases steps", ""),
+    "lock.md": ("lock", "name definition pins cite phases steps", ""),
+    "clean-pull.md": ("pull", "name phase command measured mentions", ""),
 }
-LISTS = {"lines", "check", "tree", "loop", "locked_when", "phases", "steps"}
+LISTS = {"lines", "check", "tree", "loop", "definition", "pins", "phases", "steps", "mentions"}
 STATUS = {  # each word of health.md, the first words of every `health` and `status`: (stroke, fill), Open Color
     "in force": ("#2f9e44", "#b2f2bb"), "specified": ("#0c8599", "#c5f6fa"), "experimental": ("#e67700", "#ffe8cc"),
     "candidate": ("#f08c00", "#fff3bf"), "planned": ("#6741d9", "#e5dbff"), "gap": ("#c92a2a", "#ffc9c9"),
@@ -49,6 +50,7 @@ FAMILY = {  # layer colors, Open Color families: (stroke, fill)
     "gray": ("#495057", "#e9ecef"), "orange": ("#e67700", "#fff3bf"), "green": ("#2f9e44", "#d3f9d8"),
     "blue": ("#1864ab", "#d0ebff"), "purple": ("#862e9c", "#f3d9fa"),
 }
+STRIPE = {"gray": "#ced4da", "orange": "#ffe066", "green": "#8ce99a", "blue": "#a5d8ff", "purple": "#e599f7"}  # newest
 UNSAFE = re.compile(r"""^[][{},#&*!|>'"%@`]|^[-?:] |: | #|:$""")  # plain YAML values cannot hold these
 
 
@@ -127,6 +129,18 @@ def status(value, where="the tree"):
         if value == word or value.startswith((word + " ", word + ";")):
             return word
     return refuse(where, "`health` and `status` start with one of: " + ", ".join(STATUS) + "; or are —")
+
+
+def channel(x):
+    """The release a layer or part ships in, derived from its health: RAPP/1, the LTS release, exactly when it
+    is in force; "outside" for outside knowledge, which keeps its own shape; None for —; else "newest"."""
+    word = status(x["health"], x.get("where", "the tree"))
+    return None if word is None else {"in force": "RAPP/1", "own shape": "outside"}.get(word, "newest")
+
+
+def boxes(t):
+    """Every layer and part drawn as a box of its own. A layer drawn only as a frame speaks through its parts."""
+    return [x for x in t["layer"] if not t["inner"][x["n"]] or x in t["row"][x["n"]]] + t["part"]
 
 
 def validate(t):
@@ -214,11 +228,30 @@ def validate(t):
     for ph in lock["plan"]:
         if not ph["steps"]:
             refuse(lock["where"], f"phase {ph['n']} has no step")
+    pull = t["pull"]
+    if not re.fullmatch(r"[1-5]", pull["phase"]) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", pull["measured"]):
+        refuse(pull["where"], "`phase` is 1 to 5, and `measured` is the date of the count, YYYY-MM-DD")
+    pull["phase"], pull["counts"] = int(pull["phase"]), []
+    for item in pull["mentions"]:
+        m = re.fullmatch(r"(\S+): (\d+)", item)
+        if not m:
+            refuse(pull["where"], "each `mentions` item reads `<repository>: <files that mention it>`")
+        pull["counts"].append((m[1], int(m[2])))
+    if not any(pull["name"].lower() in step.lower() for step in lock["plan"][pull["phase"] - 1]["steps"]):
+        refuse(pull["where"], f"no phase {pull['phase']} step in lock.md says “{pull['name'].lower()}”; add it to one")
     for x in t["layer"] + t["part"] + t["crossing"] + [t["dogfood"]]:
         status(x["health"], x["where"])
         for ref in re.findall(r"\bG[0-9]+\b", x["health"]):
             if ref not in gaps:
                 refuse(x["where"], f"`health` names {ref}, which has no file in gaps/")
+    for x in boxes(t):  # RAPP/1 holds only what is in force; everything newest needs a step that graduates it
+        if channel(x) == "RAPP/1" and re.search(r"\bexperimental\b", x["health"], re.I):
+            refuse(x["where"], "is in force, so it ships in RAPP/1, where nothing is experimental; give the "
+                   "experimental piece a part of its own")
+        if channel(x) == "newest" and not any(re.search(rf"\b{re.escape(x['name'])}\b", step, re.I)
+                                              for step in lock["steps"]):
+            refuse(x["where"], f"{x['name']} is not in RAPP/1 yet ({status(x['health'])}); name it in a lock.md "
+                   "step that graduates it")
     for kind in ("invariants", "health", "glossary"):
         x = t[kind]
         rules = [re.fullmatch(r"- \*\*(.+?)\*\*\s*(.*)", line) for line in x["body"].splitlines() if line]
@@ -319,8 +352,9 @@ def joined(x):
 
 
 def locks(t):
-    """Each layer's lock status: the gaps that hold back it or its parts, then its parts not in force
-    that no gap covers. Returns {layer: (label, [gap and part ids])}."""
+    """Each layer's lock status: the gaps that hold back it or its parts, then its newest parts that no gap
+    covers. Returns {layer: (label, [gap and part ids])}, the label "N to graduate", "in RAPP/1", or
+    "nothing to graduate" for a layer with nothing to ship."""
     out = {}
     for x in t["layer"]:
         n = x["n"]
@@ -328,10 +362,11 @@ def locks(t):
             p for p in t["sides"] if p["level"] == n]  # a layer drawn only as a frame speaks through its parts
         gaps = [g for g in t["gap"] if g["blocks"] in {x["id"]} | {p["id"] for p in drawn}]
         named = {g["id"] for g in gaps} | {g["blocks"] for g in gaps}
-        loose = [p for p in drawn if status(p["health"]) not in ("in force", "own shape", None)
+        loose = [p for p in drawn if channel(p) == "newest"
                  and not ({p["id"], *re.findall(r"\bG[0-9]+\b", p["health"])} & named)]
         items = [g["id"] for g in gaps] + [p["id"] for p in loose]
-        out[n] = (f"{len(items)} to lock" if items else "in force" if status(x["health"]) else "nothing to lock", items)
+        out[n] = (f"{len(items)} to graduate" if items else "in RAPP/1" if any(channel(p) == "RAPP/1" for p in drawn)
+                  else "nothing to graduate", items)
     return out
 
 
@@ -386,6 +421,10 @@ def graph_txt(t):
         s = status(x["health"])
         return "" if s is None else "[" + ("exp" if s == "experimental" else s) + "]"
 
+    def foot(x, width):  # a box's last rows: its health tag, and "newest" when it is not in RAPP/1 yet
+        s = (tag(x) + (" newest" if channel(x) == "newest" else "")).strip()
+        return wrap(s, width) if s else []
+
     def titled(x, pill, width):  # "n · NAME, tagline  [pill]", or the tagline on a row of its own
         name, line = f"{x['n']} \u00b7 {x['name'].upper()}", tagline(x)
         if line and len(name) + len(line) + len(pill) + 3 <= width:
@@ -408,7 +447,7 @@ def graph_txt(t):
                 cells[p["id"]] = (x, w)
                 x += w + 1
     put(0, 0, "THE RAPP/1 ORGANISM  \u00b7  read it top (6) to bottom (0)")
-    r, lock = 2, {n: f"[{label}]" if items else "" for n, (label, items) in locks(t).items()}
+    r, lock = 2, {n: f"[{label}]" if items or label == "in RAPP/1" else "" for n, (label, items) in locks(t).items()}
     for layer in reversed(t["layer"]):
         n, inner, need = layer["n"], t["row"][layer["n"]], 0
         for sb in sides:  # a part from above that reaches down to this layer ends just inside it
@@ -421,7 +460,7 @@ def graph_txt(t):
             same = bool(sides) and sides[-1]["col"] == p["col"] and sides[-1]["part"]["level"] == n
             top = max(r, low[p["col"]] + (1 if same else 2))
             width = (LW if p["col"] == "in" else RW) - 4
-            rows = fit(wrap(p["name"].upper(), width) + items(p, width) + [tag(p)], width, p)
+            rows = fit(wrap(p["name"].upper(), width) + items(p, width) + foot(p, width), width, p)
             below = [c["center"]["level"] for c in t["crossing"] if c.get("side") is p and c["top"] < n]
             sides.append(dict(part=p, col=p["col"], top=top, rows=rows, bottom=top + len(rows) + 1,
                               open=min(below) if below else None))
@@ -429,13 +468,13 @@ def graph_txt(t):
                 low[p["col"]] = sides[-1]["bottom"]
             need = max(need, top - r + 3)  # the layer grows until each part beside it overlaps it
         if not inner:
-            rows = fit(titled(layer, " ".join(filter(None, (tag(layer), lock[n]))), IN) + items(layer, IN), IN, layer)
+            rows = fit(titled(layer, lock[n], IN) + items(layer, IN) + foot(layer, IN), IN, layer)
             bottom = r + max(len(rows) + 2, need) - 1
             frame(r, C, CW, rows, bottom - r + 1)
         else:
             heads = titled(layer, lock[n], IN)
-            cols = [fit(wrap(p["name"].upper(), cells[p["id"]][1] - 2) + items(p, cells[p["id"]][1] - 2) + [tag(p)],
-                        cells[p["id"]][1] - 2, p) for p in inner]
+            cols = [fit(wrap(p["name"].upper(), cells[p["id"]][1] - 2) + items(p, cells[p["id"]][1] - 2)
+                        + foot(p, cells[p["id"]][1] - 2), cells[p["id"]][1] - 2, p) for p in inner]
             depth = max([len(col) for col in cols] + [need - len(heads) - 3])
             widths = [cells[p["id"]][1] for p in inner]
             frame(r, C, CW, heads, len(heads) + 2)
@@ -505,6 +544,7 @@ def graph_txt(t):
     r = len(grid) + 1
     put(r, 0, "health: " + " ".join(tag({"health": w}) for w in STATUS if w not in ("gap", "open", "proposed")))
     put(r + 1, 0, "[exp] = experimental   \u250a gap: no specification allows it   \u254e candidate   words: health.md")
+    put(r + 2, 0, "[in force] = RAPP/1 (LTS) \u00b7 newest = not in RAPP/1 yet \u00b7 [N to graduate] = the gaps and parts left")
     return "\n".join("".join(row).rstrip() for row in grid) + "\n"
 
 
@@ -533,7 +573,7 @@ def fitwrap(text, px, size):
 def drawing(t):
     """One layout as a list of shapes, which the SVG and the Excalidraw views both draw. Each shape names
     the box it belongs to (`g`), and texts and arrows name what they attach to (`on`, `a`, `b`)."""
-    W, TOP, LX, LW, CX, CW, RX, RW, KX = 1628, 132, 30, 300, 370, 760, 1170, 300, 1492
+    W, TOP, LX, LW, CX, CW, RX, RW, KX = 1628, 150, 30, 300, 370, 760, 1170, 300, 1488
     mid, stack, shapes, span, cells = CX + CW // 2, list(reversed(t["layer"])), [], {}, {}
     frame = {x["n"]: x["id"] + (":frame" if x in t["row"][x["n"]] else "") for x in t["layer"]}
 
@@ -552,14 +592,15 @@ def drawing(t):
     def text(g, x, y, s, size, bold=False, color="#000000", middle=False, on=None):
         shape("text", g, x=round(x), y=round(y), s=s, size=size, bold=bold, color=color, middle=middle, on=on)
 
-    def rect(g, x, y, w, h, stroke, fill, rx=10, dash=False, width=2, id=None):
-        shape("rect", g, id=id or g, x=x, y=y, w=w, h=h, stroke=stroke, fill=fill, rx=rx, dash=dash, width=width)
+    def rect(g, x, y, w, h, stroke, fill, rx=10, dash=False, width=2, id=None, hatch=None):
+        shape("rect", g, id=id or g, x=x, y=y, w=w, h=h, stroke=stroke, fill=fill, rx=rx, dash=dash, width=width,
+              hatch=hatch)
 
     def line(g, pts, c, a, b):
         shape("line", g, id=g, pts=pts, red=c["red"], dim=c["dim"], both=c["arrow"] == "both", a=a, b=b)
 
-    def box(g, x, y, w, h, s, f, title, lines, tag, num=None, frame=False):
-        rect(g, x - 8, y - 8, w + 16, h + 16, s, None, 14, True) if frame else rect(g, x, y, w, h, s, f)
+    def box(g, x, y, w, h, s, f, title, lines, tag, num=None, frame=False, hatch=None):
+        rect(g, x - 8, y - 8, w + 16, h + 16, s, None, 14, True) if frame else rect(g, x, y, w, h, s, f, hatch=hatch)
         span[g] = (y - 8, y + h + 8) if frame else (y, y + h)
         if num is not None:
             shape("circle", g, id=f"{g}:num", x=x - 22, y=y + 30, r=14, fill=s)
@@ -585,6 +626,10 @@ def drawing(t):
         x = 990 + 290 * k
         line(f"legend:{word}:line", [(x, 94), (x + 36, 94)], {"red": k == 0, "dim": k == 1, "arrow": "in"}, None, None)
         text("legend", x + 44, 99, why, 12.5)
+    for k, (lane, why) in enumerate((("rapp1", "RAPP/1 (LTS): in force"), ("newest", "newest: not in RAPP/1 yet"))):
+        rect("legend", 990 + 290 * k, 112, 36, 18, *FAMILY["gray"], 4, width=1.5, id=f"legend:{lane}",
+             hatch=STRIPE["gray"] if lane == "newest" else None)
+        text("legend", 990 + 290 * k + 44, 126, why, 12.5)
     for n, inner in t["row"].items():  # cells share the width by `span`, on a grid that lines up across layers
         units, x = sum(p["span"] for p in inner), CX
         for p in inner:
@@ -609,16 +654,18 @@ def drawing(t):
         n, (s, f), inner = layer["n"], FAMILY[layer["color"]], t["row"][layer["n"]]
         title = smart(layer["name"] + (f" \u2014 {tagline(layer)}" if tagline(layer) else ""))
         box(frame[n], CX, ys[n], CW, band[n], s, f, "" if inner else title, [] if inner else rows(layer, CW)
-            + home(layer), None if inner else status(layer["health"]), n, bool(inner))
+            + home(layer), None if inner else status(layer["health"]), n, bool(inner),
+            hatch=STRIPE[layer["color"]] if not inner and channel(layer) == "newest" else None)
         for p in inner:
             x, w = cells[p["id"]]
             box(p["id"], x, ys[n], w, band[n], s, f, title if p is layer else smart(p["name"]),
-                rows(p, w) + (home(p, w) if p is layer else []), status(p["health"]))
-    for n, (label, items) in locks(t).items():  # the lock column: how far each layer is from a locked RAPP/1
-        ks, kf = ("#495057", "#ffffff") if items else STATUS["in force" if label == "in force" else "open"]
-        rect("lock", KX, ys[n] + band[n] // 2 - 12, 106, 24, ks, kf, 12, width=1.5, id=f"lock:{n}")
-        text("lock", KX + 53, ys[n] + band[n] // 2 + 4, label, 12.5, bold=bool(items), middle=True, on=f"lock:{n}")
-    text("lock", KX + 53, TOP - 14, "to lock RAPP/1", 12.5, color="#495057", middle=True)
+                rows(p, w) + (home(p, w) if p is layer else []), status(p["health"]),
+                hatch=STRIPE[layer["color"]] if channel(p) == "newest" else None)
+    for n, (label, items) in locks(t).items():  # the lock column: what each layer needs to graduate into RAPP/1
+        ks, kf = ("#495057", "#ffffff") if items else STATUS["in force" if label == "in RAPP/1" else "open"]
+        rect("lock", KX, ys[n] + band[n] // 2 - 12, 128, 24, ks, kf, 12, width=1.5, id=f"lock:{n}")
+        text("lock", KX + 64, ys[n] + band[n] // 2 + 4, label, 12.5, bold=bool(items), middle=True, on=f"lock:{n}")
+    text("lock", KX + 64, TOP - 14, "into RAPP/1 (LTS)", 12.5, color="#495057", middle=True)
     for x, c, words, gap in labels:
         up, low = c["upper"]["id"], c["lower"]["id"]
         y1, y2 = span[up][1], span[low][0]
@@ -635,7 +682,8 @@ def drawing(t):
             for p, h in zip(group, hs):
                 for c in (c for c in t["crossing"] if c.get("side") is p and c["top"] < n):
                     h = max(h, ys[c["center"]["level"]] + 90 - top)  # reach every layer it crosses to
-                box(p["id"], bx, top, bw, h, *FAMILY["gray"], smart(p["name"]), rows(p, bw), status(p["health"]))
+                box(p["id"], bx, top, bw, h, *FAMILY["gray"], smart(p["name"]), rows(p, bw), status(p["health"]),
+                    hatch=STRIPE["gray"] if channel(p) == "newest" else None)
                 prev, top = top + h, top + h + 20
     for c in (c for c in t["crossing"] if c.get("side")):
         left, level = c["side"]["col"] == "in", c["center"]["level"]
@@ -668,12 +716,17 @@ def svg(d):
     o += [f'<marker id="{m}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" '
           f'orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="{c}"/></marker>'
           for m, c in (("ah", "#343a40"), ("ahr", "#c92a2a"), ("ahg", "#868e96"))]
+    hatches = sorted({(s["fill"], s["hatch"]) for s in d["shapes"] if s["k"] == "rect" and s["hatch"]})
+    o += [f'<pattern id="h{f[1:]}{h[1:]}" width="9" height="9" patternUnits="userSpaceOnUse" '
+          f'patternTransform="rotate(45)"><rect width="9" height="9" fill="{f}"/><rect width="2.5" height="9" '
+          f'fill="{h}"/></pattern>' for f, h in hatches]  # newest: the box's fill, striped
     o += ["</defs>", f'<rect x="0" y="0" width="{W}" height="{H}" fill="#ffffff"/>']
     for s in d["shapes"]:
         if s["k"] == "rect":
             dash = ' stroke-dasharray="6 4"' if s["dash"] else ""
+            fill = f'url(#h{s["fill"][1:]}{s["hatch"][1:]})' if s["hatch"] else s["fill"] or "none"
             o.append(f'<rect x="{s["x"]}" y="{s["y"]}" width="{s["w"]}" height="{s["h"]}" rx="{s["rx"]}" '
-                     f'fill="{s["fill"] or "none"}" stroke="{s["stroke"]}" stroke-width="{s["width"]}"{dash}/>')
+                     f'fill="{fill}" stroke="{s["stroke"]}" stroke-width="{s["width"]}"{dash}/>')
         elif s["k"] == "circle":
             o.append(f'<circle cx="{s["x"]}" cy="{s["y"]}" r="{s["r"]}" fill="{s["fill"]}"/>')
         elif s["k"] == "text":
@@ -721,7 +774,8 @@ def excalidraw(d):
     for sh in d["shapes"]:
         if sh["k"] == "rect":
             el = add("rectangle", sh, sh["x"], sh["y"], sh["w"], sh["h"], strokeColor=sh["stroke"],
-                     strokeWidth=sh["width"], backgroundColor=sh["fill"] or "transparent",
+                     strokeWidth=sh["width"], backgroundColor=sh["hatch"] or sh["fill"] or "transparent",
+                     fillStyle="hachure" if sh["hatch"] else "solid",  # newest: striped
                      strokeStyle="dashed" if sh["dash"] else "solid", roundness={"type": 3})
             if sh["id"] in texts:
                 small = texts[sh["id"]][0]["middle"]
@@ -770,7 +824,8 @@ body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111;
 header { display: flex; align-items: flex-end; justify-content: space-between; }
 h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .sub { font-size: 8.2pt; color: #333; margin-top: 2px; }
-.legend { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; font-size: 7pt; white-space: nowrap; }
+.legend { display: grid; grid-template-columns: auto auto; column-gap: 12px; row-gap: 3px; align-items: center;
+          justify-items: end; font-size: 7pt; white-space: nowrap; }
 .chip { display: inline-block; border: 1px solid; border-radius: 9px; padding: 0 6px; font-size: 6.4pt; line-height: 1.45;
         white-space: nowrap; font-weight: 600; }
 .dash { display: inline-block; width: 18px; border-top: 2px dashed #868e96; vertical-align: middle; margin: 0 2px 0 4px; }
@@ -810,27 +865,39 @@ footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-be
 
 LOCK_CSS = """.lock { background: #fff; border-color: #495057; } .lock.done { background: #b2f2bb; border-color: #2f9e44; }
 .lock.none { background: #e9ecef; border-color: #868e96; font-weight: 500; }
+.newest { background-image: repeating-linear-gradient(135deg, var(--h) 0 1.6px, transparent 1.6px 6px); }
+.side.newest { --h: #dee2e6; }
+.legend .lane { justify-self: start; color: #333; }
+.sw { display: inline-block; width: 17px; height: 9px; border: 1px solid #495057; border-radius: 2px; background-color: #e9ecef;
+      vertical-align: -1.5px; margin-right: 3px; --h: #adb5bd; }
 .h .chips { display: flex; gap: 3px; flex: none; }
 .plan .ph { padding: 2px 4px 1px 4px; border-bottom: 1px solid #edf0f2; } .plan .ph.you { background: #fff4e6; }
 .plan .who { color: #495057; } .plan .gs { display: inline-block; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
+.note.lead { margin: 0 0 3px 0; }
 .g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
      font-weight: 700; margin: 0 1px 1px 0; }
-.lockin h1 { font-size: 17pt; } .lockin .panel { font-size: 8.2pt; } .lockin .panel h2 { font-size: 10pt; }
+.lockin h1 { font-size: 16pt; } .lockin .panel { font-size: 8.2pt; } .lockin .panel h2 { font-size: 10pt; }
 .decide { border: 2px solid #e67700; background: #fff4e6; border-radius: 9px; padding: 5px 10px 6px 10px; }
 .decide h2 { font-size: 10pt; margin: 0 0 3px 0; }
 .decide ol { margin: 0; padding-left: 16px; font-size: 8.6pt; } .decide li { margin: 0 0 2px 0; }
-.two { display: grid; grid-template-columns: 1fr 1.25fr; gap: 0.12in; }
+.two { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
+.pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #862e9c; background: #f8f0fc;
+        border-radius: 7px; padding: 0 4px; margin: 0 1px 2px 0; font-size: 7pt; line-height: 1.3; }
+.cite { margin-top: 2px; font-size: 7.2pt; color: #495057; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
-table.status td { padding: 1.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
-table.status td:first-child { width: 1.25in; white-space: nowrap; } table.status td:nth-child(2) { width: 0.85in; }
+table.status td { padding: 1px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status td:nth-child(2) { width: 1.05in; }
 .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.1in; }
-.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px 5px 8px; background: #fcfcfd; font-size: 8.4pt; }
+.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 8pt; }
 .phase h3 { font-size: 10pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
 .phase ul { margin: 0 0 3px 0; padding-left: 12px; } .phase li { margin: 0 0 1.5px 0; }
+.strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.6pt; }
+.strip .m { display: inline-block; border: 1px solid #adb5bd; background: #f1f3f5; border-radius: 6px; padding: 0 4px;
+            margin: 0 1px 1px 0; font-size: 7pt; line-height: 1.3; white-space: nowrap; }
 .register { display: grid; grid-template-columns: 1.12fr 1fr; column-gap: 0.25in; align-items: start; }
-table.reg { border-collapse: collapse; width: 100%; font-size: 7.7pt; line-height: 1.2; }
-table.reg td { padding: 2px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.reg { border-collapse: collapse; width: 100%; font-size: 7.3pt; line-height: 1.12; }
+table.reg td { padding: 0.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.reg td:first-child { font-weight: 700; width: 28px; } table.reg td:nth-child(3) { width: 66px; }
 table.reg td:last-child { text-align: right; white-space: nowrap; width: 90px; color: #343a40; }
 table.reg .chip { font-size: 6.2pt; line-height: 1.25; }
@@ -838,8 +905,8 @@ table.reg .chip { font-size: 6.2pt; line-height: 1.25; }
 
 
 def pages(t):
-    """The printable pages, as (title, body): the map, then the path to a locked RAPP/1."""
-    e, lk, gaps = html.escape, locks(t), {g["id"]: g for g in t["gap"]}
+    """The printable pages, as (title, body): the map, then what it takes to lock RAPP/1, the LTS release."""
+    e, lk, gaps, lock = html.escape, locks(t), {g["id"]: g for g in t["gap"]}, t["lock"]
 
     def chip(value):
         s = status(value)
@@ -847,7 +914,7 @@ def pages(t):
 
     def lockchip(n):
         label, items = lk[n]
-        kind = "" if items else " done" if label == "in force" else " none"
+        kind = "" if items else " done" if label == "in RAPP/1" else " none"
         return f'<span class="chip lock{kind}">{e(label)}</span>'
 
     def pill(health, text):  # a small chip in the colors of a health word
@@ -857,20 +924,23 @@ def pages(t):
     def gapchip(g):
         return pill(g["status"], g["id"])
 
-    def itemchip(item):  # a gap, or a part not in force that no gap covers
+    def itemchip(item):  # a gap, or a newest part that no gap covers
         return gapchip(gaps[item]) if item in gaps else pill(t["ids"][item]["health"], smart(t["ids"][item]["name"]))
+
+    def lane(x):  # newest parts are striped; RAPP/1 parts stay plain
+        return " newest" if channel(x) == "newest" else ""
 
     def box(x):
         title = smart(x["name"]) + (f" \u2014 {smart(tagline(x))}" if tagline(x) else "")
-        row, chips = t["row"][x["n"]], "" if lk[x["n"]][0] == status(x["health"]) else lockchip(x["n"])
+        row = t["row"][x["n"]]
         if not row:
-            return (f'<div class="layer f-{x["color"]}"><div class="h"><span class="t"><span class="n">{x["n"]}</span>'
-                    f'{e(title)}</span><span class="chips">{chip(x["health"])}{chips}</span></div>'
+            return (f'<div class="layer f-{x["color"]}{lane(x)}"><div class="h"><span class="t"><span class="n">{x["n"]}'
+                    f'</span>{e(title)}</span><span class="chips">{chip(x["health"])}{lockchip(x["n"])}</span></div>'
                     f'<div>{e(joined(x))}</div></div>')
-        cells = "".join(f'<div class="cell"><div class="h"><span class="t">{"" if p is x else e(smart(p["name"]))}</span>'
-                        f'{chip(p["health"])}</div><div>{e(joined(p))}</div></div>' for p in row)
+        cells = "".join(f'<div class="cell{lane(p)}"><div class="h"><span class="t">{"" if p is x else e(smart(p["name"]))}'
+                        f'</span>{chip(p["health"])}</div><div>{e(joined(p))}</div></div>' for p in row)
         return (f'<div class="device f-{x["color"]}"><div class="h"><span class="t"><span class="n">{x["n"]}</span>'
-                f'{e(title)}</span>{chips}</div><div class="cells" style="grid-template-columns: '
+                f'{e(title)}</span>{lockchip(x["n"])}</div><div class="cells" style="grid-template-columns: '
                 f'{" ".join(str(p["span"]) + "fr" for p in row)}">{cells}</div></div>')
 
     def side(p):
@@ -881,7 +951,7 @@ def pages(t):
         glyph = "\u2194" if inward and outward else "\u2192" if inward == (p["col"] == "in") else "\u2190"
         arrow = f' data-a="{glyph}"' if ways else ""
         rows = "<br>".join(e(smart(plain(line))) for line in p.get("lines", []))  # one row per line
-        return (f'<div class="side {p["col"]}"{arrow}><div class="h"><span class="t">{e(smart(p["name"]))}</span>'
+        return (f'<div class="side {p["col"]}{lane(p)}"{arrow}><div class="h"><span class="t">{e(smart(p["name"]))}</span>'
                 f'{chip(p["health"])}</div><div>{rows}</div></div>')
 
     def conn(n):
@@ -914,7 +984,7 @@ def pages(t):
         org += [side(slot.get(("in", x["n"]))), box(x), side(slot.get(("out", x["n"])))]
         if x["n"]:
             org.append(conn(x["n"]))
-    d, plan, lock = t["dogfood"], t["lock"]["plan"], t["lock"]
+    d, plan, pull = t["dogfood"], lock["plan"], t["pull"]
     tree = [item.split(": ", 1) for item in d["tree"]]
     pad = max(len(a) for a, _ in tree) + 2
     loop = '<span class="loopa">\u2192</span>'.join(
@@ -922,17 +992,20 @@ def pages(t):
         for k, step in enumerate(d["loop"], 1))
     rules = "".join(f"<li><b>{inline(lead)}</b></li>" for lead, _ in t["invariants"]["rules"])  # one line each
     dashed = {"gap": '<span class="dash red"></span>', "candidate": '<span class="dash"></span>'}
-    legend = "</div><div>".join(" ".join(dashed.get(k, "") + chip(k) for k in list(STATUS)[i:i + 5]) for i in (0, 5))
+    words = [" ".join(dashed.get(k, "") + chip(k) for k in list(STATUS)[i:i + 5]) for i in (0, 5)]
+    lanes = ['<span class="sw"></span>RAPP/1 (LTS): in force', '<span class="sw newest"></span>newest: not in RAPP/1 yet']
+    legend = "".join(f'<span class="lane">{a}</span><div>{b}</div>' for a, b in zip(lanes, words))
     summary = "".join(
         f'<div class="ph{" you" if ph["who"] == "you" else ""}"><b>{ph["n"]} {e(ph["title"])}</b> '
         f'<span class="who">\u00b7 {e(ph["who"])}</span> <span class="gs">'
         f'{"".join(gapchip(g) for g in ph["gaps"]) or e(str(len(ph["steps"])) + " steps, no gaps")}</span></div>'
         for ph in plan)
+    short = lock["name"].partition(": ")[0]
     foot = ("<footer><span>Experimental map, generated from organism/ \u00b7 details: ECOSYSTEM.md and CONSTITUTION.md in "
             "kody-w/rapp-work, branch experimental/rapp-work-constitution</span>"
             "<span>Specifications decide; these pages only point at them.</span></footer>")
     head = (f'<header><div><h1>{{}}</h1><div class="sub">{{}}</div></div>'
-            f'<div class="legend"><div>{legend}</div></div></header>')
+            f'<div class="legend">{legend}</div></header>')
     the_map = f"""<div class="page">
 {head.format("The RAPP/1 organism, on one page", "Read it top (6) to bottom (0). Left: what comes in. Right: what goes out or across.")}
 <section class="org">
@@ -943,9 +1016,9 @@ def pages(t):
 <pre class="tree">{e(chr(10).join(smart(a).ljust(pad) + smart(b) for a, b in tree))}</pre>
 <div class="loop">{loop}<span class="loopa">\u21bb</span></div>
 <div>{inline(d["body"])}</div></div>
-<div class="panel"><h2>{e(lock["name"])} <span class="chip lock">page 2 (lock-in)</span></h2>
-<div class="plan">{summary}</div>
-<div class="note">{inline(lock["body"])}</div></div>
+<div class="panel"><h2>{e(short)} <span class="chip lock">page 2: the lock-in</span></h2>
+<div class="note lead">{inline(". ".join(lock["definition"]) + ".")}</div>
+<div class="plan">{summary}</div></div>
 <div class="panel"><h2>What holds everywhere</h2>
 <ul class="inv">{rules}</ul></div>
 </section>
@@ -956,32 +1029,39 @@ def pages(t):
         f'<tr><td><b>{x["n"]} {e(smart(x["name"]))}</b></td><td>{lockchip(x["n"])}</td>'
         f'<td>{"".join(itemchip(item) for item in lk[x["n"]][1])}</td></tr>'
         for x in reversed(t["layer"]))
+    counts = "".join(f'<span class="m">{e(repo)} <b>{k}</b></span>' for repo, k in pull["counts"])
+    mentions = (f'<section class="strip"><b>{pull["phase"]} \u00b7 {e(smart(pull["name"]))}:</b> files on each default '
+                f'branch that mention \u201cexperimental\u201d ({inline(pull["command"])}), {e(pull["measured"])}: {counts} '
+                f'{inline(pull["body"])}</section>')
     cards = "".join(f'<div class="phase"><h3>{ph["n"]} \u00b7 {e(ph["title"])}</h3><div class="who">{who(ph)}</div>'
                     f'<ul>{steps(ph)}</ul><div>{"".join(gapchip(g) for g in ph["gaps"])}</div></div>' for ph in plan[1:])
     rows = [f'<tr><td>{e(g["id"])}</td><td>{inline(g["gap"])}</td><td>{chip(g["status"])}</td>'
             f'<td>{g["phase"]} \u00b7 {e(g["who"])}</td></tr>' for g in t["gap"]]
     half = (len(rows) + 1) // 2  # two columns, the first a little wider
     register = "".join(f'<table class="reg">{"".join(part)}</table>' for part in (rows[:half], rows[half:]))
+    pins = "".join(f'<span class="p">{inline(pin)}</span>' for pin in lock["pins"])
     the_lock = f"""<div class="page lockin">
-{head.format(e(lock["name"]), e(smart("What we need to do to lock in a full RAPP/1: five phases, in order, with the owner's decisions first.")))}
+{head.format(e(smart(lock["name"])), inline(lock["body"]))}
 <section class="decide"><h2>Your decisions first \u00b7 phase {one["n"]}, {e(one["title"])} \u00b7 {who(one)}</h2>
 <ol>{steps(one)}</ol></section>
 <section class="two">
-<div class="panel"><h2>RAPP/1 is locked when</h2><ul>{"".join(f"<li>{inline(item)}</li>" for item in lock["locked_when"])}</ul></div>
-<div class="panel"><h2>Lock status by layer, top to bottom</h2><table class="status">{status_rows}</table></div>
+<div class="panel"><h2>{e(short)} is</h2><ul>{"".join(f"<li>{inline(item)}.</li>" for item in lock["definition"])}</ul>
+<div class="pins"><b>It pins:</b> {pins}</div><div class="cite">{inline(lock["cite"])}.</div></div>
+<div class="panel"><h2>Each layer, top to bottom: in RAPP/1, or what it needs to graduate</h2><table class="status">{status_rows}</table></div>
 </section>
 <section class="phases">{cards}</section>
+{mentions}
 <section class="panel"><h2>Gap register: each gap, its phase and who acts</h2>
 <div class="register">{register}</div></section>
 {foot}
 </div>"""
-    return [("The RAPP/1 organism, on one page", the_map), (lock["name"], the_lock)]
+    return [("The RAPP/1 organism, on one page", the_map), (smart(lock["name"]), the_lock)]
 
 
 def document(title, *bodies):
     css = CSS + LOCK_CSS + "".join(f".s-{k.replace(' ', '-')} {{ background: {f}; border-color: {s}; }}\n"
                                    for k, (s, f) in STATUS.items())
-    css += "".join(f".f-{k} {{ --s: {s}; --f: {f}; }}\n" for k, (s, f) in FAMILY.items())
+    css += "".join(f".f-{k} {{ --s: {s}; --f: {f}; --h: {STRIPE[k]}; }}\n" for k, (s, f) in FAMILY.items())
     css += ".page + .page { break-before: page; }\n"
     return (f'<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>{html.escape(title)}</title>\n'
             "<!-- Generated from organism/ by tools/build.py. Edit the part files and rebuild. -->\n"
@@ -1012,6 +1092,20 @@ def lock_plan(t, steps=True):
             + [", ".join(g["id"] for g in ph["gaps"]) or "\u2014"] for ph in t["lock"]["plan"]]
 
 
+def pins(lock):
+    return ", ".join(lock["pins"][:-1]) + ", and " + lock["pins"][-1]
+
+
+def mentions(t, short=False):
+    """The clean-pull count in one line: the date, each repository's files, and what the numbers mean."""
+    pull, counts = t["pull"], ", ".join(f"{repo} {k}" for repo, k in t["pull"]["counts"])
+    if short:
+        return f"files that mention \u201cexperimental\u201d on each default branch, {pull['measured']}: {counts}. " \
+               "Mentions, not problems."
+    return (f"on {pull['measured']}, {pull['command']} counted the files on each default branch that mention "
+            f"\u201cexperimental\u201d: {counts}. {pull['body']}")
+
+
 def genome(t, graph):
     def ref(x, folder):
         return f"[{x['name']}]({folder}/{x['stem']}.md)"
@@ -1029,19 +1123,22 @@ def genome(t, graph):
          "drifted).", "", "```text", graph.rstrip("\n"), "```", "", "## Health words", ""]
     L += [f"- **{word}** {meaning}" for word, meaning in t["health"]["rules"]]
     L += ["", "## Layers, top to bottom"]
-    L += table(["#", "Layer", "What it is", "Health", "To lock RAPP/1"],
+    L += table(["#", "Layer", "What it is", "Health", "Into RAPP/1"],
                [[str(x["n"]), ref(x, "layers"), x["role"], brief(x["health"]), to_lock(t, x["n"])]
                 for x in reversed(t["layer"])])
-    L += ["", "## Parts"] + table(["Part", "Where", "What it is", "Health"], [
+    L += ["", "## Parts"] + table(["Part", "Where", "What it is", "Health", "Channel"], [
         [ref(p, "parts"), f"{p['column']}, beside {p['level']}" if p["col"] else f"inside {p['level']}",
-         p["role"], brief(p["health"])] for p in [p for n in range(6, -1, -1) for p in t["inner"][n]] + t["sides"]])
+         p["role"], brief(p["health"]), channel(p)] for p in [p for n in range(6, -1, -1) for p in t["inner"][n]] + t["sides"]])
     L += ["", "## Crossings"] + table(["From \u2192 to", "What crosses", "Authorized by", "Health"], [
         [f"[{t['ids'][c['from']]['name']} {arrow(c)} {t['ids'][c['to']]['name']}](crossings/{c['stem']}.md)",
          c["what"], c["authorized_by"], brief(c["health"])] for c in t["crossing"]])
     L += ["", "## Gaps (fixes in each file)"] + table(
         ["ID", "Gap", "Status"], [[f"[{g['id']}](gaps/{g['stem']}.md)", g["gap"], status(g["status"])] for g in gaps])
-    L += ["", "## Locking RAPP/1", "", t["lock"]["body"] + " Its conditions and every step: [lock.md](lock.md)."]
+    lock = t["lock"]
+    L += ["", f"## {lock['name']}", ""] + [f"- {item}." for item in lock["definition"]]
+    L += ["", f"It pins {pins(lock)}. {lock['cite']}. Every step: [lock.md](lock.md)."]
     L += table(["Phase", "Who acts", "Gaps it closes"], lock_plan(t, steps=False))
+    L += ["", f"**{t['pull']['name']}** ([clean-pull.md](clean-pull.md)): {mentions(t, short=True)}"]
     L += ["", "## Journeys"] + table(
         ["ID", "Journey"], [[f"[{j['id']}](journeys/{j['id']}.md)", j["title"]] for j in t["journey"]])
     L += ["", "## What holds everywhere", ""] + [f"- **{lead}** {rest}".rstrip() for lead, rest in inv["rules"]]
@@ -1072,19 +1169,22 @@ def ecosystem(t):
          "release rings whose evidence comes back in.",
          "- **Tags** show health, in the words of [`organism/health.md`](organism/health.md). A red dashed arrow "
          "is a crossing no specification allows yet; a gray dashed one is a candidate.",
-         "- The **far right column** says what each layer still needs before RAPP/1 locks (section 7).", "",
+         "- **Plain boxes** in force are RAPP/1, the LTS release people pull. **Striped boxes** are newest: not in "
+         "RAPP/1 yet.",
+         "- The **far right column** says what each layer still needs to graduate into RAPP/1 (section 7).", "",
          "The graph is drawn from the tree, like its other views: [Excalidraw](organism/views/organism.excalidraw), "
          "[text](organism/views/graph.txt), [one printable page](organism/views/one-page.html) and "
-         "[the path to a locked RAPP/1](organism/views/lock-in.html).", "",
+         "[what it takes to lock RAPP/1 LTS](organism/views/lock-in.html).", "",
          "## 1. The layers, top to bottom"]
     L += table(["#", "Layer", "What it is", "Who decides", "Signed with", "Home", "Health"],
                [[str(x["n"]), f"**{x['name']}**", x["role"], x["decides"], x["signed_with"], x["home"], x["health"]]
                 for x in reversed(t["layer"])])
     for x in (x for x in reversed(t["layer"]) if t["inner"][x["n"]]):
-        L += ["", f"Inside layer {x['n']}, {x['name']}:"] + table(["Part", "What it is", "Home", "Health"], [
-            [f"**{p['name']}**", p["role"], p["home"], p["health"]] for p in t["inner"][x["n"]]])
-    L += ["", "Beside the stack:"] + table(["Column", "Part", "What it is", "Home", "Health"], [
-        [p["column"].capitalize(), f"**{p['name']}**", p["role"], p["home"], p["health"]] for p in t["sides"]])
+        L += ["", f"Inside layer {x['n']}, {x['name']}:"] + table(["Part", "What it is", "Home", "Health", "Channel"], [
+            [f"**{p['name']}**", p["role"], p["home"], p["health"], channel(p)] for p in t["inner"][x["n"]]])
+    L += ["", "Beside the stack:"] + table(["Column", "Part", "What it is", "Home", "Health", "Channel"], [
+        [p["column"].capitalize(), f"**{p['name']}**", p["role"], p["home"], p["health"], channel(p)]
+        for p in t["sides"]])
     L += ["", "## 2. Crossings: how anything moves between layers", "",
           "Every arrow in the graph is one row here, pointing the same way. Transport carries bytes; signatures "
           "decide (Constitution Article 7)."]
@@ -1103,11 +1203,12 @@ def ecosystem(t):
     L += table(["Layer or part", "Check"], [[", ".join(names), item] for item, names in checks.items()])
     L += ["", "## 6. Gap register"] + table(["ID", "Gap", "Home", "Proposed fix", "Status", "Phase", "Who acts"], [
         [g["id"], g["gap"], g["home"], g["fix"], g["status"], str(g["phase"]), g["who"]] for g in gaps])
-    lock = t["lock"]
-    L += ["", inv["upstream"], "", f"## 7. {lock['name']}", "", lock["body"], "", "Its conditions:", ""]
-    L += [f"- {item}" for item in lock["locked_when"]]
+    lock, pull = t["lock"], t["pull"]
+    L += ["", inv["upstream"], "", f"## 7. {lock['name']}", ""] + [f"- {item}." for item in lock["definition"]]
+    L += ["", f"It pins {pins(lock)}. {lock['cite']}.", "", lock["body"]]
     L += ["", "The five phases, in order:"] + table(["Phase", "Who acts", "Steps", "Gaps it closes"], lock_plan(t))
-    L += ["", "What each layer still needs, top to bottom:"] + table(["Layer", "To lock RAPP/1"], [
+    L += ["", f"**{pull['name']}** (phase {pull['phase']}): {mentions(t)}"]
+    L += ["", "What each layer still needs, top to bottom:"] + table(["Layer", "Into RAPP/1"], [
         [f"{x['n']} {x['name']}", to_lock(t, x["n"])] for x in reversed(t["layer"])])
     L += ["", "## 8. Words", ""]
     L += [f"- **{term}** {meaning}" for term, meaning in t["glossary"]["rules"]]
@@ -1164,7 +1265,7 @@ def pdf(root=ROOT):
         return 0
     with tempfile.TemporaryDirectory() as scratch:
         both = Path(scratch) / "rapp-lock-in.html"
-        both.write_text(document("RAPP/1: the map and the path to lock it", *(b for _, b in pages(load(root)))),
+        both.write_text(document("RAPP/1 LTS: the map, and what it takes to lock it", *(b for _, b in pages(load(root)))),
                         encoding="utf-8")
         sources = {"views/one-page.pdf": root / "views/one-page.html", "views/lock-in.pdf": root / "views/lock-in.html",
                    "views/rapp-lock-in.pdf": both}

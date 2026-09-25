@@ -4,6 +4,8 @@ The anatomy of the RAPP/1 ecosystem as a tree of small markdown files, one fact 
 
 It is experimental. Specifications decide; the organism only points at them.
 
+It also says what it takes to lock RAPP/1, the one LTS release of the whole stack that people pull. Only parts in force are in RAPP/1; every other part is newest, until it graduates.
+
 | Path | What it holds |
 |---|---|
 | [`ORGANISM.md`](ORGANISM.md) | The genome: the whole organism on one page. Generated. |
@@ -16,7 +18,8 @@ It is experimental. Specifications decide; the organism only points at them.
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
 | `health.md` | The health words every `health` and `status` starts with |
 | `glossary.md` | The other words this map uses, one per line |
-| `lock.md` | The path to a locked RAPP/1: what locked means, and five phases of steps |
+| `lock.md` | RAPP/1 LTS: what it is and pins, and five phases of steps that lock it |
+| `clean-pull.md` | The clean-pull check: files on each default branch that mention “experimental” |
 | `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html`, `lock-in.html`, and their printed `one-page.pdf`, `lock-in.pdf` and `rapp-lock-in.pdf` (both pages) |
 | `tools/build.py` | The builder: Python 3.10 or newer, standard library only |
 
@@ -45,7 +48,8 @@ Each of these gets you this folder from the `experimental/rapp-work-constitution
 ## View it
 
 - Open `views/one-page.html` in a browser. It prints on one US Letter landscape page.
-- Open `views/lock-in.html` for the path to a locked RAPP/1: the owner's decisions first, then five phases, each layer's lock status and every gap. `views/rapp-lock-in.pdf` holds both pages.
+- Open `views/lock-in.html` for what it takes to lock RAPP/1 LTS: the owner's decisions first, what RAPP/1 pins, five phases, each layer's status and every gap. `views/rapp-lock-in.pdf` holds both pages.
+- In every view, plain boxes in force are RAPP/1, and striped boxes (in the text graph, the word `newest`) are not in RAPP/1 yet.
 - Read `views/graph.txt` in a terminal, or `ORGANISM.md` for the graph with every table.
 - Open `views/organism.svg` for the drawing, or load `views/organism.excalidraw` in [Excalidraw](https://excalidraw.com).
 
@@ -79,7 +83,7 @@ A public copy is a separate repository. It holds exactly the files the members a
   python3 tools/build.py --pdf    # also prints the PDFs in views/, when Chrome or Chromium is installed
   ```
 
-The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, a gap with a bad `phase`, `who` or `blocks`, a gap that no `lock.md` step of its phase names, a page that prints on more than one sheet, or a value that would break the frontmatter.
+The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, a gap with a bad `phase`, `who` or `blocks`, a gap that no `lock.md` step of its phase names, a newest part that no `lock.md` step graduates, a part in force whose health names something experimental, a bad clean-pull count, a page that prints on more than one sheet, or a value that would break the frontmatter.
 
 | File | Fields (optional ones in brackets) |
 |---|---|
@@ -91,15 +95,17 @@ The builder refuses with the file and the fix when something is wrong: an unknow
 | `invariants.md` | `healthy`, `upstream`; each rule is a body line `- **Lead.** More words.` |
 | `dogfood.md` | `name`, `health`, `tree`, `loop` |
 | `health.md`, `glossary.md` | `name`; each word is a body line `- **word:** meaning` |
-| `lock.md` | `name`, `locked_when`, `phases` (`Title: who` or `Title: who, note`), `steps` (`<phase>: words`) |
+| `lock.md` | `name`, `definition`, `pins`, `cite`, `phases` (`Title: who` or `Title: who, note`), `steps` (`<phase>: words`) |
+| `clean-pull.md` | `name`, `phase`, `command`, `measured` (YYYY-MM-DD), `mentions` (`<repository>: <files>`) |
 
 - `health` and `status` start with a word from `health.md`: in force, specified, experimental, candidate, planned, gap, idea, open, proposed or own shape. Words after it are notes. `—` means none.
 - `color` is an Open Color family: gray, orange, green, blue or purple.
 - `column` is in, out or across. `beside` and `layer` are layer numbers.
 - `arrow` is down, up or both inside the stack; in, out or both beside it. It must point from `from` to `to`, so every arrow reads like its row.
 - `span` sets how much of its layer's width a part inside it takes (default 1). A layer with parts and its own `lines` is drawn as one more cell; its `span` sizes that cell.
-- `phase` is the lock-in phase that closes a gap, 1 to 5, and `who` acts on it: you, engineering, spec owner or estate owner. `blocks` names the layer or part the gap holds back. Each layer's lock status counts those gaps, plus its parts not in force that no gap covers.
-- Every gap must be named by a `lock.md` step of its own phase, and every phase needs a step.
+- A part's channel follows its health, and is never set by hand: RAPP/1 (the LTS release) when it is in force; newest, not in RAPP/1 yet, for any other word; outside knowledge (own shape) ships in neither.
+- `phase` is the lock-in phase that closes a gap, 1 to 5, and `who` acts on it: you, engineering, spec owner or estate owner. `blocks` names the layer or part the gap holds back. Each layer's status is `in RAPP/1`, `N to graduate` (those gaps, plus its newest parts that no gap covers) or `nothing to graduate`.
+- Every gap must be named by a `lock.md` step of its own phase, every newest part by some `lock.md` step, and every phase needs a step. The clean-pull check needs a step of its `phase` that says its `name`.
 - `lines` are the words drawn in a box. A layer `role` that starts with a short phrase and a colon gives the box its title.
 - Wrap a value in double quotes when it holds `: ` or starts with a sign such as `` ` ``, `[` or `"`, so the frontmatter stays valid YAML.
 
