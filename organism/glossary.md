@@ -1,18 +1,19 @@
 ---
 name: Words this map uses
 ---
-- **RAPP/1 (LTS):** the one release people pull; everything in it is in force. One estate release scope holds it: its Grail pin never moves (RAPP/1 §11.1), and each release in it pins every component (`rapp-cicd/1` §2).
+- **RAPP/1 (LTS):** the one release people pull; everything in it is in force. One estate-signed `release_scope` holds it: its Grail pin never moves (RAPP/1 §11.1), and each release in it pins every component (`rapp-cicd/1` §2).
 - **Newest:** successor releases, where experiments live until they graduate. Each newer kernel gets its own `release_scope`, and two scopes never pin the same kernel (RAPP/1 §11.1).
 - **DOGG:** public-safe data: PII-free, and safe to publish anywhere (`rapp-hive/1` §2).
 - **GODD:** private data. It stays local unless its owner selects it (`rapp-hive/1` §2).
 - **frontier track:** the release track where new, experimental agents and profiles start.
 - **canary ring:** the stage after development and test (`rapp-cicd/1` §3); here, where a few real users try a release first.
-- **notary (idea):** the owner signing, at the edge, only what a Hive already approved. No specification provides it (G5, G10).
+- **notary (proposed):** the owner signing, at the edge, only what a Hive already approved. Drafts in `kody-w/rapp-1` propose it; no specification provides it yet (G5, G10).
 - **Hive Mind:** the network of sovereign Private Hives, `urn:rapp:hive-mind`. Knowing the name confers no rights (`rapp-federation/1` §1).
 - **dial record:** on Hive Hub's `main`, a record named by its SHA-256 Dial Record ID, that tells a device how to reach a declared Hive. It grants no access.
 - **join card:** on Hive Hub's `main`, a content-addressed card, often shown as a QR code, that leads a device to a Hive's dial record.
 - **`work.vector`:** the signed `rapp-work/1` frame that records which authenticated `rapp-hive/1` checkpoint an organization accepted.
-- **network pulse (planned):** one RAPP/1 `body.pulse` frame per crawl of the network portfolio, on the network's body stream and chained by `prev`. Its `sig` is null until the estate authorizes a signer, whose key its registry then holds (RAPP/1 §§7.1–7.4, 10, 13.3). The portfolio's subway map keeps a version per pulse.
+- **network pulse (experimental):** one RAPP/1 `body.pulse` frame per crawl of the network portfolio, on the network's body stream and chained by `prev`. `kody-w/rapp-hive-public` published the first, `seq` 0. Its `sig` stays null until the estate authorizes a signer for that stream (rev-17's `stream-signer` grant is a draft; RAPP/1 §§7.1–7.4, 10, 13.3). Each pulse versions the map and the network's health: the portfolio keeps every version's subway map, and its timeline lists them all.
+- **station, Hive root:** in a distributed Hive, a station is one public repository, with its member space in `.rapp/`; a Hive root is a Hive's public copy, which keeps one pointer per station (HIVE-MD, “Remote member spaces”, a draft).
 - **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
 - **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
 - **LTS and newest kernels:** the Brainstem kernel has the same two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest release is what the installer's `main` ships, and nothing pins it yet (G15).

@@ -34,7 +34,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                   │ Brainstem    │
                                   ▼ yet, G17)    ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ OUTSIDE         │           │ 4 · YOUR DEVICE            [7 to graduate] │
+│ OUTSIDE         │           │ 4 · YOUR DEVICE            [8 to graduate] │
 │ KNOWLEDGE       │           ├──────────────┬──────────────┬──────────────┤
 │ old Hives ·     │           │ WORKSPACES   │ REFERENCES   │ HIVE COPY    │
 │ second brains · │           │ private GODD │ read-only    │ your copy of │
@@ -61,7 +61,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                               │              │ yet (G10)                   │  │ HIVE MIND         │
                               │              │ [exp] newest                │◄►│ ◄► agreements     │
                               └───┬──────────┴───┬─────────────────────────┘  │ other             │
-                                  │ work.vector: ┊ idea (G5, G10)             │ organizations'    │
+                                  │ work.vector: ┊ proposed (G5, G10)         │ organizations'    │
                                   │ the accepted ┊                            │ Hives, by         │
                                   │ Hive         ┊                            │ agreement only    │
                                   ▼ checkpoint   ▼                            │ rapp-federation/1 │
@@ -78,22 +78,23 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                                      ▲ authorizes the owner   │ → alpha → beta    │
                                                      │ (estate registry)      │ → preprod →       │
                               ┌────────────────────────────────────────────┐  │ grail ·           │
-                              │ 1 · ESTATE                 [1 to graduate] │  │ rapp-cicd/1 ·     │
+                              │ 1 · ESTATE                 [2 to graduate] │  │ rapp-cicd/1 ·     │
                               │ an owner's signed registry                 │  │ rapp-deploy/1     │
                               │ Who may sign as whom · which protocols are │  │ [specified]       │
                               │ pinned · which Grail kernel each release   │  │ newest            │
                               │ scope pins                                 │  └───────────────────┘
                               │ Append-only · rappid.json ·                │
-                              │ registry.json · owner-anchor.json          │
-                              │ [in force]                                 │
-                              └────────────────────────────────────────────┘
-                                                     ▲ RAPP/1 frames · RAPPIDs · registry entries
-                                                     │
-                              ┌────────────────────────────────────────────┐
-                              │ 0 · RAPP/1, bytes and identity [in RAPP/1] │
-                              │ RAPPIDs · the eleven-key frame · hashes ·  │
-                              │ Ed25519 (or ES256) signatures · eggs ·     │
-                              │ registries                                 │
+                              │ registry.json · owner-anchor.json          │  ┌───────────────────┐
+                              │ [in force]                                 │─►│ DISTRIBUTED HIVE  │
+                              └────────────────────────────────────────────┘  │ ► pins its root   │
+                                                     ▲ RAPP/1 frames ·        │ the RAPP/1        │
+                                                     │ RAPPIDs · registry     │ network as one    │
+                                                     │ entries                │ Hive              │
+                              ┌────────────────────────────────────────────┐  │ each repo's       │
+                              │ 0 · RAPP/1, bytes and identity [in RAPP/1] │  │ .rapp/ · found    │
+                              │ RAPPIDs · the eleven-key frame · hashes ·  │  │ from RAPP's seed  │
+                              │ Ed25519 (or ES256) signatures · eggs ·     │  │ [exp] newest      │
+                              │ registries                                 │  └───────────────────┘
                               │ Frozen forms                               │
                               │ [in force]                                 │
                               └────────────────────────────────────────────┘

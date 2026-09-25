@@ -25,7 +25,7 @@ The graph is drawn from the tree, like its other views: [Excalidraw](organism/vi
 | 6 | **You** | “Give me my Brainstem.” You talk; a Hive change is shown in plain words first, and you confirm it | You | Your confirmation of an exact plan, in a later turn (the Hive agent) | — | — |
 | 5 | **Brainstem** | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | You, in conversation | Nothing by itself: its Hive agent proposes, you confirm | [`kody-w/RAPP`](https://github.com/kody-w/RAPP), with the LTS kernel pinned to `kody-w/rapp-installer@brainstem-v0.6.9` | in force (the LTS kernel); the default install still gives the newest kernel |
 | 4 | **Your device** | Your copy of each Hive, your read-only references and your private workspaces, with one key per device per Hive | You | Your device key | The Hive agent's private state (`<hive>/.git/rapp-hive/`); RAPP Workspace/1 | experimental (Hive side); specified (workspaces) |
-| 3 | **Hive** | Where the members share work: a folder Hive (experimental) or a `rapp-hive/1` Private Hive (in force, and the only kind of Hive an organization can bind) | The members, by the approvals number in a folder Hive; the one owner of a Private Hive | SSH-signed commits in a folder Hive; signed RAPP/1 frames in a Private Hive | Folder Hive: [`kody-w/rapp-model-hive`](https://github.com/kody-w/rapp-model-hive/tree/experimental/hive-md) `HIVE-MD.md`. Private Hive: [`rapp-hive/1`](protocols/rapp-hive/1/SPEC.md) | in force (`rapp-hive/1` Private Hive); experimental (folder Hive) |
+| 3 | **Hive** | Where the members share work: a `rapp-hive/1` Private Hive (in force, and the only kind of Hive an organization can bind), a folder Hive (experimental), or a distributed Hive of many repositories (experimental) | The members, by the approvals number in a folder Hive; the one owner of a Private Hive | SSH-signed commits in a folder Hive; signed RAPP/1 frames in a Private Hive | Folder Hive: [`kody-w/rapp-model-hive`](https://github.com/kody-w/rapp-model-hive/tree/experimental/hive-md) `HIVE-MD.md`. Private Hive: [`rapp-hive/1`](protocols/rapp-hive/1/SPEC.md) | in force (`rapp-hive/1` Private Hive); experimental (folder Hive, distributed Hive) |
 | 2 | **Organization** | The accountable body: one owner, one world, one policy, one release scope, and exactly one Hive. Its body stream holds its declaration, then catalogs, Hive vectors, migrations, receipts, observations and rollbacks | The accountable owner, under the estate's rules | RAPP/1 frames | Canonical `rapp-work/1` §§1–9 (pinned by [`RAPP_WORK_PIN.json`](RAPP_WORK_PIN.json)) | specified; no estate has activated canonical `rapp-work/1` yet (G16); cannot bind a folder Hive yet (G10) |
 | 1 | **Estate** | An owner's signed registry: who may sign as whom, which protocols are pinned, which Grail kernel each release scope pins (RAPP/1 §§11.1, 13.3) | The estate owner | RAPP/1 §13 registry entries | Each owner's repository (`rappid.json`, `registry.json`) | in force; no estate declares the Brainstem's kernel yet (G15) |
 | 0 | **RAPP/1** | Bytes and identity: RAPPIDs, the eleven-key frame, hashes, signatures, eggs, registries | The protocol itself (frozen forms) | Ed25519 (or ES256) detached JWS | [`kody-w/rapp-1`](https://github.com/kody-w/rapp-1) `SPEC.md` | in force |
@@ -60,6 +60,7 @@ Beside the stack:
 | Out | **Public copy** | A separate, reviewed repository holding exactly the approved files, plus `PUBLISHED.md` | The Hive folder convention; DOGG rules of `rapp-hive/1` §2 | experimental | newest |
 | Across | **Hive Mind** | The network of sovereign Hives: discovery through Hive Hub cards, and agreements between organizations | [`rapp-federation/1`](protocols/rapp-federation/1/SPEC.md) (candidate); [`kody-w/hive-hub`](https://github.com/kody-w/hive-hub/tree/experimental/organism-fit) | candidate; folder Hives through Hive Hub cards (experimental, G12) | newest |
 | Out | **Release rings** | Estate-named stages over `rapp-cicd/1` §3: here canary, nightly, alpha, beta, the Preprod gate, then the production ring (the grail) | `rapp-cicd/1` §3 and `rapp-deploy/1` in `kody-w/rapp-1` | specified (G16) | newest |
+| Across | **Distributed Hive** | The RAPP/1 network as one Hive, found by raw URL: RAPP's seed → beacon → `estate.json` → Hive root → a pointer per repository → its `.rapp/member.md`, at its LTS commit | HIVE-MD “Remote member spaces” and the Hive agent's `resolve`, in [`kody-w/rapp-model-hive`](https://github.com/kody-w/rapp-model-hive/tree/experimental/hive-md-distributed) (branch `experimental/hive-md-distributed`); RAPP proposal 0020, a draft on branch `experimental/proposal-0020-distributed-hive` | experimental; the seed does not reach it yet | newest |
 
 ## 2. Crossings: how anything moves between layers
 
@@ -77,10 +78,11 @@ Every arrow in the graph is one row here, pointing the same way. Transport carri
 | Folder Hive → Public copy | Exactly the files of an approved manifest | The approvals number; `check-public` verifies the copy | Hive folder convention; `rapp-hive/1` §2 | experimental |
 | Outside knowledge → Folder Hive | An old Hive's signed join requests | The old signatures, checked with RAPP/1's hash and signature math; the new Hive's rules | Hive folder convention; `previous:` | experimental |
 | Private Hive ↔ Hive Mind | Agreements, grants, receipts | Both owners' signed consent and agreement. A crossing between worlds is refused unless every owning spec allows it (`rapp-hive/1` §12; `rapp-federation/1` §6; historical root [`SPEC.md`](SPEC.md) §3) | `rapp-federation/1` | candidate; folder Hives after G12 |
-| Folder Hive → Organization | “The organization accepted this Hive state” | Nothing yet (idea: the owner notarizes the accepted head; G5, G10) | Canonical `rapp-work/1` §§1, 4 | **gap (G10)** |
+| Folder Hive → Organization | “The organization accepted this Hive state” | Nothing yet (proposed: a folder-Hive organization records the accepted head in a signed vector, its owner signing as the Hive's notary; G5, G10) | Canonical `rapp-work/1` §§1, 4 | **gap (G10)** |
 | Private Hive → Organization | A signed Hive vector (`work.vector`) naming the accepted checkpoint | The organization's signer; a consumer accepts it only after verifying the checkpoint under `rapp-hive/1` | Canonical `rapp-work/1` §§2, 4 | specified (G16) |
 | Release rings → Organization | Release evidence, as verified-release receipts and bounded observations | The organization's signer; a healthy verdict needs RAPP Deploy health evidence | Canonical `rapp-work/1` §§5, 7, 8; `rapp-cicd/1`; `rapp-deploy/1` | specified (G16) |
 | Estate → Organization | The owner's authority | The estate's signed registry and its time-scoped owner rules | Canonical `rapp-work/1` §2; RAPP/1 §13 | specified (G16) |
+| Estate → Distributed Hive | The estate's pin of the Hive root: a `hives[]` entry in `estate.json` naming the public copy's commit and the hash of its `PUBLISHED.md` | The estate owner's choice of commit. Hashes prove integrity; authenticity needs the estate owner's signed registry | RAPP proposal 0020 (§§1, 3, 5), a draft; RAPP Constitution Article XLVI | candidate; `estate.json` is a placeholder today |
 | RAPP/1 → Estate | Frames, RAPPIDs and registry entries | RAPP/1's own hash and signature checks | RAPP/1 §§6, 7, 13 | in force |
 
 ## 3. End to end, through every layer
@@ -88,7 +90,7 @@ Every arrow in the graph is one row here, pointing the same way. Transport carri
 1. **A teammate joins.**
    - Their Brainstem writes one signed request file. It may arrive by any channel.
    - Members admit them by moving it into `members/<name>/keys/`, with enough approvals.
-   - The Hive's next verified head carries them. Idea (G10): the organization could later record that head in a `work.vector`.
+   - The Hive's next verified head carries them. Proposed (G10): a folder-Hive organization could later record that head in a signed vector.
 2. **Your second brain feeds the team.**
    - You reference your Obsidian vault; nothing is copied.
    - Your Brainstem reads it as fenced, unattributed data and proposes to bring three notes into `shared/wiki/`, saying they will be visible to the Hive's members.
@@ -97,7 +99,7 @@ Every arrow in the graph is one row here, pointing the same way. Transport carri
    - A manifest in `members/<you>/publish/` lists exact files and hashes. Members approve it.
    - Your Brainstem copies exactly those files into the separate public copy, with `PUBLISHED.md`.
    - Anyone runs `check-public`; a member adds `--hive` to check the signers too.
-   - Idea (G5): the organization could later notarize the publication with RAPP/1.
+   - Proposed (G5): the organization's owner could later notarize the publication with RAPP/1.
 4. **An old Hive moves.**
    - The new folder Hive names the old one in `previous:`.
    - The old Hive's signed join requests come along unchanged. No request is lost: carried requests wait for admission.
@@ -123,6 +125,7 @@ Every arrow in the graph is one row here, pointing the same way. Transport carri
 - **Propose, confirm, apply.** Every change to a Hive or a workspace is proposed, confirmed in a later turn, and applied as one exact step (a signed commit, inside a Hive).
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
 - **The Brainstem is the one surface you talk to.** Every other layer is plumbing.
+- **Front doors stay editable.** Frozen identities never pin human-facing docs: READMEs, badges and “Start here” links. They pin only normative bytes: specifications, schemas, reference code, tests and AI instruction files such as `SKILL.md`. RAPP Workspace/1 still pins its READMEs (G24).
 - **Only top-level `agents/*_agent.py` files are live.** That is the Grail kernel's rule; RAPP's Constitution and its cloud Brainstem still differ (G18, G19). Every folder is organization: loading or unloading an agent is a file move, a drag and drop. The Grail kernel's `load_agents()` is a flat glob (`kody-w/rapp-installer` `rapp_brainstem/brainstem.py`, lines 1202–1205 at `brainstem-v0.6.9`).
 
 ## 5. Keeping it healthy
@@ -143,52 +146,53 @@ A layer is healthy when it has a specification with an owner, a reference that r
 
 | ID | Gap | Home | Fix | Status | Phase | Who acts |
 |---|---|---|---|---|---|---|
-| G1 | A `rapp-hive/1` roster can never change | `rapp-hive/1` §3 | An owner-signed later declaration | idea | 3 | spec owner |
-| G2 | SDK plans cannot move a file | `rapp-work-sdk/1` §§2, 4 | A `move` action; undo is its inverse | idea | 3 | spec owner |
-| G3 | SDK discovery misses `*_agent.py` | `rapp-work-sdk/1` §11 | Recognize them as inert data | idea | 3 | spec owner |
-| G4 | SDK migration refuses repository-seeded Hives and long world ids | `rapp-work-sdk/1` §10; the 64-character world id cap in `rapp-hive/1` `schema.json` `$defs/label` and the SDK's `migration.py` | Pointer-only successors; world ids up to 128 characters | idea | 3 | spec owner |
-| G5 | One owner only, so co-equal groups do not fit | Canonical `rapp-work/1` §2 | The owner as the Hive's notary: they sign at the edge only what the Hive approved, naming that approval | idea | 3 | spec owner |
-| G6 | Implementations refuse owner succession | `rapp-hive/1` §14.2 (the reference fails closed); `rapp-work-sdk/1` §12 | Implement RAPP/1's time-scoped owner succession (RAPP/1 §§13.2, 13.3); a lost or compromised owner root key needs a new trust anchor, given out of band (§13.1) | open | 3 | spec owner |
-| G7 | SDK verification accepts an edited instruction file | `rapp-work-sdk/1` §7 | Inventory instruction files; refuse new ones | idea | 3 | spec owner |
+| G1 | A `rapp-hive/1` roster can never change | `rapp-hive/1` §3 | An owner-signed later declaration: `kody-w/rapp-work` proposal 0001, a draft on branch `experimental/gap-g1-roster-declaration` | proposed | 3 | spec owner |
+| G2 | SDK plans cannot move a file | `rapp-work-sdk/1` §§2, 4 | A `move` plan whose undo is its exact inverse: `kody-w/rapp-work` proposal 0002, a draft on branch `experimental/gap-g2-move-action` | proposed | 3 | spec owner |
+| G3 | SDK discovery misses `*_agent.py` | `rapp-work-sdk/1` §11 | Record them as inert data: `kody-w/rapp-work` proposal 0003, a draft on branch `experimental/gap-g3-agent-discovery` | proposed | 3 | spec owner |
+| G4 | SDK migration refuses repository-seeded Hives and long world ids | `rapp-work-sdk/1` §10; the 64-character world id cap in `rapp-hive/1` `schema.json` `$defs/label` and the SDK's `migration.py` | An opt-in pointer-only successor, which records a world id of up to 128 characters as written: `kody-w/rapp-work` proposal 0004, a draft on branch `experimental/gap-g4-migration-successors` | proposed | 3 | spec owner |
+| G5 | One owner only, so co-equal groups do not fit | Canonical `rapp-work/1` §2 | The owner as the Hive's notary, who signs at the edge only what the Hive approved, naming that approval: `kody-w/rapp-1` proposal 0005, a draft on branch `experimental/gap-g5-owner-notary` | proposed | 3 | spec owner |
+| G6 | Implementations refuse owner succession | `rapp-hive/1` §14.2 (the reference fails closed); `rapp-work-sdk/1` §12 | Implement RAPP/1's time-scoped owner succession (RAPP/1 §§13.2, 13.3) in the `rapp-hive/1` reference and the SDK: `kody-w/rapp-work` proposal 0006, a draft on branch `experimental/gap-g6-owner-succession`. A lost or compromised owner root key still needs a new trust anchor, given out of band (§13.1) | proposed | 3 | spec owner |
+| G7 | SDK verification accepts an edited instruction file | `rapp-work-sdk/1` §7 | Inventory AI instruction files, and refuse new ones: `kody-w/rapp-work` proposal 0007, a draft on branch `experimental/gap-g7-instruction-inventory` | proposed | 3 | spec owner |
 | G8 | Hive members are names bound to keys, not RAPPIDs | RAPP/1 §§6.1, 10; [root `SPEC.md`](SPEC.md) §10 | Constitution Part V.4 | proposed | 1 | you |
 | G9 | A git commit is not authority in canonical `rapp-work/1` | Canonical `rapp-work/1` §9 | Constitution Part V.2 | proposed | 1 | you |
-| G10 | An organization cannot bind a folder Hive | Canonical `rapp-work/1` §§1, 2, 4 | Name the Hive by its id, first commit and founder key fingerprint. A `work.vector` names an accepted head, which must come after the previous one | idea | 3 | spec owner |
-| G11 | “Organization” means two things | `rapp-work-sdk/1` §7 | Rename the SDK's pointer-only object “workspace index” | idea | 3 | spec owner |
+| G10 | An organization cannot bind a folder Hive | Canonical `rapp-work/1` §§1, 2, 4 | A sibling profile, `rapp-work-folder-hive/1`: a folder-Hive organization names its one Hive by id, first commit and founder key fingerprint, and each signed vector names an accepted head after the previous one. `kody-w/rapp-1` proposal 0010, a draft on branch `experimental/gap-g10-folder-hive-binding` | proposed | 3 | spec owner |
+| G11 | “Organization” means two things | `rapp-work-sdk/1` §7 | Rename the SDK's pointer-only object “workspace index”: `kody-w/rapp-work` proposal 0011, a draft on branch `experimental/gap-g11-workspace-index` | proposed | 3 | spec owner |
 | G12 | Hive Hub dial records did not describe folder Hives | `kody-w/hive-hub` (branch `experimental/organism-fit`) | A Hive card carries the Hive id, its first commit, the founder key fingerprint and a channel, and may carry an address; joining writes one request file from the person's own Brainstem | experimental | 5 | engineering |
 | G13 | Outside knowledge had no way in | Hive folder convention | References: read-only pointers; bring by signed copy with provenance | experimental | 5 | engineering |
 | G14 | The Hive agent's path to the production ring | Release rings; RAPP/1 §11.1 (new behavior stays outside the frozen kernel) | A real team's week in canary, then nightly, alpha, beta, the Preprod gate and the production ring | open | 5 | engineering |
 | G15 | No estate declares the Brainstem's kernel | RAPP/1 §§11.1, 13.3; `KERNEL_PIN.json` in `kody-w/RAPP` | The estate owner signs a `grail-kernel` entry for each release scope: the LTS scope, which pins `brainstem-v0.6.9` for good, and one successor scope per newer kernel (`brainstem-v0.6.16` now); a scope is never rebound | open | 4 | estate owner |
 | G16 | No estate has activated canonical `rapp-work/1` | Canonical `rapp-work/1` §1 | An estate appends the `rapp-work/1` protocol entry, its seven `work.*` kinds, and its `rapp-hive/1`, `rapp-cicd/1` and `rapp-deploy/1` pins | open | 4 | estate owner |
-| G17 | The Brainstem does not call the RAPP Work SDK | `rapp-work-sdk/1` §2; `kody-w/RAPP` | A Brainstem agent that calls the six SDK operations and applies only exact plan hashes | idea | 4 | estate owner |
+| G17 | The Brainstem does not call the RAPP Work SDK | `rapp-work-sdk/1` §2; `kody-w/RAPP` | A Brainstem agent that calls the six SDK operations and applies only exact plan hashes: `kody-w/rapp-work` proposal 0017, a draft on branch `experimental/gap-g17-brainstem-sdk-agent` | proposed | 4 | estate owner |
 | G18 | RAPP's Constitution describes a ten-day experiment | `kody-w/RAPP` `CONSTITUTION.md`, Articles XVII, XVIII and XX; Article XVII's recursive text is from `c1f356e`, `6e62083` and `16695a4` | A documentation fix only, with no behavior change: RAPP proposal 0001, “only top-level agents are live”, in open pull request `kody-w/RAPP#119` (branch `experimental/constitution-live-agents`, CI green). It adds governing notes and keeps the old text | proposed | 1 | you |
 | G19 | The cloud Brainstem loads agents differently | `kody-w/RAPP` Tier 2, `rapp_swarm/` | RAPP proposal 0002, “the cloud Brainstem loads agents like the local one”, a draft on branch `experimental/proposal-0002-tier2-parity` (CI green, no pull request yet). Its recommended option: top-level `*_agent.py` files only, and the 5-minute cache kept as a documented cloud detail | proposed | 1 | you |
 | G20 | The Brainstem app's path to the production ring | Release rings; `kody-w/RAPP` branch `experimental/brainstem-app` | Signed builds for macOS, Windows and Linux, a real week of use, then nightly, alpha, beta, the Preprod gate and the production ring | open | 5 | engineering |
-| G22 | “Workspace” names two things | RAPP Constitution Articles XVI and XVII; RAPP Workspace/1 | Name one of them differently, or state how they relate | idea | 3 | spec owner |
-| G23 | The LTS Windows installer cannot pin the LTS kernel | `kody-w/rapp-installer` `install.ps1` at `brainstem-v0.6.9` | A version pin in `install.ps1`, in a later release: it parses `--version` since `brainstem-v0.6.14`, but only when run as a script block (`& ([scriptblock]::Create((irm <url>))) --version <tag>`), not through `irm | iex`. The front door can give Windows users that form, pinned to `v0.6.9`, once it is tried on Windows | open | 2 | engineering |
+| G22 | “Workspace” names two things | RAPP Constitution Articles XVI and XVII; RAPP Workspace/1 | Keep the names apart: `agents/` is the agents workspace, not a RAPP Workspace, and Article XVI's workspace is Brainstem data. RAPP proposal 0010, a draft on branch `experimental/gap-g22-workspace-names` | proposed | 3 | spec owner |
+| G23 | The LTS Windows installer cannot pin the LTS kernel | `kody-w/rapp-installer` `install.ps1` at `brainstem-v0.6.9` | Both one-liners read `BRAINSTEM_VERSION`, and accept only a release tag, checked before anything changes: open pull request `kody-w/rapp-installer#49` (CI green) | proposed | 2 | engineering |
+| G24 | RAPP Workspace/1's frozen identity pins its READMEs | `kody-w/rapp-workspace` `protocols/rapp-workspace/1/manifest.json` (`repository_evidence`), written by `reference/pins.py` | Pin only normative bytes, and leave the READMEs out, before an estate activates RAPP Workspace/1 | idea | 3 | spec owner |
 
 Changes to canonical bytes need an upstream revision in `kody-w/rapp-1` and a re-pin. [Root `SPEC.md`](SPEC.md) is historical and never edited.
 
 ## 7. RAPP/1 LTS: what it takes to lock the whole thing
 
-- One LTS release of the whole stack: one estate release scope; its Grail pin never moves, and each release in it pins every component.
-- Everything in it is in force, and nothing in it is experimental.
-- Newer kernels get successor scopes, one per kernel. Experiments live only there until they graduate.
+- One LTS release of the whole stack: one estate-signed `release_scope` that pins every component, with a Grail pin that never moves.
+- Everything in it is in force; nothing in it is experimental.
+- The newest channel holds the experiments until they graduate, in one successor scope per newer kernel.
 
 It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Workspace/1, `rapp-work-sdk/1`, `rapp-registry/1.1`, `rapp-cicd/1`, `rapp-deploy/1`, and the agents and apps that ship with it. RAPP/1 §11.1: the pin is “a permanent compatibility anchor, not a moving release channel”; “A successor uses a new `release_scope`”. §13.3: one `grail-kernel` entry per scope, one per protocol. `rapp-cicd/1` §2: a release lists every part.
 
-RAPP/1 is the one LTS release people pull. Five phases lock it, in order, with the owner's decisions first.
+RAPP/1 is the one LTS release people pull. Five phases lock it, in order, with the owner's decisions first; it ends as a distributed Hive.
 
 The five phases, in order:
 
 | Phase | Who acts | Steps | Gaps it closes |
 |---|---|---|---|
 | 1. Decide | you, about an hour | merge RAPP proposal 0001 (G18, `kody-w/RAPP#119`), a documentation fix only: it is yours because RAPP reserves constitution merges for the maintainer (Articles XXVIII.4 and XXX.2); accept or refuse RAPP proposal 0002 (G19), Tier 2 loading: a draft on `experimental/proposal-0002-tier2-parity`; ratify the RAPP Work Constitution and its Part V (G8, G9) | G8, G9, G18, G19 |
-| 2. Zero drift, clean pull | engineering | fix RAPP's and RAR's non-conformant eggs, and RAR's bounded scan; give rapp-model-hive's frames a trusted anchor; re-sweep until every repo of the RAPP/1 stack is certified (the dogfood); keep the default pull clean: default branches and the LTS install carry only in-force parts; experiments stay on experimental branches or in newest; one front door keeps the network unified and tracked; pin the Windows LTS install (G23) | G23 |
-| 3. Close the specification gaps | spec owner | rapp-hive/1 (G1, G6); rapp-work-sdk/1 (G2, G3, G4, G7, G11); rapp-work/1 (G5, G10); RAPP's Constitution and RAPP Workspace/1 (G22); a gap that cannot close in time waits for a later RAPP, with the owner's sign-off | G1, G2, G3, G4, G5, G6, G7, G10, G11, G22 |
-| 4. Switch it on | estate owner | sign the LTS scope's `grail-kernel` entry and a successor scope for the newest kernel (G15); sign the protocol pins; that switches on the Workspaces and RAR; authorize a signer for network pulses, so each version verifies against the estate: the pulses (planned) track RAPP/1's health over time; activate `rapp-work/1` (G16): the Organization must be in force for RAPP/1 to be healthy throughout; give the Brainstem an SDK agent (G17) | G15, G16, G17 |
-| 5. Graduate into RAPP/1 | engineering, through the rings | graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20); then Hive Mind, once an estate accepts `rapp-federation/1`, and the Release rings, once a graduation uses them; merge what graduated; the rest stays out of what people pull; tag the lock once the clean-pull check passes again; sweep for drift on a schedule | G12, G13, G14, G20 |
+| 2. Zero drift, clean pull | engineering | fix RAPP's and RAR's non-conformant eggs and RAR's bounded scan (`kody-w/RAPP#121`, `kody-w/RAR#1116`, open); give rapp-model-hive's frames a trusted anchor (`kody-w/rapp-model-hive#2`, open; it needs the owner's registry entries); re-sweep until every repo of the RAPP/1 stack is certified (the dogfood); keep the default pull clean: default branches and the LTS install carry only in-force parts; one front door keeps the network unified and tracked; pin the Windows LTS install (G23) | G23 |
+| 3. Close the specification gaps | spec owner | RAPP/1 core additions land before the estate signs: rev-17, a draft on `kody-w/rapp-1` `experimental/rapp1-core-*`, adds release pins, lifecycle notices and stream signers; rapp-hive/1 (G1, G6); rapp-work-sdk/1 (G2, G3, G4, G7, G11); rapp-work/1 (G5, G10); RAPP's Constitution and RAPP Workspace/1 (G22, G24); a gap that cannot close in time waits for a later RAPP, with the owner's sign-off | G1, G2, G3, G4, G5, G6, G7, G10, G11, G22, G24 |
+| 4. Switch it on | estate owner | sign both kernel channels: a `grail-kernel` entry for the LTS scope, and one for a successor scope (G15); sign the protocol pins; that switches on the Workspaces and RAR; activate `rapp-work/1` (G16), so the Organization is in force; authorize the network pulse signer: pulses (experimental) version the map and the network's health; give the Brainstem an SDK agent (G17); switch on the Distributed Hive: beacon 1.1 and `estate.json`, pinned by commit and hash, and the operator accepted in RAPP's seed (RAPP proposal 0020, a draft) | G15, G16, G17 |
+| 5. Graduate into RAPP/1 | engineering, through the rings | graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20), the Distributed Hive; then Hive Mind, once an estate accepts `rapp-federation/1`, and the Release rings, once a graduation uses them; merge what graduated; the rest stays out of what people pull; tag the lock once the clean-pull check passes again; sweep for drift on a schedule | G12, G13, G14, G20 |
 
-**Keep the default pull clean** (phase 2): on 2026-09-25, `git grep -l -i experimental origin/HEAD` counted the files on each default branch that mention “experimental”: RAR 50, RAPP 45, rapp-workspace 26, rapp-hive-hub 19, rapp-installer 9, rapp-model-hive 8, hive-hub 6, lisppy 1, rapp-1 0, rapp-work 0. Raw word hits, and some are legitimate, such as folder names: mentions, not problems. Run it again at lock time. One front door: **planned:** the installer README's “Start here” leads with the RAPP/1 LTS install (`kody-w/rapp-installer#48`, open) · **planned:** every RAPP repo shows its earned RAPP/1 badge and a “Start here” link (PRs open in 13 of the stack's 15 repos) · **experimental:** the drift sweep sets each status, and `kody-w/rapp-hive-public` publishes the portfolio: the RAPP/1 stack is 12 of 15 certified.
+**Keep the default pull clean** (phase 2): on 2026-09-25, `git grep -l -i experimental origin/HEAD` counted the files on each default branch that mention “experimental”: RAR 50, RAPP 45, rapp-workspace 26, rapp-hive-hub 19, rapp-installer 9, rapp-model-hive 8, hive-hub 6, lisppy 1, rapp-1 0, rapp-work 0. Raw word hits, some legitimate, such as folder names: mentions, not problems. Count again at lock time. One front door: **planned:** the installer README's “Start here” leads with the RAPP/1 LTS install (`kody-w/rapp-installer#48`, open) · **planned:** every RAPP repo shows its earned RAPP/1 badge and a “Start here” link (PRs open in 13 of the stack's 15 repos) · **experimental:** the drift sweep sets each status, and `kody-w/rapp-hive-public` publishes the portfolio: the RAPP/1 stack is 12 of 15 certified.
 
 What each layer still needs, top to bottom:
 
@@ -196,26 +200,29 @@ What each layer still needs, top to bottom:
 |---|---|
 | 6 You | nothing to graduate |
 | 5 Brainstem | 6 to graduate (G17, G18, G19, G20, G23, RAR) |
-| 4 Your device | 7 to graduate (G2, G3, G4, G7, G13, G14, G22) |
+| 4 Your device | 8 to graduate (G2, G3, G4, G7, G13, G14, G22, G24) |
 | 3 Hive | 6 to graduate (G1, G6, G8, G9, G12, Public copy) |
 | 2 Organization | 4 to graduate (G5, G10, G11, G16) |
-| 1 Estate | 1 to graduate (G15) |
+| 1 Estate | 2 to graduate (G15, Distributed Hive) |
 | 0 RAPP/1 | in RAPP/1 |
+
+**Where it ends: the Distributed Hive** (experimental; the seed does not reach it yet): RAPP/1 LTS resolves as a distributed Hive, so a person pulls full RAPP/1 from static data. The RAPP/1 network as one Hive, found by raw URL: RAPP's seed → beacon → `estate.json` → Hive root → a pointer per repository → its `.rapp/member.md`, at its LTS commit.
 
 ## 8. Words
 
-- **RAPP/1 (LTS):** the one release people pull; everything in it is in force. One estate release scope holds it: its Grail pin never moves (RAPP/1 §11.1), and each release in it pins every component (`rapp-cicd/1` §2).
+- **RAPP/1 (LTS):** the one release people pull; everything in it is in force. One estate-signed `release_scope` holds it: its Grail pin never moves (RAPP/1 §11.1), and each release in it pins every component (`rapp-cicd/1` §2).
 - **Newest:** successor releases, where experiments live until they graduate. Each newer kernel gets its own `release_scope`, and two scopes never pin the same kernel (RAPP/1 §11.1).
 - **DOGG:** public-safe data: PII-free, and safe to publish anywhere (`rapp-hive/1` §2).
 - **GODD:** private data. It stays local unless its owner selects it (`rapp-hive/1` §2).
 - **frontier track:** the release track where new, experimental agents and profiles start.
 - **canary ring:** the stage after development and test (`rapp-cicd/1` §3); here, where a few real users try a release first.
-- **notary (idea):** the owner signing, at the edge, only what a Hive already approved. No specification provides it (G5, G10).
+- **notary (proposed):** the owner signing, at the edge, only what a Hive already approved. Drafts in `kody-w/rapp-1` propose it; no specification provides it yet (G5, G10).
 - **Hive Mind:** the network of sovereign Private Hives, `urn:rapp:hive-mind`. Knowing the name confers no rights (`rapp-federation/1` §1).
 - **dial record:** on Hive Hub's `main`, a record named by its SHA-256 Dial Record ID, that tells a device how to reach a declared Hive. It grants no access.
 - **join card:** on Hive Hub's `main`, a content-addressed card, often shown as a QR code, that leads a device to a Hive's dial record.
 - **`work.vector`:** the signed `rapp-work/1` frame that records which authenticated `rapp-hive/1` checkpoint an organization accepted.
-- **network pulse (planned):** one RAPP/1 `body.pulse` frame per crawl of the network portfolio, on the network's body stream and chained by `prev`. Its `sig` is null until the estate authorizes a signer, whose key its registry then holds (RAPP/1 §§7.1–7.4, 10, 13.3). The portfolio's subway map keeps a version per pulse.
+- **network pulse (experimental):** one RAPP/1 `body.pulse` frame per crawl of the network portfolio, on the network's body stream and chained by `prev`. `kody-w/rapp-hive-public` published the first, `seq` 0. Its `sig` stays null until the estate authorizes a signer for that stream (rev-17's `stream-signer` grant is a draft; RAPP/1 §§7.1–7.4, 10, 13.3). Each pulse versions the map and the network's health: the portfolio keeps every version's subway map, and its timeline lists them all.
+- **station, Hive root:** in a distributed Hive, a station is one public repository, with its member space in `.rapp/`; a Hive root is a Hive's public copy, which keeps one pointer per station (HIVE-MD, “Remote member spaces”, a draft).
 - **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
 - **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
 - **LTS and newest kernels:** the Brainstem kernel has the same two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest release is what the installer's `main` ships, and nothing pins it yet (G15).

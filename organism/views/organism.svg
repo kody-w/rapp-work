@@ -138,13 +138,13 @@
 <rect x="1692" y="1327" width="128" height="24" rx="4" fill="#ffffff" stroke="#2f9e44" stroke-width="1.5"/>
 <text x="1756" y="1343" font-size="12.5" text-anchor="middle">in RAPP/1</text>
 <rect x="1692" y="1147" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
-<text x="1756" y="1163" font-size="12.5" font-weight="700" text-anchor="middle">1 to graduate</text>
+<text x="1756" y="1163" font-size="12.5" font-weight="700" text-anchor="middle">2 to graduate</text>
 <rect x="1692" y="967" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
 <text x="1756" y="983" font-size="12.5" font-weight="700" text-anchor="middle">4 to graduate</text>
 <rect x="1692" y="787" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
 <text x="1756" y="803" font-size="12.5" font-weight="700" text-anchor="middle">6 to graduate</text>
 <rect x="1692" y="607" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
-<text x="1756" y="623" font-size="12.5" font-weight="700" text-anchor="middle">7 to graduate</text>
+<text x="1756" y="623" font-size="12.5" font-weight="700" text-anchor="middle">8 to graduate</text>
 <rect x="1692" y="407" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
 <text x="1756" y="423" font-size="12.5" font-weight="700" text-anchor="middle">6 to graduate</text>
 <rect x="1692" y="207" width="128" height="24" rx="4" fill="#ffffff" stroke="#868e96" stroke-width="1.5" stroke-dasharray="6 4"/>
@@ -166,7 +166,7 @@
 <text x="532" y="884" font-size="12.5">work.vector: the accepted Hive</text>
 <text x="532" y="902" font-size="12.5">checkpoint</text>
 <line x1="780" y1="858" x2="780" y2="920" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#ahr)"/>
-<text x="792" y="893" font-size="12.5">idea (G5, G10)</text>
+<text x="792" y="893" font-size="12.5">proposed (G5, G10)</text>
 <line x1="850" y1="1100" x2="850" y2="1038" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="862" y="1073" font-size="12.5">authorizes the owner (estate registry)</text>
 <line x1="850" y1="1280" x2="850" y2="1218" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
@@ -202,6 +202,12 @@
 <text x="1384" y="1021" font-size="13.5">rapp-deploy/1</text>
 <rect x="1577" y="937" width="83" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
 <text x="1618" y="952" font-size="12" text-anchor="middle">specified</text>
+<rect x="1370" y="1100" width="300" height="98" rx="10" fill="url(#he9ecefadb5bd)" stroke="#495057" stroke-width="2"/>
+<text x="1384" y="1128" font-size="17" font-weight="700">Distributed Hive</text>
+<text x="1384" y="1154" font-size="13.5">the RAPP/1 network as one Hive</text>
+<text x="1384" y="1174" font-size="13.5">each repo’s .rapp/ · found from RAPP’s seed</text>
+<rect x="1555" y="1110" width="105" height="22" rx="11" fill="#ffe8cc" stroke="#e67700" stroke-width="1"/>
+<text x="1608" y="1125" font-size="12" text-anchor="middle">experimental</text>
 <line x1="330" y1="408" x2="462" y2="408" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="380" y="401" font-size="11" text-anchor="middle" fill="#495057">copy in</text>
 <line x1="330" y1="656" x2="462" y2="656" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
@@ -215,5 +221,7 @@
 <text x="1304" y="830" font-size="11" text-anchor="middle" fill="#495057">agreements</text>
 <line x1="1370" y1="982" x2="1230" y2="982" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="1300" y="975" font-size="11" text-anchor="middle" fill="#495057">release evidence</text>
+<line x1="1230" y1="1149" x2="1370" y2="1149" stroke="#868e96" stroke-width="2.5" stroke-dasharray="5 5" marker-end="url(#ahg)"/>
+<text x="1300" y="1142" font-size="11" text-anchor="middle" fill="#495057">pins its root</text>
 <text x="30" y="1438" font-size="12.5" fill="#495057">Drawn from the organism/ tree by tools/build.py · the tree is the source; this picture is a view · health words: health.md · experimental</text>
 </svg>

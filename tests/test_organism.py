@@ -44,6 +44,7 @@ def test_rapp1_holds_only_what_is_in_force() -> None:
         assert build.channel(box) != "RAPP/1" or "experimental" not in box["health"], box["where"]
     lanes = {box["name"]: build.channel(box) for box in build.boxes(tree)}
     assert lanes["Brainstem app"] == "newest" and lanes["Private Hive"] == "RAPP/1"
+    assert lanes["Distributed Hive"] == "newest"
     assert lanes["Outside knowledge"] == "outside" and lanes["You"] is None
     for cells in tree["row"].values():  # every view draws a layer's RAPP/1 cells first, then its newest lane
         newest = [build.channel(cell) == "newest" for cell in cells]
@@ -60,6 +61,17 @@ def test_every_crossing_is_drawn_with_its_words() -> None:
         assert build.html.escape(build.smart(words)) in the_map, crossing["where"]
         assert build.html.escape(build.smart(words)).split()[0] in svg, crossing["where"]
         assert words.split()[0] in flat, crossing["where"]
+
+
+def test_the_lock_in_page_ends_at_the_distributed_hive() -> None:
+    build = builder()
+    tree = build.load(ORGANISM)
+    goal, words = tree["lock"]["goal"]
+    assert goal["name"] == "Distributed Hive" and build.channel(goal) == "newest"
+    _, the_lock = build.pages(tree)[1]
+    last = the_lock.rindex("<section")
+    assert the_lock[last:].startswith('<section class="end">'), "the lock-in page must end at its goal"
+    assert build.html.escape(build.smart(words)) in the_lock[last:]
 
 
 @pytest.mark.parametrize(
@@ -79,6 +91,8 @@ def test_every_crossing_is_drawn_with_its_words() -> None:
         ("clean-pull.md", "phase: 2", "phase: 3", "no phase 3 step in lock.md says"),
         ("clean-pull.md", '"planned: the installer', '"maybe: the installer', "each `door` item reads"),
         ("lock.md", '"1: merge RAPP proposal 0001', '"2: merge RAPP proposal 0001', "names G18, which is no phase 2 gap"),
+        ("lock.md", 'end: "distributed-hive:', 'end: "nowhere:', "`end` reads `<part id>: words`"),
+        ("gaps/G24.md", "phase: 3", "phase: 4", "a phase 3 step names G24, which is no phase 3 gap"),
     ],
 )
 def test_a_broken_tree_is_refused(sandbox: Path, name: str, old: str, new: str, why: str) -> None:

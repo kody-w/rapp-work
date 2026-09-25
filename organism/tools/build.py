@@ -36,7 +36,7 @@ KINDS = {  # where: (kind, required fields, optional fields)
     "dogfood.md": ("dogfood", "name health tree loop", ""),
     "health.md": ("health", "name", ""),
     "glossary.md": ("glossary", "name", ""),
-    "lock.md": ("lock", "name definition pins cite phases steps", ""),
+    "lock.md": ("lock", "name definition pins cite phases steps", "end"),
     "clean-pull.md": ("pull", "name phase command measured mentions", "door"),
 }
 LISTS = {"lines", "check", "tree", "loop", "definition", "pins", "phases", "steps", "mentions", "door"}
@@ -229,6 +229,12 @@ def validate(t):
     for ph in lock["plan"]:
         if not ph["steps"]:
             refuse(lock["where"], f"phase {ph['n']} has no step")
+    lock["goal"] = None  # where the lock-in ends: one part, and what reaching it means
+    if "end" in lock:
+        pid, sep, words = lock["end"].partition(": ")
+        if not sep or not words or pid not in {p["id"] for p in t["part"]}:
+            refuse(lock["where"], "`end` reads `<part id>: words`, and names a part in parts/")
+        lock["goal"] = (ids[pid], words)
     pull = t["pull"]
     if not re.fullmatch(r"[1-5]", pull["phase"]) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", pull["measured"]):
         refuse(pull["where"], "`phase` is 1 to 5, and `measured` is the date of the count, YYYY-MM-DD")
@@ -892,7 +898,7 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .xa b { font-size: 12pt; font-weight: 700; color: #343a40; margin: 0 1px; vertical-align: -1.5pt; }
 .xa.in { justify-self: end; margin-right: -0.145in; } .xa.out { justify-self: start; margin-left: -0.155in; }
 .xa.dim b { color: #868e96; } .xa.red b { color: #c92a2a; }
-.bottom { display: grid; grid-template-columns: 1.62fr 1fr 0.9fr; gap: 0.1in; flex: 1; }
+.bottom { display: grid; grid-template-columns: 1.52fr 1.1fr 0.9fr; gap: 0.1in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
 .panel h2 { font-size: 9pt; margin: 0 0 3px 0; display: flex; align-items: center; justify-content: space-between; }
 pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt; line-height: 1.25; margin: 2px 0 4px 0;
@@ -923,33 +929,43 @@ LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radiu
 .note.lead { margin: 0 0 3px 0; }
 .g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
      font-weight: 700; margin: 0 1px 1px 0; }
-.lockin h1 { font-size: 16pt; } .lockin .panel { font-size: 8pt; } .lockin .panel h2 { font-size: 10pt; }
-.page.lockin { gap: 0.04in; }
-.decide { border: 2px solid #e67700; background: #fff4e6; border-radius: 9px; padding: 5px 10px 6px 10px; }
+.lockin h1 { font-size: 16pt; } .lockin .panel { font-size: 7.8pt; } .lockin .panel h2 { font-size: 10pt; }
+.page.lockin { gap: 0.028in; }
+.decide { border: 2px solid #e67700; background: #fff4e6; border-radius: 9px; padding: 3px 10px 4px 10px; }
 .decide h2 { font-size: 10pt; margin: 0 0 3px 0; }
-.decide ol { margin: 0; padding-left: 16px; font-size: 8.4pt; } .decide li { margin: 0 0 1px 0; }
+.decide ol { margin: 0; padding-left: 16px; font-size: 8.3pt; } .decide li { margin: 0; }
 .two { display: grid; grid-template-columns: 1.25fr 1fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
 .pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #862e9c; background: #f8f0fc;
         border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.3; }
-.cite { margin-top: 2px; font-size: 7.2pt; color: #495057; }
+.cite { margin-top: 1px; font-size: 7pt; color: #495057; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
-table.status td { padding: 0.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.status td { padding: 0 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.status .chip { line-height: 1.3; } table.status .g { line-height: 1.25; }
 table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status td:nth-child(2) { width: 1.05in; }
 .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.1in; }
-.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 7.6pt; }
-.phase h3 { font-size: 10pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
+.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 7.3pt; }
+.phase h3 { font-size: 9.6pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
 .phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; }
-.strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.6pt; }
+li .g { margin: 0; padding: 0 3px; line-height: 1.12; vertical-align: 0.4px; }  /* a gap chip inside a step keeps its line */
+.nw { white-space: nowrap; }
+.strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.4pt; }
 .strip .door { margin-top: 1px; } .strip .chip { font-size: 6.2pt; line-height: 1.25; }
 .strip .m { display: inline-block; border: 1px solid #adb5bd; background: #f1f3f5; border-radius: 6px; padding: 0 4px;
             margin: 0 1px 1px 0; font-size: 7pt; line-height: 1.3; white-space: nowrap; }
 .register { display: grid; grid-template-columns: 1.12fr 1fr; column-gap: 0.25in; align-items: start; }
-table.reg { border-collapse: collapse; width: 100%; font-size: 7.2pt; line-height: 1.05; }
-table.reg td { padding: 0.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.reg { border-collapse: collapse; width: 100%; font-size: 7.1pt; line-height: 1.02; }
+table.reg td { padding: 0 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.reg td:first-child { font-weight: 700; width: 28px; } table.reg td:nth-child(3) { width: 66px; }
 table.reg td:last-child { text-align: right; white-space: nowrap; width: 90px; color: #343a40; }
-table.reg .chip { font-size: 6.2pt; line-height: 1.25; }
+table.reg .chip { font-size: 6.1pt; line-height: 1.12; }
+.end { border: 2px solid #343a40; background: #f8f9fa; border-radius: 9px; padding: 3px 10px 4px 10px; font-size: 7.6pt; }
+.end .eh { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.end .eh > b { font-size: 10pt; } .end .eh .chip { align-self: center; } .end .ew { font-size: 8.6pt; font-weight: 700; }
+.end .ec { margin-top: 1px; line-height: 1.4; } .end .ek { display: inline-block; border: 1px solid #495057; background: #fff;
+          border-radius: 5px; padding: 0 4px; line-height: 1.35; white-space: nowrap; }
+.end .ea { font-weight: 700; color: #343a40; margin: 0 3px; }
+.plan .ph.end1 { border-bottom: 0; } .plan .ph.end1 .chip { font-size: 6pt; line-height: 1.3; }
 """
 
 
@@ -1030,8 +1046,11 @@ def pages(t):
             spans.append(f'<span class="{kind(c).strip()}"><b>{mark}{arrow}</b>{label}</span>')
         return f'<div class="conn">{"".join(spans)}</div>'
 
-    def steps(ph):
-        return "".join(f"<li>{inline(step)}</li>" for step in ph["steps"])
+    def steps(ph):  # each gap a step names is drawn as its chip, in the colors of its status, glued to its marks
+        def chipped(m):
+            return f'<span class="nw">{m[1]}{gapchip(gaps[m[2]])}{m[3]}</span>' if m[2] in gaps else m[0]
+        return "".join("<li>" + re.sub(r"(\(?)\b(G[0-9]+)\b([),;:.]?)", chipped, inline(step)) + "</li>"
+                       for step in ph["steps"])
 
     def who(ph):
         return e(ph["who"] + (f", {ph['note']}" if ph["note"] else ""))
@@ -1083,6 +1102,18 @@ def pages(t):
         f'{"".join(gapchip(g) for g in ph["gaps"]) or e(str(len(ph["steps"])) + " steps, no gaps")}</span></div>'
         for ph in plan)
     short = lock["name"].partition(": ")[0]
+    ending = end_line = ""
+    if lock["goal"]:  # the page ends where RAPP/1 LTS ends: one part, reached by the steps its role names
+        goal, words = lock["goal"]
+        lead, sep, route = goal["role"].partition(": ")
+        hops = route.split(" \u2192 ") if sep and "\u2192" in route else []
+        flow = (inline(lead) + ": " + '<span class="ea">\u2192</span>'.join(
+            f'<span class="ek">{inline(hop)}</span>' for hop in hops)) if hops else inline(goal["role"])
+        ending = (f'<section class="end"><div class="eh"><b>Where it ends: the {e(smart(goal["name"]))}</b>'
+                  f'{chip(goal["health"])}<span class="ew">{inline(words)}.</span></div>'
+                  f'<div class="ec">{flow}</div></section>')
+        end_line = (f'<div class="ph end1"><b>\u21b3 It ends as the {e(smart(goal["name"]))}</b> '
+                    f'<span class="gs">{chip(goal["health"])}</span></div>')
     foot = ("<footer><span>Experimental map, generated from organism/ \u00b7 details: ECOSYSTEM.md and CONSTITUTION.md in "
             "kody-w/rapp-work, branch experimental/rapp-work-constitution</span>"
             "<span>Specifications decide; these pages only point at them.</span></footer>")
@@ -1102,7 +1133,7 @@ def pages(t):
 <div>{inline(d["body"])}</div></div>
 <div class="panel"><h2>{e(short)} <span class="chip lock">page 2: the lock-in</span></h2>
 <div class="note lead">{inline(". ".join(lock["definition"]) + ".")}</div>
-<div class="plan">{summary}</div></div>
+<div class="plan">{summary}</div>{end_line}</div>
 <div class="panel"><h2>What holds everywhere</h2>
 <ul class="inv">{rules}</ul></div>
 </section>
@@ -1120,7 +1151,9 @@ def pages(t):
                 f'{inline(pull["body"])}' + (f'<div class="door"><b>One front door:</b> {doors}</div>' if doors else "")
                 + "</section>")
     cards = "".join(f'<div class="phase"><h3>{ph["n"]} \u00b7 {e(ph["title"])}</h3><div class="who">{who(ph)}</div>'
-                    f'<ul>{steps(ph)}</ul><div>{"".join(gapchip(g) for g in ph["gaps"])}</div></div>' for ph in plan[1:])
+                    f'<ul>{steps(ph)}</ul></div>' for ph in plan[1:])
+    words_in = [sum(len(plain(step)) + 24 for step in ph["steps"]) + 60 for ph in plan[1:]]
+    widths = " ".join(f"{k / min(words_in):.2f}fr" for k in words_in)  # wider cards for longer phases: even heights
     rows = [f'<tr><td>{e(g["id"])}</td><td>{inline(g["gap"])}</td><td>{chip(g["status"])}</td>'
             f'<td>{g["phase"]} \u00b7 {e(g["who"])}</td></tr>' for g in t["gap"]]
     half = (len(rows) + 1) // 2  # two columns, the first a little wider
@@ -1135,10 +1168,11 @@ def pages(t):
 <div class="pins"><b>It pins:</b> {pins}</div><div class="cite">{inline(lock["cite"])}.</div></div>
 <div class="panel"><h2>Each layer, top to bottom: in RAPP/1, or what it needs to graduate</h2><table class="status">{status_rows}</table></div>
 </section>
-<section class="phases">{cards}</section>
+<section class="phases" style="grid-template-columns: {widths}">{cards}</section>
 {mentions}
 <section class="panel"><h2>Gap register: each gap, its phase and who acts</h2>
 <div class="register">{register}</div></section>
+{ending}
 {foot}
 </div>"""
     return [("The RAPP/1 organism, on one page", the_map), (smart(lock["name"]), the_lock)]
@@ -1229,6 +1263,10 @@ def genome(t, graph):
     L += ["", f"It pins {pins(lock)} (RAPP/1 \u00a7\u00a711.1, 13.3). Why, and every step: [lock.md](lock.md)."]
     L += table(["Phase", "Who acts", "Gaps it closes"], lock_plan(t, steps=False))
     L += ["", f"**{t['pull']['name']}** ([clean-pull.md](clean-pull.md)): {mentions(t, short=True)}"]
+    if lock["goal"]:
+        goal, words = lock["goal"]
+        L += ["", f"**Where it ends: the [{goal['name']}](parts/{goal['stem']}.md)** ({status(goal['health'])}): "
+              f"{words}. {goal['role']}."]
     L += ["", "## Journeys"] + table(
         ["ID", "Journey"], [[f"[{j['id']}](journeys/{j['id']}.md)", j["title"]] for j in t["journey"]])
     L += ["", "## What holds everywhere", ""] + [f"- **{lead}** {rest}".rstrip() for lead, rest in inv["rules"]]
@@ -1301,6 +1339,9 @@ def ecosystem(t):
     L += ["", f"**{pull['name']}** (phase {pull['phase']}): {mentions(t)}"]
     L += ["", "What each layer still needs, top to bottom:"] + table(["Layer", "Into RAPP/1"], [
         [f"{x['n']} {x['name']}", to_lock(t, x["n"])] for x in reversed(t["layer"])])
+    if lock["goal"]:
+        goal, words = lock["goal"]
+        L += ["", f"**Where it ends: the {goal['name']}** ({goal['health']}): {words}. {goal['role']}."]
     L += ["", "## 8. Words", ""]
     L += [f"- **{term}** {meaning}" for term, meaning in t["glossary"]["rules"]]
     L += [""]

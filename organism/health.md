@@ -9,5 +9,5 @@ name: Health words
 - **gap:** no specification allows it yet.
 - **idea:** a fix not yet proposed to the spec that owns it.
 - **open:** a known gap with no fix under way.
-- **proposed:** a fix proposed to the specification that owns it, in the draft Constitution or that specification's own proposal process, not accepted yet.
+- **proposed:** a fix proposed to the specification or code that owns it, in the draft Constitution or its owner's own process (a proposal, or a pull request), not accepted yet.
 - **own shape:** outside knowledge that is never converted, and never part of a release.

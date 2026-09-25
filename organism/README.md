@@ -13,12 +13,12 @@ It also says what it takes to lock RAPP/1, the one LTS release of the whole stac
 | `parts/` | Parts inside a layer, and parts beside the stack |
 | `crossings/` | How anything moves between layers, one crossing per file |
 | `journeys/` | E1 to E7: end to end, through every layer |
-| `gaps/` | One file per gap, G01 to G23: what is still open, and which lock-in phase closes each. A dropped gap leaves its number unused (G21). |
+| `gaps/` | One file per gap, G01 to G24: what is still open, and which lock-in phase closes each. A dropped gap leaves its number unused (G21). |
 | `invariants.md` | What holds everywhere |
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
 | `health.md` | The health words every `health` and `status` starts with |
 | `glossary.md` | The other words this map uses, one per line |
-| `lock.md` | RAPP/1 LTS: what it is and pins, and five phases of steps that lock it |
+| `lock.md` | RAPP/1 LTS: what it is and pins, five phases of steps that lock it, and the part where it ends |
 | `clean-pull.md` | The clean-pull check: files on each default branch that mention “experimental”, and the front door where people find RAPP/1 |
 | `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html`, `lock-in.html`, and their printed `one-page.pdf`, `lock-in.pdf` and `rapp-lock-in.pdf` (both pages) |
 | `tools/build.py` | The builder: Python 3.10 or newer, standard library only |
@@ -48,7 +48,7 @@ Each of these gets you this folder from the `experimental/rapp-work-constitution
 ## View it
 
 - Open `views/one-page.html` in a browser. It prints on one US Letter landscape page.
-- Open `views/lock-in.html` for what it takes to lock RAPP/1 LTS: the owner's decisions first, what RAPP/1 pins, five phases, each layer's status and every gap. `views/rapp-lock-in.pdf` holds both pages.
+- Open `views/lock-in.html` for what it takes to lock RAPP/1 LTS: the owner's decisions first, what RAPP/1 pins, five phases, each layer's status and every gap. Each gap a step names is drawn as a chip in the colors of its status. The page ends where RAPP/1 LTS ends: the Distributed Hive, which a person pulls from static data. `views/rapp-lock-in.pdf` holds both pages.
 - In every view, plain boxes in force are RAPP/1, and striped boxes (in the text graph, the word `newest`) are not in RAPP/1 yet. Inside each layer the RAPP/1 cells come first and the newest cells after them, so newest parts read as their own lane. You and outside knowledge ship in neither, and are drawn dotted and white. Square chips say what each layer still needs to graduate.
 - Read `views/graph.txt` in a terminal, or `ORGANISM.md` for the graph with every table.
 - Open `views/organism.svg` for the drawing, or load `views/organism.excalidraw` in [Excalidraw](https://excalidraw.com).
@@ -83,7 +83,7 @@ A public copy is a separate repository. It holds exactly the files the members a
   python3 tools/build.py --pdf    # also prints the PDFs in views/, when Chrome or Chromium is installed
   ```
 
-The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, a gap with a bad `phase`, `who` or `blocks`, a gap that no `lock.md` step of its phase names, a newest part that no `lock.md` step graduates, a part in force whose health names something experimental, a bad clean-pull count, a page that prints on more than one sheet, or a value that would break the frontmatter.
+The builder refuses with the file and the fix when something is wrong: an unknown or missing field, a duplicate id, layers other than exactly 0 to 6, a crossing with an unknown end or an arrow against its direction, a health word that `health.md` does not define, a gap with a bad `phase`, `who` or `blocks`, a gap that no `lock.md` step of its phase names, a newest part that no `lock.md` step graduates, a part in force whose health names something experimental, a bad clean-pull count, an `end` that names no part, a page that prints on more than one sheet, or a value that would break the frontmatter.
 
 | File | Fields (optional ones in brackets) |
 |---|---|
@@ -95,7 +95,7 @@ The builder refuses with the file and the fix when something is wrong: an unknow
 | `invariants.md` | `healthy`, `upstream`; each rule is a body line `- **Lead.** More words.` |
 | `dogfood.md` | `name`, `health`, `tree`, `loop` |
 | `health.md`, `glossary.md` | `name`; each word is a body line `- **word:** meaning` |
-| `lock.md` | `name`, `definition`, `pins`, `cite`, `phases` (`Title: who` or `Title: who, note`), `steps` (`<phase>: words`) |
+| `lock.md` | `name`, `definition`, `pins`, `cite`, `phases` (`Title: who` or `Title: who, note`), `steps` (`<phase>: words`), [`end` (`<part id>: words`)] |
 | `clean-pull.md` | `name`, `phase`, `command`, `measured` (YYYY-MM-DD), `mentions` (`<repository>: <files>`), [`door` (`<health word>: words`)] |
 
 - `health` and `status` start with a word from `health.md`: in force, specified, experimental, candidate, planned, gap, idea, open, proposed or own shape. Words after it are notes. `—` means none.
@@ -107,6 +107,7 @@ The builder refuses with the file and the fix when something is wrong: an unknow
 - A part's channel follows its health, and is never set by hand: RAPP/1 (the LTS release) when it is in force; newest, not in RAPP/1 yet, for any other word; outside knowledge (own shape) ships in neither.
 - `phase` is the lock-in phase that closes a gap, 1 to 5, and `who` acts on it: you, engineering, spec owner or estate owner. `blocks` names the layer or part the gap holds back. Each layer's status is `in RAPP/1`, `N to graduate` (those gaps, plus its newest parts that no gap covers) or `nothing to graduate`.
 - Every gap must be named by a `lock.md` step of its own phase, every newest part by some `lock.md` step, and every phase needs a step. The clean-pull check needs a step of its `phase` that says its `name`.
+- `end` names the part where the lock-in ends, and what reaching it means. The lock-in page ends with it, its role drawn as a route when the role reads `lead: a → b → c`.
 - `lines` are the words drawn in a box. A layer `role` that starts with a short phrase and a colon gives the box its title.
 - Wrap a value in double quotes when it holds `: ` or starts with a sign such as `` ` ``, `[` or `"`, so the frontmatter stays valid YAML.
 

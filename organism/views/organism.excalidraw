@@ -2937,6 +2937,10 @@
     {
      "id": "rapp1-estate",
      "type": "arrow"
+    },
+    {
+     "id": "estate-distributed-hive",
+     "type": "arrow"
     }
    ],
    "updated": 1,
@@ -3489,8 +3493,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "1 to graduate",
-   "originalText": "1 to graduate",
+   "text": "2 to graduate",
+   "originalText": "2 to graduate",
    "fontSize": 12.5,
    "fontFamily": 2,
    "containerId": "lock:1",
@@ -3711,8 +3715,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "7 to graduate",
-   "originalText": "7 to graduate",
+   "text": "8 to graduate",
+   "originalText": "8 to graduate",
    "fontSize": 12.5,
    "fontFamily": 2,
    "containerId": "lock:4",
@@ -4672,7 +4676,159 @@
    "verticalAlign": "middle"
   },
   {
-   "id": "foot:125",
+   "id": "distributed-hive",
+   "type": "rectangle",
+   "x": 1370,
+   "y": 1100,
+   "width": 300,
+   "height": 98,
+   "angle": 0,
+   "strokeColor": "#495057",
+   "backgroundColor": "#adb5bd",
+   "fillStyle": "hachure",
+   "strokeWidth": 2,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "distributed-hive"
+   ],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 125,
+   "version": 1,
+   "versionNonce": 125,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "id": "distributed-hive:126",
+     "type": "text"
+    },
+    {
+     "id": "estate-distributed-hive",
+     "type": "arrow"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "distributed-hive:126",
+   "type": "text",
+   "x": 1375,
+   "y": 1105,
+   "width": 290,
+   "height": 51,
+   "angle": 0,
+   "strokeColor": "#000000",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "distributed-hive"
+   ],
+   "frameId": null,
+   "roundness": null,
+   "seed": 126,
+   "version": 1,
+   "versionNonce": 126,
+   "isDeleted": false,
+   "boundElements": null,
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "Distributed Hive\nthe RAPP/1 network as one Hive\neach repo’s .rapp/ · found from RAPP’s seed",
+   "originalText": "Distributed Hive\nthe RAPP/1 network as one Hive\neach repo’s .rapp/ · found from RAPP’s seed",
+   "fontSize": 13.5,
+   "fontFamily": 2,
+   "containerId": "distributed-hive",
+   "lineHeight": 1.25,
+   "autoResize": true,
+   "textAlign": "left",
+   "verticalAlign": "top"
+  },
+  {
+   "id": "distributed-hive:tag",
+   "type": "rectangle",
+   "x": 1555,
+   "y": 1110,
+   "width": 105,
+   "height": 22,
+   "angle": 0,
+   "strokeColor": "#e67700",
+   "backgroundColor": "#ffe8cc",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "distributed-hive"
+   ],
+   "frameId": null,
+   "roundness": {
+    "type": 3
+   },
+   "seed": 127,
+   "version": 1,
+   "versionNonce": 127,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "id": "distributed-hive:128",
+     "type": "text"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false
+  },
+  {
+   "id": "distributed-hive:128",
+   "type": "text",
+   "x": 1560,
+   "y": 1115,
+   "width": 95,
+   "height": 15,
+   "angle": 0,
+   "strokeColor": "#000000",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "distributed-hive"
+   ],
+   "frameId": null,
+   "roundness": null,
+   "seed": 128,
+   "version": 1,
+   "versionNonce": 128,
+   "isDeleted": false,
+   "boundElements": null,
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "experimental",
+   "originalText": "experimental",
+   "fontSize": 12,
+   "fontFamily": 2,
+   "containerId": "distributed-hive:tag",
+   "lineHeight": 1.25,
+   "autoResize": true,
+   "textAlign": "center",
+   "verticalAlign": "middle"
+  },
+  {
+   "id": "foot:129",
    "type": "text",
    "x": 30,
    "y": 1426,
@@ -4691,9 +4847,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 125,
+   "seed": 129,
    "version": 1,
-   "versionNonce": 125,
+   "versionNonce": 129,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -4729,9 +4885,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 126,
+   "seed": 130,
    "version": 1,
-   "versionNonce": 126,
+   "versionNonce": 130,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -4774,9 +4930,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 127,
+   "seed": 131,
    "version": 1,
-   "versionNonce": 127,
+   "versionNonce": 131,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -4819,13 +4975,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 128,
+   "seed": 132,
    "version": 1,
-   "versionNonce": 128,
+   "versionNonce": 132,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "you-brainstem:129",
+     "id": "you-brainstem:133",
      "type": "text"
     }
    ],
@@ -4858,7 +5014,7 @@
    "elbowed": false
   },
   {
-   "id": "you-brainstem:129",
+   "id": "you-brainstem:133",
    "type": "text",
    "x": 423.5,
    "y": 301.0,
@@ -4877,9 +5033,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 129,
+   "seed": 133,
    "version": 1,
-   "versionNonce": 129,
+   "versionNonce": 133,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -4915,13 +5071,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 130,
+   "seed": 134,
    "version": 1,
-   "versionNonce": 130,
+   "versionNonce": 134,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "brainstem-workspaces:131",
+     "id": "brainstem-workspaces:135",
      "type": "text"
     }
    ],
@@ -4954,7 +5110,7 @@
    "elbowed": false
   },
   {
-   "id": "brainstem-workspaces:131",
+   "id": "brainstem-workspaces:135",
    "type": "text",
    "x": 424.5,
    "y": 513.0,
@@ -4973,9 +5129,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 131,
+   "seed": 135,
    "version": 1,
-   "versionNonce": 131,
+   "versionNonce": 135,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5011,13 +5167,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 132,
+   "seed": 136,
    "version": 1,
-   "versionNonce": 132,
+   "versionNonce": 136,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "brainstem-device:133",
+     "id": "brainstem-device:137",
      "type": "text"
     }
    ],
@@ -5050,7 +5206,7 @@
    "elbowed": false
   },
   {
-   "id": "brainstem-device:133",
+   "id": "brainstem-device:137",
    "type": "text",
    "x": 659.5,
    "y": 517.0,
@@ -5069,9 +5225,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 133,
+   "seed": 137,
    "version": 1,
-   "versionNonce": 133,
+   "versionNonce": 137,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5107,13 +5263,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 134,
+   "seed": 138,
    "version": 1,
-   "versionNonce": 134,
+   "versionNonce": 138,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "references-folder-hive:135",
+     "id": "references-folder-hive:139",
      "type": "text"
     }
    ],
@@ -5146,7 +5302,7 @@
    "elbowed": false
   },
   {
-   "id": "references-folder-hive:135",
+   "id": "references-folder-hive:139",
    "type": "text",
    "x": 672.5,
    "y": 701.0,
@@ -5165,9 +5321,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 135,
+   "seed": 139,
    "version": 1,
-   "versionNonce": 135,
+   "versionNonce": 139,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5203,13 +5359,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 136,
+   "seed": 140,
    "version": 1,
-   "versionNonce": 136,
+   "versionNonce": 140,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "hive-copy-folder-hive:137",
+     "id": "hive-copy-folder-hive:141",
      "type": "text"
     }
    ],
@@ -5242,7 +5398,7 @@
    "elbowed": false
   },
   {
-   "id": "hive-copy-folder-hive:137",
+   "id": "hive-copy-folder-hive:141",
    "type": "text",
    "x": 948.5,
    "y": 693.0,
@@ -5261,9 +5417,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 137,
+   "seed": 141,
    "version": 1,
-   "versionNonce": 137,
+   "versionNonce": 141,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5299,13 +5455,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 138,
+   "seed": 142,
    "version": 1,
-   "versionNonce": 138,
+   "versionNonce": 142,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "private-hive-organization:139",
+     "id": "private-hive-organization:143",
      "type": "text"
     }
    ],
@@ -5338,7 +5494,7 @@
    "elbowed": false
   },
   {
-   "id": "private-hive-organization:139",
+   "id": "private-hive-organization:143",
    "type": "text",
    "x": 429.5,
    "y": 873.0,
@@ -5357,9 +5513,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 139,
+   "seed": 143,
    "version": 1,
-   "versionNonce": 139,
+   "versionNonce": 143,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5395,13 +5551,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 140,
+   "seed": 144,
    "version": 1,
-   "versionNonce": 140,
+   "versionNonce": 144,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "folder-hive-organization:141",
+     "id": "folder-hive-organization:145",
      "type": "text"
     }
    ],
@@ -5434,11 +5590,11 @@
    "elbowed": false
   },
   {
-   "id": "folder-hive-organization:141",
+   "id": "folder-hive-organization:145",
    "type": "text",
-   "x": 733.5,
+   "x": 719.5,
    "y": 881.0,
-   "width": 93,
+   "width": 121,
    "height": 16,
    "angle": 0,
    "strokeColor": "#000000",
@@ -5453,16 +5609,16 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 141,
+   "seed": 145,
    "version": 1,
-   "versionNonce": 141,
+   "versionNonce": 145,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "idea (G5, G10)",
-   "originalText": "idea (G5, G10)",
+   "text": "proposed (G5, G10)",
+   "originalText": "proposed (G5, G10)",
    "fontSize": 12.5,
    "fontFamily": 2,
    "containerId": "folder-hive-organization",
@@ -5491,13 +5647,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 142,
+   "seed": 146,
    "version": 1,
-   "versionNonce": 142,
+   "versionNonce": 146,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "estate-organization:143",
+     "id": "estate-organization:147",
      "type": "text"
     }
    ],
@@ -5530,7 +5686,7 @@
    "elbowed": false
   },
   {
-   "id": "estate-organization:143",
+   "id": "estate-organization:147",
    "type": "text",
    "x": 742.0,
    "y": 1061.0,
@@ -5549,9 +5705,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 143,
+   "seed": 147,
    "version": 1,
-   "versionNonce": 143,
+   "versionNonce": 147,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5587,13 +5743,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 144,
+   "seed": 148,
    "version": 1,
-   "versionNonce": 144,
+   "versionNonce": 148,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "rapp1-estate:145",
+     "id": "rapp1-estate:149",
      "type": "text"
     }
    ],
@@ -5626,7 +5782,7 @@
    "elbowed": false
   },
   {
-   "id": "rapp1-estate:145",
+   "id": "rapp1-estate:149",
    "type": "text",
    "x": 724.0,
    "y": 1241.0,
@@ -5645,9 +5801,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 145,
+   "seed": 149,
    "version": 1,
-   "versionNonce": 145,
+   "versionNonce": 149,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5683,13 +5839,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 146,
+   "seed": 150,
    "version": 1,
-   "versionNonce": 146,
+   "versionNonce": 150,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "rar-brainstem:147",
+     "id": "rar-brainstem:151",
      "type": "text"
     }
    ],
@@ -5722,7 +5878,7 @@
    "elbowed": false
   },
   {
-   "id": "rar-brainstem:147",
+   "id": "rar-brainstem:151",
    "type": "text",
    "x": 371.0,
    "y": 400.0,
@@ -5741,9 +5897,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 147,
+   "seed": 151,
    "version": 1,
-   "versionNonce": 147,
+   "versionNonce": 151,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5779,13 +5935,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 148,
+   "seed": 152,
    "version": 1,
-   "versionNonce": 148,
+   "versionNonce": 152,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "outside-knowledge-device:149",
+     "id": "outside-knowledge-device:153",
      "type": "text"
     }
    ],
@@ -5818,7 +5974,7 @@
    "elbowed": false
   },
   {
-   "id": "outside-knowledge-device:149",
+   "id": "outside-knowledge-device:153",
    "type": "text",
    "x": 372.0,
    "y": 648.0,
@@ -5837,9 +5993,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 149,
+   "seed": 153,
    "version": 1,
-   "versionNonce": 149,
+   "versionNonce": 153,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5875,13 +6031,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 150,
+   "seed": 154,
    "version": 1,
-   "versionNonce": 150,
+   "versionNonce": 154,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "folder-hive-public-copy:151",
+     "id": "folder-hive-public-copy:155",
      "type": "text"
     }
    ],
@@ -5914,7 +6070,7 @@
    "elbowed": false
   },
   {
-   "id": "folder-hive-public-copy:151",
+   "id": "folder-hive-public-copy:155",
    "type": "text",
    "x": 1260.0,
    "y": 756.0,
@@ -5933,9 +6089,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 151,
+   "seed": 155,
    "version": 1,
-   "versionNonce": 151,
+   "versionNonce": 155,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -5971,13 +6127,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 152,
+   "seed": 156,
    "version": 1,
-   "versionNonce": 152,
+   "versionNonce": 156,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "old-hive-folder-hive:153",
+     "id": "old-hive-folder-hive:157",
      "type": "text"
     }
    ],
@@ -6010,7 +6166,7 @@
    "elbowed": false
   },
   {
-   "id": "old-hive-folder-hive:153",
+   "id": "old-hive-folder-hive:157",
    "type": "text",
    "x": 352.0,
    "y": 784.0,
@@ -6029,9 +6185,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 153,
+   "seed": 157,
    "version": 1,
-   "versionNonce": 153,
+   "versionNonce": 157,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -6067,13 +6223,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 154,
+   "seed": 158,
    "version": 1,
-   "versionNonce": 154,
+   "versionNonce": 158,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "private-hive-hive-mind:155",
+     "id": "private-hive-hive-mind:159",
      "type": "text"
     }
    ],
@@ -6106,7 +6262,7 @@
    "elbowed": false
   },
   {
-   "id": "private-hive-hive-mind:155",
+   "id": "private-hive-hive-mind:159",
    "type": "text",
    "x": 1266.0,
    "y": 829.0,
@@ -6125,9 +6281,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 155,
+   "seed": 159,
    "version": 1,
-   "versionNonce": 155,
+   "versionNonce": 159,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -6163,13 +6319,13 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 156,
+   "seed": 160,
    "version": 1,
-   "versionNonce": 156,
+   "versionNonce": 160,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "release-rings-organization:157",
+     "id": "release-rings-organization:161",
      "type": "text"
     }
    ],
@@ -6202,7 +6358,7 @@
    "elbowed": false
   },
   {
-   "id": "release-rings-organization:157",
+   "id": "release-rings-organization:161",
    "type": "text",
    "x": 1248.0,
    "y": 974.0,
@@ -6221,9 +6377,9 @@
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 157,
+   "seed": 161,
    "version": 1,
-   "versionNonce": 157,
+   "versionNonce": 161,
    "isDeleted": false,
    "boundElements": null,
    "updated": 1,
@@ -6234,6 +6390,102 @@
    "fontSize": 11,
    "fontFamily": 2,
    "containerId": "release-rings-organization",
+   "lineHeight": 1.25,
+   "autoResize": true,
+   "textAlign": "center",
+   "verticalAlign": "middle"
+  },
+  {
+   "id": "estate-distributed-hive",
+   "type": "arrow",
+   "x": 1230,
+   "y": 1149,
+   "width": 140,
+   "height": 0,
+   "angle": 0,
+   "strokeColor": "#868e96",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 2,
+   "strokeStyle": "dashed",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "estate-distributed-hive"
+   ],
+   "frameId": null,
+   "roundness": null,
+   "seed": 162,
+   "version": 1,
+   "versionNonce": 162,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "id": "estate-distributed-hive:163",
+     "type": "text"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     140,
+     0
+    ]
+   ],
+   "lastCommittedPoint": null,
+   "startBinding": {
+    "elementId": "estate",
+    "focus": 0,
+    "gap": 1
+   },
+   "endBinding": {
+    "elementId": "distributed-hive",
+    "focus": 0,
+    "gap": 1
+   },
+   "startArrowhead": null,
+   "endArrowhead": "arrow",
+   "elbowed": false
+  },
+  {
+   "id": "estate-distributed-hive:163",
+   "type": "text",
+   "x": 1263.0,
+   "y": 1141.0,
+   "width": 74,
+   "height": 14,
+   "angle": 0,
+   "strokeColor": "#495057",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "estate-distributed-hive"
+   ],
+   "frameId": null,
+   "roundness": null,
+   "seed": 163,
+   "version": 1,
+   "versionNonce": 163,
+   "isDeleted": false,
+   "boundElements": null,
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "pins its root",
+   "originalText": "pins its root",
+   "fontSize": 11,
+   "fontFamily": 2,
+   "containerId": "estate-distributed-hive",
    "lineHeight": 1.25,
    "autoResize": true,
    "textAlign": "center",
