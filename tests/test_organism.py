@@ -43,7 +43,7 @@ def test_every_gap_holds_back_exactly_one_layer() -> None:
         ("gaps/G18.md", "phase: 1", "phase: 6", "`phase` is 1 to 5"),
         ("gaps/G18.md", "who: you", "who: nobody", "`who` is one of"),
         ("gaps/G18.md", "blocks: brainstem", "blocks: nowhere", "`blocks` names"),
-        ("lock.md", '  - "1: pick the kernel to lock (G21)"\n', "", "no phase 1 step in lock.md names G21"),
+        ("lock.md", '  - "1: decide Tier 2 loader parity (G19)"\n', "", "no phase 1 step in lock.md names G19"),
         ("lock.md", '"1: merge RAPP proposal 0001', '"2: merge RAPP proposal 0001', "names G18, which is no phase 2 gap"),
     ],
 )

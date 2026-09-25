@@ -20,21 +20,21 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                                  ▲ ask · propose · confirm the exact plan
                                                  ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ RAR             │           │ 5 · BRAINSTEM                  [5 to lock] │
+│ RAR             │           │ 5 · BRAINSTEM                  [4 to lock] │
 │ one-file        │           │ the one surface you talk to                │
 │ agents, read    │           ├──────────────┬─────────────────────────────┤
 │ first           │─copy in──►│ BRAINSTEM    │ BRAINSTEM                   │
 │ you copy one    │           │ APP          │ Your own AI: frozen Grail   │
 │ into agents/    │           │ drag agents  │ kernel · hot-loaded         │
 │ [in force]      │           │ in and out   │ agents · soul · memory      │
-└─────────────────┘           │ of the top   │ only top-level              │
-                              │ of agents/   │ agents/*_agent.py are live  │
-                              │ agent and    │ It proposes; you decide. A  │
-                              │ memory cards │ Hive is never its agents    │
-                              │ your         │ folder or soul.             │
-                              │ Brainstem's  │ [in force]                  │
-                              │ chat         │                             │
-                              │ [exp]        │                             │
+└─────────────────┘           │ of the top   │ kernel: LTS                 │
+                              │ of agents/   │ brainstem-v0.6.9 (RAPP's    │
+                              │ agent and    │ pin) · newest release       │
+                              │ memory cards │ brainstem-v0.6.16           │
+                              │ your         │ It proposes; you decide. A  │
+                              │ Brainstem's  │ Hive is never its agents    │
+                              │ chat         │ folder or soul.             │
+                              │ [exp]        │ [in force]                  │
                               └──────────────┴───┬─────────────────────────┘
                                                  │ operates     ▲ SDK operations (not wired to the
                                                  │ your Hive    │ Brainstem yet, G17)
@@ -124,7 +124,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | # | Layer | What it is | Health | To lock RAPP/1 |
 |---|---|---|---|---|
 | 6 | [You](layers/6-you.md) | “Give me my Brainstem.” You talk and confirm; every change is shown in plain words first | — | nothing to lock |
-| 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force | 5 to lock (G17, G18, G19, G20, G21) |
+| 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force | 4 to lock (G17, G18, G19, G20) |
 | 4 | [Your device](layers/4-your-device.md) | Your copy of each Hive, your read-only references and your private workspaces, with one key per device per Hive | experimental | 7 to lock (G2, G3, G4, G7, G13, G14, G22) |
 | 3 | [Hive](layers/3-hive.md) | Where the members share work: a folder Hive (experimental) or a `rapp-hive/1` Private Hive (in force, and the organization's one Hive today) | in force | 6 to lock (G1, G6, G8, G9, G12, Public copy) |
 | 2 | [Organization](layers/2-organization.md) | The accountable body: one owner, one world, one policy, one release scope, and exactly one Hive. Its body stream holds catalogs, Hive vectors, migrations, receipts, observations and rollbacks | specified (G10, G16) | 4 to lock (G5, G10, G11, G16) |
@@ -191,7 +191,6 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | [G18](gaps/G18.md) | RAPP's Constitution said agents load from every folder | proposed |
 | [G19](gaps/G19.md) | The cloud Brainstem loads agents differently | open |
 | [G20](gaps/G20.md) | The Brainstem app's path to the production ring | open |
-| [G21](gaps/G21.md) | RAPP's kernel pin lags the Grail kernel's newest release | open |
 | [G22](gaps/G22.md) | “Workspace” names two things | idea |
 
 ## Locking RAPP/1
@@ -200,7 +199,7 @@ RAPP/1 is locked when the whole stack is frozen, pinned, in force and free of dr
 
 | Phase | Who acts | Gaps it closes |
 |---|---|---|
-| 1. Decide | you, about an hour | G8, G9, G18, G19, G21 |
+| 1. Decide | you, about an hour | G8, G9, G18, G19 |
 | 2. Zero drift | engineering | — |
 | 3. Close the specification gaps | spec owner | G1, G2, G3, G4, G5, G6, G7, G10, G11, G22 |
 | 4. Switch it on | estate owner | G15, G16, G17 |

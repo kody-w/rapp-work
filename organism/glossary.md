@@ -12,5 +12,6 @@ name: Words this map uses
 - **`work.vector`:** the signed `rapp-work/1` frame that records which authenticated `rapp-hive/1` checkpoint an organization accepted.
 - **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
 - **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
+- **LTS and newest:** the Brainstem kernel's two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest release is tracked separately.
 - **Grail and grail:** the Grail is the Brainstem's frozen kernel, pinned by its `grail_id` (RAPP/1 §11.1). Lowercase grail is this project's name for a track's production ring.
 - **organism:** RAPP/1 uses it for one running Brainstem with a lasting identity (RAPP/1 §3). This map uses it for the whole ecosystem.

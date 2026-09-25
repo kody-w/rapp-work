@@ -52,9 +52,9 @@
 <rect x="630" y="312" width="500" height="158" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
 <text x="644" y="340" font-size="17" font-weight="700">Brainstem — the one surface you talk to</text>
 <text x="644" y="366" font-size="13.5">Your own AI: frozen Grail kernel · hot-loaded agents · soul · memory</text>
-<text x="644" y="386" font-size="13.5">only top-level agents/*_agent.py are live</text>
+<text x="644" y="386" font-size="13.5">kernel: LTS brainstem-v0.6.9 (RAPP’s pin) · newest release brainstem-v0.6.16</text>
 <text x="644" y="406" font-size="13.5">It proposes; you decide. A Hive is never its agents folder or soul.</text>
-<text x="644" y="426" font-size="13.5">Home: kody-w/RAPP, with the kernel pinned to</text>
+<text x="644" y="426" font-size="13.5">Home: kody-w/RAPP, with the LTS kernel pinned to</text>
 <text x="644" y="446" font-size="13.5">kody-w/rapp-installer@brainstem-v0.6.9</text>
 <rect x="1045" y="322" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
 <text x="1082" y="337" font-size="12" text-anchor="middle">in force</text>
@@ -136,7 +136,7 @@
 <rect x="1492" y="579" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
 <text x="1545" y="595" font-size="12.5" font-weight="700" text-anchor="middle">7 to lock</text>
 <rect x="1492" y="379" width="106" height="24" rx="12" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
-<text x="1545" y="395" font-size="12.5" font-weight="700" text-anchor="middle">5 to lock</text>
+<text x="1545" y="395" font-size="12.5" font-weight="700" text-anchor="middle">4 to lock</text>
 <rect x="1492" y="179" width="106" height="24" rx="12" fill="#e9ecef" stroke="#868e96" stroke-width="1.5"/>
 <text x="1545" y="195" font-size="12.5" text-anchor="middle">nothing to lock</text>
 <text x="1545" y="118" font-size="12.5" text-anchor="middle" fill="#495057">to lock RAPP/1</text>

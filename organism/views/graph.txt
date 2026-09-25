@@ -11,21 +11,21 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                                  ▲ ask · propose · confirm the exact plan
                                                  ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ RAR             │           │ 5 · BRAINSTEM                  [5 to lock] │
+│ RAR             │           │ 5 · BRAINSTEM                  [4 to lock] │
 │ one-file        │           │ the one surface you talk to                │
 │ agents, read    │           ├──────────────┬─────────────────────────────┤
 │ first           │─copy in──►│ BRAINSTEM    │ BRAINSTEM                   │
 │ you copy one    │           │ APP          │ Your own AI: frozen Grail   │
 │ into agents/    │           │ drag agents  │ kernel · hot-loaded         │
 │ [in force]      │           │ in and out   │ agents · soul · memory      │
-└─────────────────┘           │ of the top   │ only top-level              │
-                              │ of agents/   │ agents/*_agent.py are live  │
-                              │ agent and    │ It proposes; you decide. A  │
-                              │ memory cards │ Hive is never its agents    │
-                              │ your         │ folder or soul.             │
-                              │ Brainstem's  │ [in force]                  │
-                              │ chat         │                             │
-                              │ [exp]        │                             │
+└─────────────────┘           │ of the top   │ kernel: LTS                 │
+                              │ of agents/   │ brainstem-v0.6.9 (RAPP's    │
+                              │ agent and    │ pin) · newest release       │
+                              │ memory cards │ brainstem-v0.6.16           │
+                              │ your         │ It proposes; you decide. A  │
+                              │ Brainstem's  │ Hive is never its agents    │
+                              │ chat         │ folder or soul.             │
+                              │ [exp]        │ [in force]                  │
                               └──────────────┴───┬─────────────────────────┘
                                                  │ operates     ▲ SDK operations (not wired to the
                                                  │ your Hive    │ Brainstem yet, G17)

@@ -11,7 +11,7 @@ It is experimental. Specifications decide; the organism only points at them.
 | `parts/` | Parts inside a layer, and parts beside the stack |
 | `crossings/` | How anything moves between layers, one crossing per file |
 | `journeys/` | E1 to E7: end to end, through every layer |
-| `gaps/` | G01 to G22: what is still open, and which lock-in phase closes each |
+| `gaps/` | One file per gap, G01 to G22: what is still open, and which lock-in phase closes each. A dropped gap leaves its number unused (G21). |
 | `invariants.md` | What holds everywhere |
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
 | `health.md` | The health words every `health` and `status` starts with |
