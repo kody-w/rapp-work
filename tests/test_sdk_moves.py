@@ -7,6 +7,7 @@ import os
 import stat
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -474,6 +475,237 @@ def test_a_destination_taken_after_the_flip_is_reported_not_chased(
     assert elsewhere.read_bytes() == AGENT
     assert not (root / SOURCE).exists()
     assert (root / MARKER).is_file()
+
+
+def folds(directory: Path, folding: str) -> bool:
+    """Whether this filesystem resolves another case or normalization of a stored name."""
+    stored, other = {
+        "case": ("fold-probe.txt", "FOLD-PROBE.txt"),
+        "normalization": ("fold-probe-\u00e9.txt", "fold-probe-e\u0301.txt"),
+    }[folding]
+    probe = directory / stored
+    probe.write_bytes(b"")
+    try:
+        return os.path.lexists(directory / other)
+    finally:
+        probe.unlink()
+
+
+def stored_note(root: Path) -> tuple[str, str]:
+    """Create ``notes/café.md``; return its stored name and its other normalization form."""
+    (root / "notes/archive").mkdir(parents=True)
+    (root / "notes/caf\u00e9.md").write_bytes(NOTE)
+    stored = next(name for name in os.listdir(root / "notes") if name != "archive")
+    composed = unicodedata.normalize("NFC", stored)
+    return stored, unicodedata.normalize("NFD", stored) if stored == composed else composed
+
+
+@pytest.mark.parametrize(
+    ("alias", "folding"),
+    [
+        ("case-source-name", "case"),
+        ("case-source-directory", "case"),
+        ("case-destination-directory", "case"),
+        ("normalization-source-name", "normalization"),
+        ("case-note-destination-directory", "case"),
+    ],
+)
+def test_existing_entries_are_named_by_their_stored_spelling(
+    sandbox: Path,
+    alias: str,
+    folding: str,
+) -> None:
+    root = make_root(sandbox)
+    stored, other = stored_note(root)
+    if not folds(root, folding):
+        pytest.skip(f"this filesystem keeps other {folding} spellings apart")
+    pair = {
+        "case-source-name": ("agents/Example_Agent.py", "agents/experimental/Example_Agent.py"),
+        "case-source-directory": ("Agents/example_agent.py", DESTINATION),
+        "case-destination-directory": (SOURCE, "agents/Experimental/example_agent.py"),
+        "normalization-source-name": ("notes/" + other, "notes/archive/" + other),
+        "case-note-destination-directory": ("notes/" + stored, "Notes/archive/" + stored),
+    }[alias]
+    before = tree(root)
+    result = update({"moves": moves(pair), "root": str(root)})
+    assert refusal(result) == "REFUSE_PATH_SPELLING"
+    assert result["refusal"]["details"]["reason"] == "stored-spelling"
+    assert tree(root) == before
+
+
+def test_a_stored_non_ascii_name_round_trips_exactly(sandbox: Path) -> None:
+    root = make_root(sandbox)
+    stored, _ = stored_note(root)
+    source = "notes/" + stored
+    before = tree(root)
+    planned = plan_moves(root, (source, "notes/archive/" + stored))
+    assert apply(root, planned)["status"] == "applied"
+    undo = inverse(root, planned)
+    assert apply(root, undo)["status"] == "applied"
+    assert tree(root) == before
+    assert os.listdir(root / "notes/archive") == []
+
+
+def test_a_source_respelled_after_planning_is_refused_by_the_replay(sandbox: Path) -> None:
+    root = make_root(sandbox)
+    if not folds(root, "case"):
+        pytest.skip("this filesystem keeps other case spellings apart")
+    planned = plan_moves(root, (SOURCE, DESTINATION))
+    os.rename(root / SOURCE, root / "agents/Example_agent.py")
+    before = tree(root)
+    assert refusal(apply(root, planned)) == "REFUSE_PATH_SPELLING"
+    assert tree(root) == before
+
+
+def test_a_destination_the_filesystem_stores_differently_is_undone(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = make_root(sandbox)
+    planned = plan_moves(root, (SOURCE, DESTINATION))
+    before = tree(root)
+    real = moves_module._stored
+
+    def respelled(directory: int, name: str, *, path: str) -> bool:
+        # A filesystem that normalizes new names (HFS+ stores decomposed forms) keeps none
+        # under the planned spelling.
+        return False if path == DESTINATION else real(directory, name, path=path)
+
+    monkeypatch.setattr(moves_module, "_stored", respelled)
+    refused = apply(root, planned)
+    assert refusal(refused) == "REFUSE_PATH_SPELLING"
+    details = refused["refusal"]["details"]
+    assert (details["reason"], details["undone"], details["recovery"]) == (
+        "destination-spelling",
+        True,
+        "none",
+    )
+    assert tree(root) == before
+
+
+def test_a_destination_name_the_filesystem_rewrites_is_undone(sandbox: Path) -> None:
+    root = make_root(sandbox)
+    stored, other = stored_note(root)
+    probe = root / "notes/archive" / other
+    probe.write_bytes(b"")
+    rewritten = os.listdir(root / "notes/archive") != [other]
+    probe.unlink()
+    if not rewritten:
+        pytest.skip("this filesystem stores new names as spelled")
+    planned = plan_moves(root, ("notes/" + stored, "notes/archive/" + other))
+    before = tree(root)
+    refused = apply(root, planned)
+    assert refusal(refused) == "REFUSE_PATH_SPELLING"
+    details = refused["refusal"]["details"]
+    assert (details["reason"], details["undone"], details["recovery"]) == (
+        "destination-spelling",
+        True,
+        "none",
+    )
+    assert tree(root) == before
+
+
+def test_an_undo_that_would_move_another_file_back_is_not_reported_undone(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = make_root(sandbox)
+    planned = plan_moves(root, (SOURCE, DESTINATION))
+    version_3 = b"# version 3: saved at the destination during the undo\n"
+    real = moves_module._rename_exclusive
+    calls: list[str] = []
+
+    def hooked(source_directory: int, source: str, destination_directory: int, target: str) -> None:
+        if source == "example_agent.py" and target == "example_agent.py":
+            calls.append(source)
+            if len(calls) == 1:
+                atomic_save(root / SOURCE, VERSION_2)
+            elif len(calls) == 2:
+                atomic_save(root / DESTINATION, version_3)
+        real(source_directory, source, destination_directory, target)
+
+    monkeypatch.setattr(moves_module, "_rename_exclusive", hooked)
+    refused = apply(root, planned)
+    assert len(calls) == 2
+    assert refusal(refused) == "REFUSE_FILE_RACE"
+    details = refused["refusal"]["details"]
+    assert (details["reason"], details["undone"], details["recovery"]) == (
+        "source-replaced",
+        False,
+        "pending",
+    )
+    assert (root / SOURCE).read_bytes() == version_3
+    assert (root / MARKER).is_file()
+
+
+def test_a_parent_swapped_while_it_is_opened_is_refused(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = make_root(sandbox)
+    real = moves_module._lstat_at
+    swapped: list[bool] = []
+
+    def swapping_lstat(directory: int, name: str) -> os.stat_result | None:
+        info = real(directory, name)
+        if name == "experimental" and not swapped:
+            swapped.append(True)
+            os.rename(root / "agents/experimental", root / "agents/experimental-old")
+            (root / "agents/experimental").mkdir()
+        return info
+
+    monkeypatch.setattr(moves_module, "_lstat_at", swapping_lstat)
+    result = update({"moves": moves((SOURCE, DESTINATION)), "root": str(root)})
+    assert swapped == [True]
+    assert refusal(result) == "REFUSE_FILE_RACE"
+    assert result["refusal"]["message"] == "move parent changed while it was opened"
+    assert (root / SOURCE).read_bytes() == AGENT
+    assert not (root / MARKER).exists()
+
+
+def test_a_marker_edited_in_place_during_apply_is_never_removed(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = make_root(sandbox)
+    planned = plan_moves(root, (SOURCE, DESTINATION))
+    marker = root / MARKER
+
+    def edit_the_marker() -> None:
+        with marker.open("r+b") as stream:
+            stream.write(b" ")
+
+    hook_flip(monkeypatch, after=edit_the_marker)
+    refused = apply(root, planned)
+    assert refusal(refused) == "REFUSE_RECOVERY_BINDING"
+    assert marker.read_bytes().startswith(b" ")
+    assert (root / DESTINATION).read_bytes() == AGENT
+    assert not (root / SOURCE).exists()
+
+
+def test_a_resume_refuses_a_path_the_sdk_inventory_now_owns(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = make_root(sandbox)
+    planned = plan_moves(root, (SOURCE, DESTINATION))
+    monkeypatch.setattr(moves_module, "_flip", crash)
+    with pytest.raises(SimulatedCrash):
+        apply(root, planned)
+    monkeypatch.undo()
+    assert (root / MARKER).is_file()
+    real = moves_module._integration
+
+    def owning(path: Path, identity: dict[str, Any]) -> tuple[set[str], tuple[str, ...]]:
+        owned, owned_paths = real(path, identity)
+        return owned | {plans_module.fold_path(DESTINATION)}, owned_paths
+
+    monkeypatch.setattr(moves_module, "_integration", owning)
+    before = tree(root)
+    refused = apply(root, planned)
+    assert refusal(refused) == "REFUSE_MOVE_PROTECTED"
+    assert refused["refusal"]["details"]["reason"] == "sdk-managed-file"
+    assert tree(root) == before
 
 
 @pytest.mark.parametrize("where", ["source", "source-parent", "destination-parent"])

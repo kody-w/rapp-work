@@ -68,7 +68,11 @@ carries file bytes, creates or removes a directory, or replaces a destination,
 and it refuses hidden, identity, Organization, workspace-specification,
 instruction, kernel (`basic_agent.py`), and SDK-owned paths, as well as paths
 containing invisible, format, private-use, unassigned, or
-filesystem-ignorable code points. Each move is one no-replace rename; if
+filesystem-ignorable code points. Every existing file and folder a move
+names must be spelled exactly as stored, not as another case or Unicode
+normalization that the filesystem also accepts (`REFUSE_PATH_SPELLING`), so a
+plan and its inverse restore every name exactly. Each move is one no-replace
+rename; if
 another program changes or replaces the source while it moves, the move is
 undone and refused with `REFUSE_FILE_RACE`, so no version of the file is ever
 lost. The applied result has status `moved`. Applying a completed plan again

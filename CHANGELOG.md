@@ -9,7 +9,9 @@
   verified, descriptor-relative no-replace rename that is undone if another
   program changes the source meanwhile, under a plan-bound
   `rapp-work-move-recovery/1` marker; hosts without such a rename refuse moves.
-  An ordinary SDK update may run while a move is pending. `rapp-work-sdk/1`
+  Every existing entry a move names must be spelled exactly as stored, so a
+  plan and its inverse restore every name exactly. An ordinary SDK update may
+  run while a move is pending. `rapp-work-sdk/1`
   §§2, 4, and 7 carry the proposed text, and its SPEC hash pins in
   `protocols/index.json` and `src/rapp_work/data/profiles.json` are updated.
   See `docs/proposals/0002-sdk-move-action.md`.

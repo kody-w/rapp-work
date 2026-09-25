@@ -2,8 +2,8 @@
 
 - **Status:** draft, not accepted. Every change here is a proposal on branch
   `experimental/gap-g2-move-action`; the owner decides what moves.
-- **Revision:** round 2. It answers the round-1 independent review; see
-  "Revision history" at the end.
+- **Revision:** round 3. It answers the round-1 and round-2 independent
+  reviews; see "Revision history" at the end.
 - **Gap:** G2, "SDK plans cannot move a file": an SDK plan can create or
   update a file, but not move one. The proposed fix adds a `move` action whose
   undo is the inverse move.
@@ -173,6 +173,19 @@ states instead of the source and destination checks:
   a directory, so the directory structure is constant during a plan and the
   inverse restores the tree exactly. This matches drag and drop, which always
   drops into an existing folder. The bound on created directories is zero.
+- Every existing entry a plan names (each component of the source, and each
+  directory component of the destination) is spelled exactly as its directory
+  stores it. Case-insensitive and normalization-insensitive filesystems (for
+  example APFS and HFS+ as macOS formats them by default) resolve
+  `agents/Example_Agent.py`
+  or a decomposed `café.md` to the stored `agents/example_agent.py` or
+  composed `café.md`; a move under such an alias would rename the file to the
+  alias, and its inverse would bring it back under the alias, not under the
+  stored name (round-2 finding 1: an agent unloaded and "undone" that way no
+  longer matches the Brainstem's case-sensitive `*_agent.py` glob). The
+  check lists the directory and requires the exact name (`REFUSE_PATH_SPELLING`,
+  reason `stored-spelling`); a directory with more than 100,000 entries is
+  refused rather than listed without bound.
 - The source is a regular file (checked with `lstat`, then opened with
   `O_NOFOLLOW` and matched by `fstat` identity), has exactly one link, is
   owned by the effective user, has no setuid, setgid, or sticky bit, is at
@@ -227,9 +240,13 @@ descriptor open across the rename, so the verified file's identity cannot be
 reused by another file. After the rename and `fsync` of both directories, the
 file named by the destination must be that same open file, with one link, the
 planned mode and byte length, and the planned SHA-256 (read again through the
-descriptor), and no protected name in the destination directory may now refer
-to it. Otherwise another process changed or replaced the source in the window,
-or the destination is an alias of a protected name. Apply then renames the
+descriptor), the destination directory must store it under exactly the
+planned spelling, and no protected name in the destination directory may now
+refer to it. Otherwise another process changed or replaced the source in the
+window, the filesystem stored the new name under another spelling (HFS+
+stores decomposed forms, so a composed destination name is refused with
+`REFUSE_PATH_SPELLING`, reason `destination-spelling`, and undone), or the
+destination is an alias of a protected name. Apply then renames the
 destination back to the source name with the same no-replace rename, verifies
 that the entry it moved is back, and refuses with `REFUSE_FILE_RACE` or
 `REFUSE_MOVE_PROTECTED` (details `reason`, `undone`, `completed_moves`,
@@ -243,9 +260,9 @@ test in `tests/test_sdk_moves.py`):
 | Concurrent action | Window | Result | Bytes |
 |---|---|---|---|
 | creates the destination (file, directory, dangling symlink) | before the rename | `REFUSE_MOVE_COLLISION`, nothing moved, marker removed | winner and source kept |
-| atomically saves the source (temporary file renamed over it) | after verification, before the rename | the new file is moved, detected, moved back; `REFUSE_FILE_RACE` (`source-replaced`, undone) | the new version at the source; the old version was replaced by the saver itself |
+| atomically saves the source (temporary file renamed over it) | after verification, before the rename | the new file is moved, detected, moved back; `REFUSE_FILE_RACE` (`source-replaced`, undone) | the new version at the source (it was at the destination, unverified, until the undo); the old version was replaced by the saver itself |
 | renames the source away and creates a new source | same | `REFUSE_FILE_RACE` (`source-replaced`, undone) | both files kept at their names |
-| edits the source in place, same size or not | same | `REFUSE_FILE_RACE` (`source-changed`, undone) | the edited file at the source |
+| edits the source in place, same size or not | same | `REFUSE_FILE_RACE` (`source-changed`, undone) | the edited file at the source (at the destination, unverified, until the undo) |
 | hard-links or re-modes the source | same | `REFUSE_FILE_RACE` (`source-changed`, undone) | every name kept |
 | atomically saves the source again | after the rename | the planned file stays moved; the save creates a new source; apply succeeds | both versions kept |
 | saves the source during the undo, so the undo finds a source | after the rename, before the undo | `REFUSE_FILE_RACE` (undone false), marker kept, resume refused | every version kept at a name |
@@ -315,13 +332,14 @@ Platform and filesystem evidence (scratch probes, not committed):
 
 | Host | Filesystem | No-replace rename | Move suite |
 |---|---|---|---|
-| macOS 27.0, `renameatx_np(RENAME_EXCL)` | APFS (case-insensitive) | `EEXIST` onto an existing file, same-inode link, or dangling symlink; success onto an absent name | 286 cases pass (3.13 and 3.10) |
-| same | HFS+ disk image (case-insensitive, journaled) | same | 286 cases pass (3.13) |
+| macOS 27.0, `renameatx_np(RENAME_EXCL)` | APFS (case-insensitive) | `EEXIST` onto an existing file, same-inode link, or dangling symlink; success onto an absent name | 298 of 299 cases pass, 1 skipped (it needs a filesystem that rewrites new names) (3.13 and 3.10) |
+| same | HFS+ disk image (case-insensitive, journaled) | same | 299 cases pass, the stored-spelling cases included (3.13) |
 | same | exFAT disk image | `ENOTSUP`, no effect (`EEXIST` if the target exists) | moves refused `REFUSE_PLATFORM`; the SDK's own scaffold already refuses there |
-| Linux 6.12, glibc 2.41, `renameat2(RENAME_NOREPLACE)`, uid 1000 | overlayfs, tmpfs, Docker Desktop host bind mount | same as APFS | 286 cases pass on overlayfs and tmpfs (Python 3.12) |
+| Linux 6.12, glibc 2.41, `renameat2(RENAME_NOREPLACE)`, uid 1000 | overlayfs, tmpfs, Docker Desktop host bind mount | same as APFS | 292 of 299 cases pass on overlayfs and tmpfs, 7 skipped (they need case or normalization folding) (Python 3.12) |
 
-The 286 cases are the move suite plus the SDK workspace, CLI, public-contract,
-and migration suites. A host without `renameat2` or `renameatx_np` (Windows,
+The 299 cases are the move suite plus the SDK workspace, CLI, public-contract,
+and migration suites; the skipped cases test the stored-spelling rule, which
+only a folding filesystem can exercise. A host without `renameat2` or `renameatx_np` (Windows,
 the BSDs, a C library without the symbol) refuses moves with
 `REFUSE_PLATFORM` before planning; a filesystem that cannot honor the flag
 (exFAT on macOS, above) refuses at the first rename, which is the marker's, so
@@ -448,7 +466,8 @@ filesystems resolve to one name.
 Planning refuses unless all of the following hold. A first apply replays every
 one before its first write. A resumed apply (§4.2) replays the same checks,
 except that it expects its own move marker and checks each file against the
-recovery states instead of items 7 and 8.
+recovery states instead of items 7 and 8 and, for the files themselves,
+item 10.
 
 1. The root is reached without symlinks, its identity is a Workspace or
    Organization, and its SDK integration verifies: the SDK-owned inventory
@@ -490,6 +509,12 @@ recovery states instead of items 7 and 8.
    its own directory named `rappid.json` or a final-component name of item 4.
 8. Each destination is absent: no file, directory, symlink, or other entry.
 9. `subject` and `preconditions` equal the root's current values.
+10. Every existing entry a move names, each component of `source` and each
+    directory component of `destination`, is spelled exactly, code point for
+    code point, as its directory stores it, never as another case, width, or
+    normalization form that the filesystem only resolves to it. So applying a
+    plan and then its inverse restores every name exactly. A directory that
+    cannot be listed, or that lists more than 100,000 entries, is refused.
 
 ### 4.2 Applying a move plan
 
@@ -521,13 +546,15 @@ Then, for each move in order, apply:
    refusing an existing destination or another filesystem, and makes both
    directories durable; and
 3. verifies that the file now named by the destination is that same open file,
-   with one link and the planned mode, byte length, and SHA-256, and that no
-   entry of the destination directory named `rappid.json` or a final-component
-   name of §4.1 item 4 (and, at the root, `organization.json`,
-   `workspaces.json`, or `SPEC.md`) refers to it.
+   stored under exactly the planned spelling, with one link and the planned
+   mode, byte length, and SHA-256, and that no entry of the destination
+   directory named `rappid.json` or a final-component name of §4.1 item 4
+   (and, at the root, `organization.json`, `workspaces.json`, or `SPEC.md`)
+   refers to it.
 
 If step 3 fails, another process changed or replaced the source during the
-move, or the destination is another name of a protected file. Apply renames the
+move, the filesystem stored the destination under another spelling, or the
+destination is another name of a protected file. Apply renames the
 destination name back to the source name with the same no-replace rename and
 refuses. When that undo is verified, the apply created the marker, and no
 earlier move of the apply took effect, it also removes the marker; otherwise
@@ -536,12 +563,20 @@ replaces a name of a file it moves, so a move never makes a file unreachable,
 whatever another process does meanwhile. The only names an apply removes are
 its own recovery marker and temporary file.
 
+A move is not a transaction against concurrent writers of its source. Until
+step 3 completes, the destination holds whatever file the source name held at
+the rename; if another process replaced or edited the source after step 1,
+those unverified bytes are at the destination until the undo, and a program
+that reads the destination directory in that instant, such as a Brainstem
+loading agents, may read them.
+
 After every move verifies, apply removes the marker, only while the marker name
 still refers to the file it created and holds, and makes the removal durable.
 
 A marker for the same plan resumes apply. Each move must then be in one of two
-states: pending (the planned source and no destination) or moved (no source
-and a destination with the planned bytes, mode, and one link). Apply continues
+states: pending (the planned source, under its stored spelling, and no
+destination) or moved (no source and a destination, under the planned
+spelling, with the planned bytes, mode, and one link). Apply continues
 from those states. Any other state, a marker for another plan, or changed
 preconditions are refused, and the marker and every name stay in place for the
 owner. Foreign or ambiguous state is never repaired, deleted, or rewritten. A
@@ -575,8 +610,9 @@ the same `sha256`, `bytes`, and `mode`, and the moves are sorted by the new
 apply of that exact hash. The inverse of the inverse is the original plan,
 byte for byte. `update` with `inverse_of` returns the inverse without effects
 and without reading the moved files, so the owner can review a move and its
-undo together. Applying a plan and then its inverse restores every moved path,
-byte, and permission mode; directory timestamps are not restored. Move plans do
+undo together. Applying a plan and then its inverse restores every moved
+name exactly (§4.1 item 10), with its bytes and permission mode; directory
+timestamps are not restored. Move plans do
 not bind the SDK-owned inventory, so an SDK update between a move and its undo
 leaves the stored inverse valid.
 
@@ -635,7 +671,7 @@ the refusal "replacing, cross-filesystem, or protected-path moves".
   `rapp-work-sdk/2`; that is open question 1.
 - **Pins:** the SDK SPEC hash moves from
   `cf64a90f44427728966ba142d6ef42cdd31f08ad465badf86a93c969f0cb8ef1`
-  to `17c16433aefaffdedaa3d6dd6709d32cc6304c9811fbc772918006155d6a28e8`
+  to `7b3ceacf4f57d11b1f9bc27f14d70b4f713743460b4b35e0a464dc85f1c5dde1`
   in `protocols/index.json` and `src/rapp_work/data/profiles.json`, and
   `RELEASE-INVENTORY.json` is regenerated. The `generated_utc` of
   `protocols/index.json` is left as is. The signed `registry.json`, root
@@ -682,6 +718,10 @@ the refusal "replacing, cross-filesystem, or protected-path moves".
   alias (round-1 finding 3).
 - **Review integrity:** bidi controls and invisible characters are refused, and
   refusals echo such paths only in the visible `<U+XXXX>` form.
+- **Names:** every existing entry a plan names is spelled exactly as stored,
+  and a destination the filesystem would store under another spelling is
+  undone, so a plan and its inverse restore every name exactly and a reviewed
+  path is the name on disk (M40, M41).
 - **Boundaries:** one root, one filesystem, no nested identity or repository
   roots, and no directories; world and Organization boundaries are unchanged.
 - **Hardlinks and special files:** sources must be single-link regular files
@@ -719,6 +759,18 @@ Residual risks, stated precisely:
   HFS+, and exFAT. On other filesystems, fixed protected names are also
   guarded by the identity checks; suffix-pattern names and hidden directories
   rely on the lexical rule alone.
+- A move is not a transaction against concurrent writers of its source. From
+  the rename until the arrival check completes, the destination holds whatever
+  the source name held at the rename; if another process replaced or edited
+  the source after it was pinned, those unreviewed bytes sit at the
+  destination until the undo, and a Brainstem that loads agents in that
+  instant may run them (round-2 finding 2). The writer is the same user, apply
+  still refuses and undoes the move, and no version is lost. A two-step
+  variant (rename the source without replacing to a private name in its own
+  directory, verify it there, then rename it into place without replacing)
+  would close this window at the cost of a third recovery state and a
+  private name that a crash can leave behind; open question 13 asks whether
+  that is wanted.
 
 ## Migration
 
@@ -741,8 +793,8 @@ only SDK-owned files, running it with a pending move is harmless.
 
 ## Conformance and test vectors
 
-`tests/test_sdk_moves.py` (pytest, `sandbox` fixture) has 58 test functions
-that expand to 254 cases. Fixed vectors:
+`tests/test_sdk_moves.py` (pytest, `sandbox` fixture) has 67 test functions
+that expand to 267 cases. Fixed vectors:
 
 - **`/1` stability:** the release plan built in
   `test_release_plan_v1_hash_vector_is_unchanged` hashes to
@@ -765,7 +817,8 @@ that expand to 254 cases. Fixed vectors:
 Positive vectors: plan-only by default (tree unchanged, no marker); apply with
 the exact hash (bytes, mode, and inode preserved, one link, `verify` passes);
 a three-move plan (an unload, a load, and a note) and its inverse restore the
-exact tree; the inverse's own hash is required; redo after undo; every crash
+exact tree; a stored non-ASCII name round-trips under its stored spelling; the
+inverse's own hash is required; redo after undo; every crash
 matrix row resumes or refuses exactly; an identical replacement after a crash
 counts as moved; a leftover temporary marker never blocks a first apply; an
 SDK upgrade during a pending move resumes after the ordinary update, and a
@@ -782,8 +835,12 @@ same-size edit injected after the replay; a destination file, dangling
 symlink, or directory created after planning or immediately before the
 rename; every concurrent-writer row of the race matrix; a symlinked source,
 source parent, destination parent, or root, and a parent swapped for a
-symlink after planning; hard-linked, FIFO, directory, setuid, oversize, and
-missing sources; 15 unsafe path spellings on each side; 23 invisible,
+symlink after planning, and a parent swapped for another directory while it
+is opened; hard-linked, FIFO, directory, setuid, oversize, and missing
+sources; a source or a directory named by another case or normalization of
+its stored name, at planning and after a respelling rename between planning
+and apply, and a destination that the filesystem stores under another
+spelling (undone; on HFS+ for real, elsewhere by instrumentation); 15 unsafe path spellings on each side; 23 invisible,
 format, private-use, unassigned, surrogate, and ignorable code points on each
 side (also refused by the plan parser) and the review's three HFS+ spellings;
 34 protected paths on each side, including `CLAUDE.local.md`,
@@ -803,8 +860,10 @@ interrupted states (edited, same-size edit, second link, source reappears,
 both missing, source edited before the rename, destination appears before the
 rename); a second apply while another holds the marker lock; a stale resume
 whose marker was removed or replaced; racing first applies; a marker that
-cannot be locked; a marker replaced during an apply; foreign or forged
-markers; a partial multi-move failure; rename errors (`EXDEV`, `EINVAL`,
+cannot be locked; a marker replaced, or edited in place, during an apply;
+foreign or forged markers; an undo that would move another file back (not
+reported as undone); a resume whose path the SDK inventory now owns; a
+partial multi-move failure; rename errors (`EXDEV`, `EINVAL`,
 `ENOTSUP`, `ENOENT`, `EACCES`); a filesystem and a host without a no-replace
 rename; another device at planning; and a pending update recovery.
 
@@ -854,9 +913,17 @@ Python 3.13, and the original bytes were restored and verified by SHA-256 and
 | M37 | an unsupported no-replace rename is not a platform refusal | red: 2 failed, 3 passed |
 | M38 | SDK update refused while a move is pending (round-1 guard restored) | red: 2 failed |
 | M39 | move plans bind the SDK inventory bytes (a stored undo expires) | red: 1 failed |
+| M40 | existing entries not checked for their stored spelling (planning, replay, resume) | red: 6 failed |
+| M41 | the destination's stored spelling not checked after the rename | red: 1 failed |
+| M42 | an undo reported verified without comparing identities | red: 1 failed |
+| M43 | a parent's identity not re-checked after it is opened | red: 1 failed |
+| M44 | the marker's bytes not re-checked before its removal | red: 1 failed |
+| M45 | SDK-owned paths not checked on resume | red: 1 failed |
 
-M16 of round 1 ("SDK update apply allowed while a move recovery is pending")
-is retired: that refusal was removed by design, and M38 now proves the
+Round 3 reran M1 to M39 on the final code with the same results and added
+M40 to M45 for the stored-spelling rule and the four checks the round-2 review
+found untested. M16 of round 1 ("SDK update apply allowed while a move
+recovery is pending") is retired: that refusal was removed by design, and M38 now proves the
 opposite property. The cases that stay green under a mutation are refused by
 an independent layer or do not exercise the mutated check, which is intended
 defense in depth: M2's content changes are also caught by the per-move state
@@ -893,11 +960,12 @@ and refusing.
 
 Checks: the local mirror of the `conformance` workflow (`tools/check.py`,
 `pytest -q`, `ruff check`, `mypy`, `release_inventory.py --check`, `build`,
-and `verify_package.py`) passes on Python 3.13 and on Python 3.10: 423 tests
-passed with 69 subtests (the 169 pre-existing tests plus the 254 new cases),
-an inventory of 147 files, a wheel of 114 files, and an sdist of 156 files.
-The 286-case subset in the platform table also passes on an HFS+ disk image
-(Python 3.13) and on Linux overlayfs and tmpfs (Python 3.12, uid 1000).
+and `verify_package.py`) passes on Python 3.13 and on Python 3.10: 435 tests
+passed and 1 skipped, with 69 subtests (the 169 pre-existing tests plus the
+267 new cases), an inventory of 147 files, a wheel of 114 files, and an sdist
+of 156 files. The 299-case subset in the platform table also passes on an
+HFS+ disk image (Python 3.13) and on Linux overlayfs and tmpfs (Python 3.12,
+uid 1000), with the skips listed there.
 GitHub CI does not run for branch pushes in this repository.
 
 ## Open questions for the owner
@@ -935,6 +1003,10 @@ GitHub CI does not run for branch pushes in this repository.
     here, once G7 is accepted?
 12. Should a later operation help the owner abandon a refused interrupted move
     (today the owner checks the named paths and removes the marker by hand)?
+13. Should moves stage each file under a private name before renaming it into
+    place, so that bytes changed by a concurrent writer are never visible at
+    the destination, even briefly (Residual risks)? That adds a third recovery
+    state; the recommendation is to keep one rename per move.
 
 ## Owner actions needed
 
@@ -962,14 +1034,17 @@ edited here):
 | G3 | `experimental/gap-g3-agent-discovery` | SDK SPEC §11; the SPEC hash pins and inventory |
 | G4 | `experimental/gap-g4-migration-successors` | `api.py`, `cli.py`, `data/api.json` (other operations); the inventory |
 | G6 | `experimental/gap-g6-owner-succession` | SDK SPEC §5.1 and §12; the SPEC hash pins and inventory |
-| G7 | `experimental/gap-g7-instruction-inventory` | SDK SPEC §4 (a paragraph at the same anchor as this proposal's §4 insertion), §7.1 to §7.6 (after the Organization paragraph; this proposal's §7 sentence goes after the first paragraph), and §12; `api.py`; the pins and inventory |
+| G7 | `experimental/gap-g7-instruction-inventory` | SDK SPEC §4 (its paragraph follows the first paragraph, before "Create-only means"; this proposal's insertion follows the second), §7.1 to §7.6 (after both §7 paragraphs; this proposal's §7 sentence ends the first), and §12; `api.py` (it rewrites the same `_update` planning lines, with `plan_update_with_review` and `instruction_review`), `cli.py`, `data/api.json` (the same refusal list), `workspace.py`, `_paths.py` (it refactors `read_regular`, which `moves.py` imports, into `read_regular_at` without changing its behavior), `README.md`, and `protocols/README.md`; the pins and inventory |
 | G11 | `experimental/gap-g11-workspace-index` | none in the SDK SPEC |
 | G17 | `experimental/gap-g17-brainstem-sdk-agent` | consumes move plans to load and unload agents |
 
 Every SDK SPEC edit here is an insertion, so the drafts compose textually.
-Where G7 and this proposal insert after the same §4 sentence, keep both
-paragraphs: G7's instruction-file paragraph, then this proposal's move
-paragraph and §4.1 to §4.3. Both G6 and G7 keep the words "source deletion" in
+G7's §4 paragraph and this proposal's §4 insertion follow different
+paragraphs of §4, and G7's §7.1 to §7.6 follow the second paragraph of §7
+while this proposal's sentence ends the first, so the two SPEC texts merge
+without a conflict. A merged `_update` keeps G7's `instruction_review` for
+ordinary updates and sends `moves`, `inverse_of`, and move plans to this
+proposal's path first. Both G6 and G7 keep the words "source deletion" in
 §12, to which §4 refers. This proposal's protected set contains every G7
 instruction path, so a move can never change G7's instruction inventory.
 Recommended order: G7, then G2, then G17 (which calls move plans); G3, G4, G6,
@@ -998,7 +1073,7 @@ matrices, vectors, and mutation results."
 ## Revision history
 
 - **Round 1** (`e6361ce`): link, verify, unlink under a locked marker.
-- **Round 2** (this revision), answering the round-1 independent review:
+- **Round 2** (`5d5a043`), answering the round-1 independent review:
   1. (high) Moves use one verified no-replace rename with undo instead of
      link-then-unlink, so a concurrent atomic save can no longer be deleted;
      race and crash matrices are specified and tested.
@@ -1017,6 +1092,20 @@ matrices, vectors, and mutation results."
   8. (low) The protected set adds `AGENTS.override.md`, `CLAUDE.local.md`, and
      `basic_agent.py`, contains every G7 instruction path, and the claim is
      stated as that closed list.
+- **Round 3** (this revision), answering the round-2 independent review:
+  1. (medium) Every existing entry a plan names must be spelled exactly as
+     its directory stores it (§4.1 item 10, `REFUSE_PATH_SPELLING`), and a
+     destination the filesystem stores under another spelling is undone, so
+     a plan and its inverse restore every name exactly on case- and
+     normalization-insensitive filesystems (tested on APFS and HFS+).
+  2. (low) The brief exposure of a concurrent writer's bytes at the
+     destination is stated in §4.2, the race matrix, and the residual risks,
+     with open question 13 on staging.
+  3. (low) Tests and mutations M42 to M45 now cover the undo identity check,
+     the parent identity check after open, the marker bytes check before
+     removal, and SDK-owned paths on resume.
+  4. (low) The G7 row of "Related proposals" names every shared file and
+     the real §4 and §7 anchors.
 
 ## References
 

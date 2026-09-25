@@ -107,7 +107,8 @@ filesystems resolve to one name.
 Planning refuses unless all of the following hold. A first apply replays every
 one before its first write. A resumed apply (§4.2) replays the same checks,
 except that it expects its own move marker and checks each file against the
-recovery states instead of items 7 and 8.
+recovery states instead of items 7 and 8 and, for the files themselves,
+item 10.
 
 1. The root is reached without symlinks, its identity is a Workspace or
    Organization, and its SDK integration verifies: the SDK-owned inventory
@@ -149,6 +150,12 @@ recovery states instead of items 7 and 8.
    its own directory named `rappid.json` or a final-component name of item 4.
 8. Each destination is absent: no file, directory, symlink, or other entry.
 9. `subject` and `preconditions` equal the root's current values.
+10. Every existing entry a move names, each component of `source` and each
+    directory component of `destination`, is spelled exactly, code point for
+    code point, as its directory stores it, never as another case, width, or
+    normalization form that the filesystem only resolves to it. So applying a
+    plan and then its inverse restores every name exactly. A directory that
+    cannot be listed, or that lists more than 100,000 entries, is refused.
 
 ### 4.2 Applying a move plan
 
@@ -180,13 +187,15 @@ Then, for each move in order, apply:
    refusing an existing destination or another filesystem, and makes both
    directories durable; and
 3. verifies that the file now named by the destination is that same open file,
-   with one link and the planned mode, byte length, and SHA-256, and that no
-   entry of the destination directory named `rappid.json` or a final-component
-   name of §4.1 item 4 (and, at the root, `organization.json`,
-   `workspaces.json`, or `SPEC.md`) refers to it.
+   stored under exactly the planned spelling, with one link and the planned
+   mode, byte length, and SHA-256, and that no entry of the destination
+   directory named `rappid.json` or a final-component name of §4.1 item 4
+   (and, at the root, `organization.json`, `workspaces.json`, or `SPEC.md`)
+   refers to it.
 
 If step 3 fails, another process changed or replaced the source during the
-move, or the destination is another name of a protected file. Apply renames the
+move, the filesystem stored the destination under another spelling, or the
+destination is another name of a protected file. Apply renames the
 destination name back to the source name with the same no-replace rename and
 refuses. When that undo is verified, the apply created the marker, and no
 earlier move of the apply took effect, it also removes the marker; otherwise
@@ -195,12 +204,20 @@ replaces a name of a file it moves, so a move never makes a file unreachable,
 whatever another process does meanwhile. The only names an apply removes are
 its own recovery marker and temporary file.
 
+A move is not a transaction against concurrent writers of its source. Until
+step 3 completes, the destination holds whatever file the source name held at
+the rename; if another process replaced or edited the source after step 1,
+those unverified bytes are at the destination until the undo, and a program
+that reads the destination directory in that instant, such as a Brainstem
+loading agents, may read them.
+
 After every move verifies, apply removes the marker, only while the marker name
 still refers to the file it created and holds, and makes the removal durable.
 
 A marker for the same plan resumes apply. Each move must then be in one of two
-states: pending (the planned source and no destination) or moved (no source
-and a destination with the planned bytes, mode, and one link). Apply continues
+states: pending (the planned source, under its stored spelling, and no
+destination) or moved (no source and a destination, under the planned
+spelling, with the planned bytes, mode, and one link). Apply continues
 from those states. Any other state, a marker for another plan, or changed
 preconditions are refused, and the marker and every name stay in place for the
 owner. Foreign or ambiguous state is never repaired, deleted, or rewritten. A
@@ -234,8 +251,9 @@ the same `sha256`, `bytes`, and `mode`, and the moves are sorted by the new
 apply of that exact hash. The inverse of the inverse is the original plan,
 byte for byte. `update` with `inverse_of` returns the inverse without effects
 and without reading the moved files, so the owner can review a move and its
-undo together. Applying a plan and then its inverse restores every moved path,
-byte, and permission mode; directory timestamps are not restored. Move plans do
+undo together. Applying a plan and then its inverse restores every moved
+name exactly (§4.1 item 10), with its bytes and permission mode; directory
+timestamps are not restored. Move plans do
 not bind the SDK-owned inventory, so an SDK update between a move and its undo
 leaves the stored inverse valid.
 

@@ -65,6 +65,7 @@ MOVE_RECOVERY_PATH = ".rapp-work/" + MOVE_RECOVERY_NAME
 MAX_MARKER_BYTES = 1024 * 1024
 UPDATE_RECOVERY_PATH = ".rapp-work/update-recovery.json"
 BOUNDARY_ENTRIES = ("rappid.json", ".git")
+MAX_LISTED_ENTRIES = 100_000
 NAMED_ANYWHERE = (IDENTITY_NAME, *INSTRUCTION_NAMES, *KERNEL_NAMES)
 LINUX_RENAME_NOREPLACE = 1
 DARWIN_RENAME_EXCL = 0x00000004
@@ -260,6 +261,45 @@ def _lstat_at(directory: int, name: str) -> os.stat_result | None:
         ) from error
 
 
+def _stored(directory: int, name: str, *, path: str) -> bool:
+    """Whether ``name`` is spelled exactly as one of the directory's entries.
+
+    A case-, width-, or normalization-insensitive filesystem resolves other spellings of a
+    stored name to it; a move names every existing entry by its stored spelling, so applying a
+    plan and then its inverse restores every name exactly.
+    """
+    listed = 0
+    try:
+        with os.scandir(directory) as entries:
+            for entry in entries:
+                if entry.name == name:
+                    return True
+                listed += 1
+                require(
+                    listed < MAX_LISTED_ENTRIES,
+                    "REFUSE_FILE_LIMIT",
+                    "a move directory lists more than 100,000 entries",
+                    path=path,
+                )
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_PATH_UNSAFE",
+            "a move directory could not be listed",
+            {"errno": error.errno, "path": path},
+        ) from error
+    return False
+
+
+def _require_stored(directory: int, name: str, *, path: str) -> None:
+    require(
+        _stored(directory, name, path=path),
+        "REFUSE_PATH_SPELLING",
+        "move path spells an existing entry differently from its stored name",
+        path=path,
+        reason="stored-spelling",
+    )
+
+
 def _fsync(descriptor: int, *, path: str) -> None:
     try:
         os.fsync(descriptor)
@@ -287,6 +327,7 @@ def _parent_fd(root: Path, parent: str, root_device: int) -> Iterator[int]:
                         path=parent,
                     )
                     assert info is not None
+                    _require_stored(descriptor, component, path=parent)
                     require(
                         not stat.S_ISLNK(info.st_mode),
                         "REFUSE_SYMLINK",
@@ -517,6 +558,7 @@ def _inspect(
         info = _lstat_at(source_directory, source_name)
         require(info is not None, "REFUSE_MOVE_SOURCE", "move source is missing", path=source)
         assert info is not None
+        _require_stored(source_directory, source_name, path=source)
         _require_movable(info, path=source, root_device=root_device)
         digest = _hash_at(source_directory, source_name, info)
         local = _named_identities(source_directory, at_root=source_parent == ".")
@@ -613,12 +655,18 @@ def _classify(
     """
     source = _lstat_at(source_directory, source_name)
     destination = _lstat_at(destination_directory, destination_name)
-    if source is not None and destination is None and _matches(source, move, root_device):
+    if (
+        source is not None
+        and destination is None
+        and _matches(source, move, root_device)
+        and _stored(source_directory, source_name, path=move.source)
+    ):
         return "pending", source
     if (
         source is None
         and destination is not None
         and _matches(destination, move, root_device)
+        and _stored(destination_directory, destination_name, path=move.destination)
         and _hash_at(destination_directory, destination_name, destination) == move.sha256
     ):
         return "moved", destination
@@ -703,6 +751,7 @@ def _arrival_problem(
     pinned: os.stat_result,
     move: FileMove,
     destination_directory: int,
+    destination_name: str,
     *,
     at_root: bool,
     root_device: int,
@@ -713,6 +762,8 @@ def _arrival_problem(
     if (arrived.st_dev, arrived.st_ino) != (pinned.st_dev, pinned.st_ino):
         return "source-replaced"
     try:
+        if not _stored(destination_directory, destination_name, path=move.destination):
+            return "destination-spelling"
         current = os.fstat(pin)
         if not _matches(current, move, root_device) or (
             _hash_descriptor(pin, current, path=move.destination) != move.sha256
@@ -816,6 +867,7 @@ def _apply_one(
                 pinned,
                 move,
                 destination_directory,
+                destination_name,
                 at_root=destination_parent == ".",
                 root_device=root_device,
             )
@@ -842,6 +894,12 @@ def _apply_one(
                 raise Refusal(
                     "REFUSE_MOVE_PROTECTED",
                     "move destination is another name of a protected file; " + outcome,
+                    details,
+                )
+            if problem == "destination-spelling":
+                raise Refusal(
+                    "REFUSE_PATH_SPELLING",
+                    "the filesystem stores the destination under another spelling; " + outcome,
                     details,
                 )
             raise Refusal(
