@@ -24,9 +24,41 @@ ActionKind = Literal["create", "replace"]
 
 MAX_MOVES = 64
 MAX_MOVE_TOTAL_BYTES = 64 * 1024 * 1024
-PROTECTED_ROOT_FILES = frozenset({"organization.json", "spec.md", "workspaces.json"})
-INSTRUCTION_NAMES = frozenset({"agents.md", "claude.md", "gemini.md", "skill.md", "soul.md"})
+IDENTITY_NAME = "rappid.json"
+ROOT_AUTHORITY_NAMES = ("SPEC.md", "organization.json", "workspaces.json")
+INSTRUCTION_NAMES = (
+    "AGENTS.md",
+    "AGENTS.override.md",
+    "CLAUDE.md",
+    "CLAUDE.local.md",
+    "GEMINI.md",
+    "SKILL.md",
+    "soul.md",
+)
 INSTRUCTION_SUFFIXES = (".agent.md", ".chatmode.md", ".instructions.md", ".prompt.md")
+KERNEL_NAMES = ("basic_agent.py",)
+# Unicode Default_Ignorable_Code_Point ranges (DerivedCoreProperties.txt, Unicode 15.1),
+# fixed here so every implementation refuses the same code points whatever its database.
+DEFAULT_IGNORABLE_RANGES = (
+    (0x00AD, 0x00AD),
+    (0x034F, 0x034F),
+    (0x061C, 0x061C),
+    (0x115F, 0x1160),
+    (0x17B4, 0x17B5),
+    (0x180B, 0x180F),
+    (0x200B, 0x200F),
+    (0x202A, 0x202E),
+    (0x2060, 0x206F),
+    (0x3164, 0x3164),
+    (0xFE00, 0xFE0F),
+    (0xFEFF, 0xFEFF),
+    (0xFFA0, 0xFFA0),
+    (0xFFF0, 0xFFF8),
+    (0x1BCA0, 0x1BCA3),
+    (0x1D173, 0x1D17A),
+    (0xE0000, 0xE0FFF),
+)
+REFUSED_CATEGORIES = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl", "Zp"})
 
 
 @dataclass(frozen=True)
@@ -283,12 +315,53 @@ class SignedRelease:
         }
 
 
-def fold_path(value: str) -> str:
-    """Caseless, normalization-insensitive key used to detect aliases and protected names."""
+def _fold(value: str) -> str:
     return unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", value).casefold())
 
 
+def fold_path(value: str) -> str:
+    """Caseless, normalization-insensitive key used to detect aliases and protected names.
+
+    Folding once more after upper-casing also joins names that filesystems comparing
+    by upper case treat as one, such as dotless i (U+0131) and ``i``.
+    """
+    return _fold(_fold(value).upper())
+
+
+_FOLDED_IDENTITY = fold_path(IDENTITY_NAME)
+_FOLDED_ROOT_AUTHORITY = frozenset(fold_path(name) for name in ROOT_AUTHORITY_NAMES)
+_FOLDED_INSTRUCTION_NAMES = frozenset(fold_path(name) for name in INSTRUCTION_NAMES)
+_FOLDED_INSTRUCTION_SUFFIXES = tuple(fold_path(suffix) for suffix in INSTRUCTION_SUFFIXES)
+_FOLDED_KERNEL_NAMES = frozenset(fold_path(name) for name in KERNEL_NAMES)
+
+
+def invisible_code_point(character: str) -> bool:
+    """Whether a filesystem may ignore the code point or it can hide what a path says."""
+    code = ord(character)
+    return unicodedata.category(character) in REFUSED_CATEGORIES or any(
+        low <= code <= high for low, high in DEFAULT_IGNORABLE_RANGES
+    )
+
+
+def visible_path(value: str) -> str:
+    """The path with every refused code point spelled ``<U+XXXX>``, safe to show a reviewer."""
+    return "".join(
+        f"<U+{ord(character):04X}>" if invisible_code_point(character) else character
+        for character in value
+    )
+
+
 def canonical_move_path(value: Any) -> str:
+    if isinstance(value, str):
+        hidden = sorted({ord(character) for character in value if invisible_code_point(character)})
+        require(
+            not hidden,
+            "REFUSE_PATH",
+            "move path contains an invisible, format, unassigned, or filesystem-ignorable "
+            "code point",
+            code_points=[f"U+{code:04X}" for code in hidden],
+            path=visible_path(value),
+        )
     path = safe_relative(value)
     pure = PurePosixPath(path)
     require(
@@ -305,12 +378,14 @@ def move_path_protection(path: str) -> str | None:
     parts = [fold_path(part) for part in PurePosixPath(path).parts]
     if any(part.startswith(".") for part in parts):
         return "hidden-path"
-    if "rappid.json" in parts:
+    if _FOLDED_IDENTITY in parts:
         return "identity-file"
-    if len(parts) == 1 and parts[0] in PROTECTED_ROOT_FILES:
+    if len(parts) == 1 and parts[0] in _FOLDED_ROOT_AUTHORITY:
         return "authority-file"
-    if parts[-1] in INSTRUCTION_NAMES or parts[-1].endswith(INSTRUCTION_SUFFIXES):
+    if parts[-1] in _FOLDED_INSTRUCTION_NAMES or parts[-1].endswith(_FOLDED_INSTRUCTION_SUFFIXES):
         return "instruction-file"
+    if parts[-1] in _FOLDED_KERNEL_NAMES:
+        return "kernel-file"
     return None
 
 
@@ -409,7 +484,7 @@ class FileMove:
 def _move_preconditions(value: Any) -> dict[str, Any]:
     item = closed_object(
         value,
-        required={"identity_sha256", "managed_sha256", "root_identity"},
+        required={"identity_sha256", "root_identity"},
         where="move plan preconditions",
     )
     root = closed_object(
@@ -418,17 +493,14 @@ def _move_preconditions(value: Any) -> dict[str, Any]:
         where="move plan root identity",
     )
     require(
-        all(
-            isinstance(item[key], str) and bool(HEX64.fullmatch(item[key]))
-            for key in ("identity_sha256", "managed_sha256")
-        )
+        isinstance(item["identity_sha256"], str)
+        and bool(HEX64.fullmatch(item["identity_sha256"]))
         and all(type(root[key]) is int and root[key] >= 0 for key in ("device", "inode", "mode")),
         "REFUSE_MOVE_PLAN",
         "move plan preconditions are invalid",
     )
     return {
         "identity_sha256": item["identity_sha256"],
-        "managed_sha256": item["managed_sha256"],
         "root_identity": {key: root[key] for key in ("device", "inode", "mode")},
     }
 
@@ -493,7 +565,6 @@ class MovePlan:
             "operation": "update",
             "preconditions": {
                 "identity_sha256": self.preconditions["identity_sha256"],
-                "managed_sha256": self.preconditions["managed_sha256"],
                 "root_identity": dict(self.preconditions["root_identity"]),
             },
             "profile": "rapp-work-sdk/1",

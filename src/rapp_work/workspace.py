@@ -650,12 +650,6 @@ def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str
     )
     root = assert_no_symlinks(absolute_path(root))
     _validate_update_plan(plan, root)
-    move_marker = root / ".rapp-work/move-recovery.json"
-    require(
-        not (move_marker.exists() or move_marker.is_symlink()),
-        "REFUSE_RECOVERY_PENDING",
-        "an interrupted move plan must be resumed before an SDK update",
-    )
     marker = root / ".rapp-work/update-recovery.json"
     marker_value = {
         "plan": plan.to_dict(),

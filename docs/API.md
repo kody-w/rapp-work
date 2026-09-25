@@ -66,13 +66,22 @@ Apply either plan with `apply: true`, its complete plan, and its own exact
 move plan commits to each source's SHA-256, byte length, and mode. It never
 carries file bytes, creates or removes a directory, or replaces a destination,
 and it refuses hidden, identity, Organization, workspace-specification,
-instruction, and SDK-owned paths. The applied result has status `moved`.
-Applying a completed plan again is refused with `REFUSE_PLAN_APPLIED`. An
-interrupted apply leaves `.rapp-work/move-recovery.json`; applying the same
-plan again resumes it, and every other `update` apply is refused with
-`REFUSE_RECOVERY_PENDING` or `REFUSE_RECOVERY_BINDING` until it finishes. The
-marker is locked while an apply runs, so a concurrent apply is refused with
-`REFUSE_RECOVERY_BUSY`.
+instruction, kernel (`basic_agent.py`), and SDK-owned paths, as well as paths
+containing invisible, format, private-use, unassigned, or
+filesystem-ignorable code points. Each move is one no-replace rename; if
+another program changes or replaces the source while it moves, the move is
+undone and refused with `REFUSE_FILE_RACE`, so no version of the file is ever
+lost. The applied result has status `moved`. Applying a completed plan again
+is refused with `REFUSE_PLAN_APPLIED`. An interrupted apply leaves
+`.rapp-work/move-recovery.json`; applying the same plan again resumes it, and
+other moves, inverses, and move plans are refused with
+`REFUSE_RECOVERY_PENDING` or `REFUSE_RECOVERY_BINDING` until it finishes. An
+ordinary SDK update may still run, so a pending move resumes after an SDK
+upgrade, and a stored inverse stays valid across SDK updates. The marker is
+locked while an apply runs, so a concurrent apply is refused with
+`REFUSE_RECOVERY_BUSY`. Hosts without a descriptor-relative no-replace rename
+(Linux `renameat2`, macOS `renameatx_np`) refuse moves with
+`REFUSE_PLATFORM`.
 
 The CLI equivalents are `rapp-work update --root ROOT --move SOURCE
 DESTINATION` (repeatable) and `rapp-work update --root ROOT --inverse-of

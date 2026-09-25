@@ -1,19 +1,27 @@
 """Move plans: relocate existing files inside one root, reviewably and reversibly.
 
-A move creates the destination as a second hard link to the verified source with a
-descriptor-relative, no-follow, no-replace ``link``, makes it durable, verifies both
-names are one file with the planned bytes, and only then removes the source name. The
-file therefore always has at least one verified name. A recovery marker bound to the
-exact plan makes an interrupted apply resumable; any other state is refused.
+Each move is one descriptor-relative, no-replace rename: Linux ``renameat2`` with
+``RENAME_NOREPLACE`` or macOS ``renameatx_np`` with ``RENAME_EXCL``. A rename moves
+exactly the file its source name holds at that instant and refuses an existing
+destination, so no step of a move can make any file unreachable: the SDK never unlinks or
+replaces a name of a file it moves. The source is verified through an open descriptor
+before the rename and that same file must arrive at the destination; if another process
+changed or replaced the source in between, the rename is undone the same way and the apply
+refuses. A recovery marker bound to the exact plan makes an interrupted apply resumable;
+any other state is refused. Where no no-replace rename exists, moves are refused.
 """
 
 from __future__ import annotations
 
+import ctypes
 import errno
+import functools
 import hashlib
 import os
+import secrets
 import stat
-from collections.abc import Iterator
+import sys
+from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -32,7 +40,11 @@ from ._paths import (
 )
 from .errors import Refusal, refuse, require
 from .plans import (
+    IDENTITY_NAME,
+    INSTRUCTION_NAMES,
+    KERNEL_NAMES,
     MAX_MOVES,
+    ROOT_AUTHORITY_NAMES,
     FileMove,
     MovePlan,
     fold_path,
@@ -44,7 +56,6 @@ from .workspace import (
     Workspace,
     _read_managed,
     _sdk_record,
-    _unlink_regular,
     load_identity,
 )
 
@@ -54,11 +65,14 @@ MOVE_RECOVERY_PATH = ".rapp-work/" + MOVE_RECOVERY_NAME
 MAX_MARKER_BYTES = 1024 * 1024
 UPDATE_RECOVERY_PATH = ".rapp-work/update-recovery.json"
 BOUNDARY_ENTRIES = ("rappid.json", ".git")
-_NO_HARDLINK_ERRORS = {
+NAMED_ANYWHERE = (IDENTITY_NAME, *INSTRUCTION_NAMES, *KERNEL_NAMES)
+LINUX_RENAME_NOREPLACE = 1
+DARWIN_RENAME_EXCL = 0x00000004
+_COLLISION_ERRORS = {errno.EEXIST, errno.ENOTEMPTY}
+_UNSUPPORTED_RENAME_ERRORS = {
     value
     for value in (
-        errno.EPERM,
-        errno.EMLINK,
+        errno.EINVAL,
         errno.ENOSYS,
         getattr(errno, "ENOTSUP", None),
         getattr(errno, "EOPNOTSUPP", None),
@@ -66,23 +80,70 @@ _NO_HARDLINK_ERRORS = {
     if value is not None
 }
 
+Identity = tuple[int, int]
+
 
 @dataclass
 class _Progress:
-    effects: bool = False
     completed: int = 0
+    # A rename happened whose result is neither verified nor undone.
+    dirty: bool = False
+
+
+@functools.cache
+def _exclusive_rename() -> tuple[Any, int] | None:
+    """The platform's descriptor-relative no-replace rename and its flag, or ``None``."""
+    if sys.platform.startswith("linux"):
+        name, flag = "renameat2", LINUX_RENAME_NOREPLACE
+    elif sys.platform == "darwin":
+        name, flag = "renameatx_np", DARWIN_RENAME_EXCL
+    else:
+        return None
+    try:
+        function = getattr(ctypes.CDLL(None, use_errno=True), name, None)
+    except (OSError, TypeError):
+        return None
+    if function is None:
+        return None
+    function.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    function.restype = ctypes.c_int
+    return function, flag
+
+
+def _rename_exclusive(
+    source_directory: int,
+    source_name: str,
+    destination_directory: int,
+    destination_name: str,
+) -> None:
+    """Rename one entry between two directory descriptors; never replace, never follow links."""
+    primitive = _exclusive_rename()
+    if primitive is None:
+        raise OSError(errno.ENOSYS, "a no-replace rename is unavailable")
+    function, flag = primitive
+    ctypes.set_errno(0)
+    result = function(
+        source_directory,
+        os.fsencode(source_name),
+        destination_directory,
+        os.fsencode(destination_name),
+        flag,
+    )
+    if result != 0:
+        number = ctypes.get_errno()
+        raise OSError(number, os.strerror(number))
 
 
 def _require_move_platform() -> None:
     require(
         hasattr(os, "O_NOFOLLOW")
-        and os.link in os.supports_dir_fd
-        and os.link in os.supports_follow_symlinks
-        and os.unlink in os.supports_dir_fd
+        and os.open in os.supports_dir_fd
         and os.stat in os.supports_dir_fd
-        and os.stat in os.supports_follow_symlinks,
+        and os.stat in os.supports_follow_symlinks
+        and os.unlink in os.supports_dir_fd
+        and _exclusive_rename() is not None,
         "REFUSE_PLATFORM",
-        "descriptor-relative no-follow hard links are unavailable; moves are refused",
+        "descriptor-relative no-replace renames are unavailable; moves are refused",
     )
 
 
@@ -119,27 +180,27 @@ def _load_root(root: Path) -> tuple[Path, dict[str, Any]]:
     return root, identity
 
 
-def _integration(root: Path, identity: dict[str, Any]) -> tuple[set[str], str]:
-    """Require a verified SDK integration; return the folded SDK-owned paths and inventory hash."""
+def _integration(root: Path, identity: dict[str, Any]) -> tuple[set[str], tuple[str, ...]]:
+    """Require a verified SDK integration; return the folded and exact SDK-owned paths."""
     managed, managed_sha256 = _read_managed(root)
     require(
         managed_sha256 is not None,
         "REFUSE_SDK_PROFILE",
         "moves require a qualified SDK integration; plan an ordinary update first",
     )
-    assert managed_sha256 is not None
     sdk = strict_json_loads(read_regular(root / ".rapp-work/sdk.json"), where="SDK integration")
     require(
         sdk == _sdk_record(identity),
         "REFUSE_SDK_PROFILE",
-        "SDK integration record differs from the qualified profile; plan an ordinary update first",
+        "SDK integration record differs from the qualified profile; plan and apply an ordinary "
+        "update first (it may run while a move is pending)",
     )
     if identity["kind"] == "workspace":
         Workspace(root).verify()
     else:
         Organization(root).verify()
-    owned = {fold_path(path) for path in managed} | {fold_path(".rapp-work/managed.json")}
-    return owned, managed_sha256
+    paths = (*sorted(managed), ".rapp-work/managed.json")
+    return {fold_path(path) for path in paths}, paths
 
 
 def _marker_plan(raw: bytes) -> str | None:
@@ -175,10 +236,9 @@ def _require_no_pending(root: Path, *, move_marker: bool = True) -> None:
         )
 
 
-def _preconditions(root: Path, managed_sha256: str) -> dict[str, Any]:
+def _preconditions(root: Path) -> dict[str, Any]:
     return {
         "identity_sha256": file_sha256(root / "rappid.json"),
-        "managed_sha256": managed_sha256,
         "root_identity": path_identity(root),
     }
 
@@ -197,6 +257,17 @@ def _lstat_at(directory: int, name: str) -> os.stat_result | None:
             "REFUSE_PATH_UNSAFE",
             "safe move inspection failed",
             {"errno": error.errno, "path": name},
+        ) from error
+
+
+def _fsync(descriptor: int, *, path: str) -> None:
+    try:
+        os.fsync(descriptor)
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_PATH_UNSAFE",
+            "a move effect could not be made durable",
+            {"errno": error.errno, "path": path},
         ) from error
 
 
@@ -266,51 +337,97 @@ def _parent_fd(root: Path, parent: str, root_device: int) -> Iterator[int]:
             os.close(descriptor)
 
 
-def _hash_at(directory: int, name: str, expected: os.stat_result) -> str:
+def _hash_descriptor(descriptor: int, expected: os.stat_result, *, path: str) -> str:
+    """SHA-256 of an open regular file that must stay the expected, unchanged file."""
+    os.lseek(descriptor, 0, os.SEEK_SET)
+    info = os.fstat(descriptor)
+    require(
+        stat.S_ISREG(info.st_mode)
+        and (info.st_dev, info.st_ino) == (expected.st_dev, expected.st_ino)
+        and 0 <= info.st_size <= MAX_FILE_BYTES,
+        "REFUSE_FILE_RACE",
+        "move file changed while it was inspected",
+        path=path,
+    )
+    digest = hashlib.sha256()
+    total = 0
+    while True:
+        chunk = os.read(descriptor, 1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        require(
+            total <= MAX_FILE_BYTES,
+            "REFUSE_FILE_LIMIT",
+            "move file exceeds the sixteen MiB limit",
+            path=path,
+        )
+        digest.update(chunk)
+    after = os.fstat(descriptor)
+    require(
+        total == info.st_size
+        and (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+        == (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns),
+        "REFUSE_FILE_RACE",
+        "move file changed while it was read",
+        path=path,
+    )
+    return digest.hexdigest()
+
+
+def _open_at(directory: int, name: str, *, code: str, path: str) -> int:
     try:
-        descriptor = os.open(name, _nofollow_flags(nonblock=True), dir_fd=directory)
+        return os.open(name, _nofollow_flags(nonblock=True), dir_fd=directory)
     except OSError as error:
         raise Refusal(
-            "REFUSE_PATH_UNSAFE",
+            code,
             "move file could not be opened safely",
-            {"errno": error.errno, "path": name},
+            {"errno": error.errno, "path": path},
         ) from error
+
+
+def _hash_at(directory: int, name: str, expected: os.stat_result) -> str:
+    descriptor = _open_at(directory, name, code="REFUSE_PATH_UNSAFE", path=name)
     try:
-        info = os.fstat(descriptor)
-        require(
-            stat.S_ISREG(info.st_mode)
-            and (info.st_dev, info.st_ino) == (expected.st_dev, expected.st_ino)
-            and 0 <= info.st_size <= MAX_FILE_BYTES,
-            "REFUSE_FILE_RACE",
-            "move file changed while it was inspected",
-            path=name,
-        )
-        digest = hashlib.sha256()
-        total = 0
-        while True:
-            chunk = os.read(descriptor, 1024 * 1024)
-            if not chunk:
-                break
-            total += len(chunk)
-            require(
-                total <= MAX_FILE_BYTES,
-                "REFUSE_FILE_LIMIT",
-                "move file exceeds the sixteen MiB limit",
-                path=name,
-            )
-            digest.update(chunk)
-        after = os.fstat(descriptor)
-        require(
-            total == info.st_size
-            and (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-            == (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns),
-            "REFUSE_FILE_RACE",
-            "move file changed while it was read",
-            path=name,
-        )
-        return digest.hexdigest()
+        return _hash_descriptor(descriptor, expected, path=name)
     finally:
         os.close(descriptor)
+
+
+def _named_identities(directory: int, *, at_root: bool) -> set[Identity]:
+    """Identities of the protected names that exist in one directory."""
+    found: set[Identity] = set()
+    for name in NAMED_ANYWHERE + (ROOT_AUTHORITY_NAMES if at_root else ()):
+        info = _lstat_at(directory, name)
+        if info is not None:
+            found.add((info.st_dev, info.st_ino))
+    return found
+
+
+def _protected_identities(root: Path, owned_paths: Iterable[str]) -> set[Identity]:
+    """Identities of the root's authority files and every SDK-owned file."""
+    with directory_fd(root) as root_directory:
+        found = _named_identities(root_directory, at_root=True)
+    for relative in owned_paths:
+        pure = PurePosixPath(relative)
+        try:
+            with directory_fd(root / pure.parent) as parent:
+                info = _lstat_at(parent, pure.name)
+        except Refusal:
+            continue
+        if info is not None:
+            found.add((info.st_dev, info.st_ino))
+    return found
+
+
+def _require_not_alias(info: os.stat_result, protected: set[Identity], *, path: str) -> None:
+    require(
+        (info.st_dev, info.st_ino) not in protected,
+        "REFUSE_MOVE_PROTECTED",
+        "move source is another name of a protected file",
+        path=path,
+        reason="protected-file-alias",
+    )
 
 
 def _require_movable(info: os.stat_result, *, path: str, root_device: int) -> None:
@@ -389,6 +506,7 @@ def _inspect(
     destination: str,
     *,
     owned: set[str],
+    protected: set[Identity],
     root_device: int,
 ) -> FileMove:
     _require_unowned(source, owned)
@@ -401,6 +519,8 @@ def _inspect(
         assert info is not None
         _require_movable(info, path=source, root_device=root_device)
         digest = _hash_at(source_directory, source_name, info)
+        local = _named_identities(source_directory, at_root=source_parent == ".")
+        _require_not_alias(info, protected | local, path=source)
     with _parent_fd(root, destination_parent, root_device) as destination_directory:
         require(
             _lstat_at(destination_directory, destination_name) is None,
@@ -421,15 +541,23 @@ def plan_moves(root: Path, moves: Any) -> MovePlan:
     """Plan moves read-only; every precondition is replayed again before the first write."""
     pairs = _requests(moves)
     root, identity = _load_root(root)
-    owned, managed_sha256 = _integration(root, identity)
+    owned, owned_paths = _integration(root, identity)
     _require_no_pending(root)
     root_device = _root_device(root)
+    protected = _protected_identities(root, owned_paths)
     return MovePlan(
         target=str(root),
         subject=_subject(identity),
-        preconditions=_preconditions(root, managed_sha256),
+        preconditions=_preconditions(root),
         moves=tuple(
-            _inspect(root, source, destination, owned=owned, root_device=root_device)
+            _inspect(
+                root,
+                source,
+                destination,
+                owned=owned,
+                protected=protected,
+                root_device=root_device,
+            )
             for source, destination in pairs
         ),
     )
@@ -444,6 +572,7 @@ def invert_move_plan(root: Path, plan: MovePlan) -> MovePlan:
         "REFUSE_PLAN",
         "move plan subject differs from the workspace identity",
     )
+    _require_no_pending(root)
     return plan.inverse()
 
 
@@ -457,10 +586,10 @@ def _recovery_bytes(plan: MovePlan) -> bytes:
     )
 
 
-def _matches(info: os.stat_result, move: FileMove, *, links: int, root_device: int) -> bool:
+def _matches(info: os.stat_result, move: FileMove, root_device: int) -> bool:
     return (
         stat.S_ISREG(info.st_mode)
-        and info.st_nlink == links
+        and info.st_nlink == 1
         and info.st_uid == os.geteuid()
         and stat.S_IMODE(info.st_mode) == move.mode
         and info.st_size == move.size
@@ -468,101 +597,152 @@ def _matches(info: os.stat_result, move: FileMove, *, links: int, root_device: i
     )
 
 
-def _state(
+def _classify(
     source_directory: int,
     source_name: str,
     destination_directory: int,
     destination_name: str,
     move: FileMove,
     root_device: int,
-) -> tuple[str, tuple[int, int] | None]:
-    """Classify one move as pending, linked, moved, or foreign (anything else)."""
+) -> tuple[str, os.stat_result | None]:
+    """Classify one move as pending, moved, or foreign (anything else).
+
+    Pending needs the planned source metadata and no destination; its bytes are verified
+    through the pinned descriptor just before the rename. Moved needs no source and the
+    planned destination, bytes included.
+    """
     source = _lstat_at(source_directory, source_name)
     destination = _lstat_at(destination_directory, destination_name)
-    if source is not None and destination is None:
-        if _matches(source, move, links=1, root_device=root_device) and (
-            _hash_at(source_directory, source_name, source) == move.sha256
-        ):
-            return "pending", (source.st_dev, source.st_ino)
-    elif source is not None and destination is not None:
-        if (
-            (source.st_dev, source.st_ino) == (destination.st_dev, destination.st_ino)
-            and _matches(destination, move, links=2, root_device=root_device)
-            and _hash_at(destination_directory, destination_name, destination) == move.sha256
-        ):
-            return "linked", (destination.st_dev, destination.st_ino)
-    elif destination is not None:
-        if _matches(destination, move, links=1, root_device=root_device) and (
-            _hash_at(destination_directory, destination_name, destination) == move.sha256
-        ):
-            return "moved", (destination.st_dev, destination.st_ino)
+    if source is not None and destination is None and _matches(source, move, root_device):
+        return "pending", source
+    if (
+        source is None
+        and destination is not None
+        and _matches(destination, move, root_device)
+        and _hash_at(destination_directory, destination_name, destination) == move.sha256
+    ):
+        return "moved", destination
     return "foreign", None
 
 
-def _hardlink(
+def _pin_source(
     source_directory: int,
     source_name: str,
-    destination_directory: int,
-    destination_name: str,
-) -> None:
-    os.link(
-        source_name,
-        destination_name,
-        src_dir_fd=source_directory,
-        dst_dir_fd=destination_directory,
-        follow_symlinks=False,
-    )
+    listed: os.stat_result,
+    move: FileMove,
+    *,
+    root_device: int,
+    code: str,
+) -> int:
+    """Open and verify the planned source; the open descriptor keeps its identity unique."""
+    descriptor = _open_at(source_directory, source_name, code=code, path=move.source)
+    try:
+        info = os.fstat(descriptor)
+        require(
+            (info.st_dev, info.st_ino) == (listed.st_dev, listed.st_ino)
+            and _matches(info, move, root_device),
+            code,
+            "move source changed before apply",
+            source=move.source,
+        )
+        require(
+            _hash_descriptor(descriptor, info, path=move.source) == move.sha256,
+            code,
+            "move source bytes differ from the plan",
+            source=move.source,
+        )
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
 
 
-def _link_destination(
+def _flip(
     source_directory: int,
     source_name: str,
     destination_directory: int,
     destination_name: str,
     *,
-    path: str,
-    progress: _Progress,
+    move: FileMove,
+    recovering: bool,
 ) -> None:
     try:
-        _hardlink(source_directory, source_name, destination_directory, destination_name)
-    except FileExistsError as error:
-        raise Refusal(
-            "REFUSE_MOVE_COLLISION",
-            "move destination appeared before apply; moves never replace",
-            {"path": path},
-        ) from error
+        _rename_exclusive(source_directory, source_name, destination_directory, destination_name)
     except OSError as error:
+        details = {"destination": move.destination, "errno": error.errno, "source": move.source}
+        if error.errno in _COLLISION_ERRORS:
+            raise Refusal(
+                "REFUSE_MOVE_COLLISION",
+                "move destination appeared before apply; moves never replace",
+                details,
+            ) from error
         if error.errno == errno.EXDEV:
             raise Refusal(
                 "REFUSE_MOVE_CROSS_DEVICE",
-                "move crosses a filesystem boundary; atomicity would be lost",
-                {"path": path},
+                "move crosses a filesystem boundary",
+                details,
             ) from error
-        if error.errno in _NO_HARDLINK_ERRORS:
+        if error.errno in _UNSUPPORTED_RENAME_ERRORS:
             raise Refusal(
                 "REFUSE_PLATFORM",
-                "this filesystem cannot create the no-replace hard link a move requires",
-                {"errno": error.errno, "path": path},
+                "this filesystem cannot rename without replacing; moves are refused",
+                details,
             ) from error
-        raise Refusal(
-            "REFUSE_PATH_UNSAFE",
-            "move link failed",
-            {"errno": error.errno, "path": path},
-        ) from error
-    progress.effects = True
-    os.fsync(destination_directory)
+        if error.errno == errno.ENOENT:
+            raise Refusal(
+                "REFUSE_RECOVERY_STATE" if recovering else "REFUSE_PRECONDITION",
+                "move source disappeared before apply",
+                details,
+            ) from error
+        raise Refusal("REFUSE_PATH_UNSAFE", "move rename failed", details) from error
 
 
-def _unlink_source(source_directory: int, source_name: str, *, path: str) -> None:
+def _arrival_problem(
+    arrived: os.stat_result | None,
+    pin: int,
+    pinned: os.stat_result,
+    move: FileMove,
+    destination_directory: int,
+    *,
+    at_root: bool,
+    root_device: int,
+) -> str | None:
+    """Why the file at the destination is not exactly the verified source, or ``None``."""
+    if arrived is None:
+        return "destination-missing"
+    if (arrived.st_dev, arrived.st_ino) != (pinned.st_dev, pinned.st_ino):
+        return "source-replaced"
     try:
-        os.unlink(source_name, dir_fd=source_directory)
-    except OSError as error:
-        raise Refusal(
-            "REFUSE_PATH_UNSAFE",
-            "move source name could not be removed; both names are left in place",
-            {"errno": error.errno, "path": path},
-        ) from error
-    os.fsync(source_directory)
+        current = os.fstat(pin)
+        if not _matches(current, move, root_device) or (
+            _hash_descriptor(pin, current, path=move.destination) != move.sha256
+        ):
+            return "source-changed"
+        if (arrived.st_dev, arrived.st_ino) in _named_identities(
+            destination_directory, at_root=at_root
+        ):
+            return "protected-name-alias"
+    except (OSError, Refusal):
+        return "verification-failed"
+    return None
+
+
+def _undo(
+    destination_directory: int,
+    destination_name: str,
+    source_directory: int,
+    source_name: str,
+    arrived: os.stat_result,
+) -> bool:
+    """Rename the arrived file back, without replacing; true only when verified."""
+    try:
+        _rename_exclusive(destination_directory, destination_name, source_directory, source_name)
+        os.fsync(source_directory)
+        os.fsync(destination_directory)
+        back = _lstat_at(source_directory, source_name)
+    except (OSError, Refusal):
+        return False
+    return back is not None and (back.st_dev, back.st_ino) == (arrived.st_dev, arrived.st_ino)
 
 
 def _apply_one(
@@ -571,6 +751,7 @@ def _apply_one(
     *,
     root_device: int,
     recovering: bool,
+    protected: set[Identity],
     progress: _Progress,
 ) -> None:
     source_parent, source_name = _split(move.source)
@@ -579,8 +760,14 @@ def _apply_one(
         _parent_fd(root, source_parent, root_device) as source_directory,
         _parent_fd(root, destination_parent, root_device) as destination_directory,
     ):
-        names = (source_directory, source_name, destination_directory, destination_name)
-        state, identity = _state(*names, move, root_device)
+        state, listed = _classify(
+            source_directory,
+            source_name,
+            destination_directory,
+            destination_name,
+            move,
+            root_device,
+        )
         if not recovering:
             require(
                 state == "pending",
@@ -596,34 +783,74 @@ def _apply_one(
             destination=move.destination,
             source=move.source,
         )
-        if state == "pending":
-            _link_destination(
+        if state == "moved":
+            return
+        assert listed is not None
+        pin = _pin_source(
+            source_directory,
+            source_name,
+            listed,
+            move,
+            root_device=root_device,
+            code="REFUSE_RECOVERY_STATE" if recovering else "REFUSE_PRECONDITION",
+        )
+        try:
+            pinned = os.fstat(pin)
+            local = _named_identities(source_directory, at_root=source_parent == ".")
+            _require_not_alias(pinned, protected | local, path=move.source)
+            _flip(
                 source_directory,
                 source_name,
                 destination_directory,
                 destination_name,
-                path=move.destination,
-                progress=progress,
+                move=move,
+                recovering=recovering,
             )
-            state, linked = _state(*names, move, root_device)
-            require(
-                state == "linked" and linked == identity,
-                "REFUSE_WRITE_VERIFY",
-                "move link verification failed; both names are left in place",
-                destination=move.destination,
-                source=move.source,
+            progress.dirty = True
+            _fsync(destination_directory, path=move.destination)
+            _fsync(source_directory, path=move.source)
+            arrived = _lstat_at(destination_directory, destination_name)
+            problem = _arrival_problem(
+                arrived,
+                pin,
+                pinned,
+                move,
+                destination_directory,
+                at_root=destination_parent == ".",
+                root_device=root_device,
             )
-        if state == "linked":
-            _unlink_source(source_directory, source_name, path=move.source)
-            progress.effects = True
-        state, moved = _state(*names, move, root_device)
-        require(
-            state == "moved" and moved == identity,
-            "REFUSE_WRITE_VERIFY",
-            "move verification failed",
-            destination=move.destination,
-            source=move.source,
-        )
+            if problem is None:
+                progress.dirty = False
+                return
+            undone = arrived is not None and _undo(
+                destination_directory,
+                destination_name,
+                source_directory,
+                source_name,
+                arrived,
+            )
+            if undone:
+                progress.dirty = False
+            outcome = "the move was undone" if undone else "every name is left for the owner"
+            details = {
+                "destination": move.destination,
+                "reason": problem,
+                "source": move.source,
+                "undone": undone,
+            }
+            if problem == "protected-name-alias":
+                raise Refusal(
+                    "REFUSE_MOVE_PROTECTED",
+                    "move destination is another name of a protected file; " + outcome,
+                    details,
+                )
+            raise Refusal(
+                "REFUSE_FILE_RACE",
+                "the source changed while it was moved; " + outcome,
+                details,
+            )
+        finally:
+            os.close(pin)
 
 
 def _all_moved(root: Path, plan: MovePlan, root_device: int) -> bool:
@@ -635,7 +862,7 @@ def _all_moved(root: Path, plan: MovePlan, root_device: int) -> bool:
                 _parent_fd(root, source_parent, root_device) as source_directory,
                 _parent_fd(root, destination_parent, root_device) as destination_directory,
             ):
-                state, _ = _state(
+                state, _ = _classify(
                     source_directory,
                     source_name,
                     destination_directory,
@@ -682,74 +909,110 @@ def _flock(descriptor: int, *, blocking: bool) -> None:
         ) from error
 
 
-def _create_locked_marker(root: Path, data: bytes) -> int:
-    """Create the marker create-only and hold an exclusive lock on it for the whole apply."""
-    with directory_fd(root / ".rapp-work") as parent:
-        try:
-            descriptor = os.open(
-                MOVE_RECOVERY_NAME,
-                os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
-                0o600,
-                dir_fd=parent,
-            )
-        except FileExistsError as error:
-            raise Refusal(
-                "REFUSE_RECOVERY_PENDING",
-                "another move apply created a recovery marker first",
-                {"path": MOVE_RECOVERY_PATH},
-            ) from error
-        try:
-            _flock(descriptor, blocking=True)
-            try:
-                os.fchmod(descriptor, 0o600)
-                view = memoryview(data)
-                while view:
-                    view = view[os.write(descriptor, view) :]
-                os.fsync(descriptor)
-                os.fsync(parent)
-            except OSError as error:
-                raise Refusal(
-                    "REFUSE_PATH_UNSAFE",
-                    "move recovery marker could not be written; nothing was moved",
-                    {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
-                ) from error
-        except Exception:
-            _discard_created_marker(parent, descriptor)
-            os.close(descriptor)
-            raise
-        except BaseException:
-            os.close(descriptor)
-            raise
-    return descriptor
-
-
-def _discard_created_marker(parent: int, descriptor: int) -> None:
-    """Remove a marker this apply just created when writing it failed; nothing has moved."""
+def _same_entry(directory: int, name: str, descriptor: int) -> bool:
+    """Whether ``name`` still names the open file (a file with no name has no links)."""
     try:
-        created = os.fstat(descriptor)
-        entry = os.stat(MOVE_RECOVERY_NAME, dir_fd=parent, follow_symlinks=False)
-        if (entry.st_dev, entry.st_ino) == (created.st_dev, created.st_ino):
-            os.unlink(MOVE_RECOVERY_NAME, dir_fd=parent)
-            os.fsync(parent)
+        entry = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        opened = os.fstat(descriptor)
+    except OSError:
+        return False
+    return opened.st_nlink >= 1 and (entry.st_dev, entry.st_ino) == (opened.st_dev, opened.st_ino)
+
+
+def _discard_own(directory: int, name: str, descriptor: int) -> None:
+    """Remove a marker or temporary file this apply created while the name is still it."""
+    try:
+        if _same_entry(directory, name, descriptor):
+            os.unlink(name, dir_fd=directory)
+            os.fsync(directory)
     except OSError:
         pass
 
 
-def _lock_existing_marker(root: Path, expected: bytes) -> int:
-    """Lock a pending marker without waiting; refuse if another apply holds it."""
-    with directory_fd(root / ".rapp-work") as parent:
+def _create_locked_marker(marker_directory: int, data: bytes) -> int:
+    """Write the marker under a private name, lock it, then rename it into place.
+
+    The marker appears complete and already locked or not at all, and never replaces a
+    marker another apply placed first.
+    """
+    temporary = f".move-recovery-{secrets.token_hex(16)}.tmp"
+    try:
+        descriptor = os.open(
+            temporary,
+            os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            0o600,
+            dir_fd=marker_directory,
+        )
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_PATH_UNSAFE",
+            "move recovery marker could not be created; nothing was moved",
+            {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
+        ) from error
+    placed = False
+    try:
+        _flock(descriptor, blocking=False)
         try:
-            descriptor = os.open(
-                MOVE_RECOVERY_NAME,
-                _nofollow_flags(nonblock=True),
-                dir_fd=parent,
-            )
+            os.fchmod(descriptor, 0o600)
+            view = memoryview(data)
+            while view:
+                view = view[os.write(descriptor, view) :]
+            os.fsync(descriptor)
         except OSError as error:
             raise Refusal(
-                "REFUSE_RECOVERY_BINDING",
-                "move recovery marker cannot be opened safely",
+                "REFUSE_PATH_UNSAFE",
+                "move recovery marker could not be written; nothing was moved",
                 {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
             ) from error
+        try:
+            _rename_exclusive(marker_directory, temporary, marker_directory, MOVE_RECOVERY_NAME)
+        except OSError as error:
+            if error.errno in _COLLISION_ERRORS:
+                raise Refusal(
+                    "REFUSE_RECOVERY_PENDING",
+                    "another move apply created a recovery marker first",
+                    {"path": MOVE_RECOVERY_PATH},
+                ) from error
+            if error.errno in _UNSUPPORTED_RENAME_ERRORS:
+                raise Refusal(
+                    "REFUSE_PLATFORM",
+                    "this filesystem cannot rename without replacing; moves are refused",
+                    {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
+                ) from error
+            raise Refusal(
+                "REFUSE_PATH_UNSAFE",
+                "move recovery marker could not be placed; nothing was moved",
+                {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
+            ) from error
+        placed = True
+        _fsync(marker_directory, path=MOVE_RECOVERY_PATH)
+        require(
+            _same_entry(marker_directory, MOVE_RECOVERY_NAME, descriptor),
+            "REFUSE_RECOVERY_BINDING",
+            "move recovery marker changed while it was created; nothing was moved",
+            path=MOVE_RECOVERY_PATH,
+        )
+    except BaseException:
+        _discard_own(marker_directory, MOVE_RECOVERY_NAME if placed else temporary, descriptor)
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
+def _lock_existing_marker(marker_directory: int, expected: bytes) -> int:
+    """Lock a pending marker without waiting, then prove it is still the named marker."""
+    try:
+        descriptor = os.open(
+            MOVE_RECOVERY_NAME,
+            _nofollow_flags(nonblock=True),
+            dir_fd=marker_directory,
+        )
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_RECOVERY_BINDING",
+            "move recovery marker cannot be opened safely",
+            {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
+        ) from error
     try:
         info = os.fstat(descriptor)
         require(
@@ -759,6 +1022,13 @@ def _lock_existing_marker(root: Path, expected: bytes) -> int:
             path=MOVE_RECOVERY_PATH,
         )
         _flock(descriptor, blocking=False)
+        require(
+            _same_entry(marker_directory, MOVE_RECOVERY_NAME, descriptor),
+            "REFUSE_RECOVERY_BUSY",
+            "the move recovery marker was finished or replaced before its lock was taken; "
+            "nothing was changed",
+            path=MOVE_RECOVERY_PATH,
+        )
         current = _read_locked(descriptor)
         require(
             current == expected,
@@ -772,13 +1042,27 @@ def _lock_existing_marker(root: Path, expected: bytes) -> int:
     return descriptor
 
 
-def _remove_marker(marker: Path, expected: bytes) -> None:
+def _remove_marker(marker_directory: int, descriptor: int, expected: bytes) -> None:
     require(
-        read_regular(marker) == expected,
+        _read_locked(descriptor) == expected
+        and _same_entry(marker_directory, MOVE_RECOVERY_NAME, descriptor),
         "REFUSE_RECOVERY_BINDING",
         "move recovery marker changed during apply",
+        path=MOVE_RECOVERY_PATH,
     )
-    _unlink_regular(marker)
+    try:
+        os.unlink(MOVE_RECOVERY_NAME, dir_fd=marker_directory)
+    except OSError as error:
+        raise Refusal(
+            "REFUSE_PATH_UNSAFE",
+            "move recovery marker could not be removed",
+            {"errno": error.errno, "path": MOVE_RECOVERY_PATH},
+        ) from error
+    _fsync(marker_directory, path=MOVE_RECOVERY_PATH)
+
+
+def _marker_present(marker_directory: int) -> bool:
+    return _lstat_at(marker_directory, MOVE_RECOVERY_NAME) is not None
 
 
 def apply_move_plan(plan: MovePlan, *, root: Path, plan_sha256: str) -> dict[str, Any]:
@@ -796,67 +1080,69 @@ def apply_move_plan(plan: MovePlan, *, root: Path, plan_sha256: str) -> dict[str
         "REFUSE_PLAN",
         "move plan subject differs from the workspace identity",
     )
-    owned, managed_sha256 = _integration(root, identity)
+    owned, owned_paths = _integration(root, identity)
     _require_no_pending(root, move_marker=False)
     require(
-        plan.preconditions == _preconditions(root, managed_sha256),
+        plan.preconditions == _preconditions(root),
         "REFUSE_PRECONDITION",
-        "workspace identity, inventory, or root changed after the move plan was built",
+        "workspace identity or root changed after the move plan was built",
     )
     root_device = _root_device(root)
-    marker = root / MOVE_RECOVERY_PATH
+    protected = _protected_identities(root, owned_paths)
     marker_bytes = _recovery_bytes(plan)
-    recovering = _present(marker)
-    if recovering:
-        for move in plan.moves:
-            _require_unowned(move.source, owned)
-            _require_unowned(move.destination, owned)
-        lock = _lock_existing_marker(root, marker_bytes)
-    else:
-        if _all_moved(root, plan, root_device):
-            refuse(
-                "REFUSE_PLAN_APPLIED",
-                "move plan postconditions already hold; nothing was changed",
-                plan_sha256=plan.sha256,
-            )
-        current = plan_moves(
-            root,
-            [{"destination": move.destination, "source": move.source} for move in plan.moves],
-        )
-        require(
-            current.to_dict() == plan.to_dict(),
-            "REFUSE_PRECONDITION",
-            "workspace changed after the move plan was built",
-        )
-        lock = _create_locked_marker(root, marker_bytes)
-    progress = _Progress()
-    try:
-        try:
+    with directory_fd(root / ".rapp-work") as marker_directory:
+        recovering = _marker_present(marker_directory)
+        if recovering:
             for move in plan.moves:
-                _apply_one(
-                    root,
-                    move,
-                    root_device=root_device,
-                    recovering=recovering,
-                    progress=progress,
+                _require_unowned(move.source, owned)
+                _require_unowned(move.destination, owned)
+            lock = _lock_existing_marker(marker_directory, marker_bytes)
+        else:
+            if _all_moved(root, plan, root_device):
+                refuse(
+                    "REFUSE_PLAN_APPLIED",
+                    "move plan postconditions already hold; nothing was changed",
+                    plan_sha256=plan.sha256,
                 )
-                progress.completed += 1
-        except Refusal as error:
-            kept = recovering or progress.effects
-            if not kept:
-                _remove_marker(marker, marker_bytes)
-            raise Refusal(
-                error.code,
-                error.message,
-                {
-                    **(error.details or {}),
-                    "completed_moves": progress.completed,
-                    "recovery": "pending" if kept else "none",
-                },
-            ) from error
-        _remove_marker(marker, marker_bytes)
-    finally:
-        os.close(lock)
+            current = plan_moves(
+                root,
+                [{"destination": move.destination, "source": move.source} for move in plan.moves],
+            )
+            require(
+                current.to_dict() == plan.to_dict(),
+                "REFUSE_PRECONDITION",
+                "workspace changed after the move plan was built",
+            )
+            lock = _create_locked_marker(marker_directory, marker_bytes)
+        progress = _Progress()
+        try:
+            try:
+                for move in plan.moves:
+                    _apply_one(
+                        root,
+                        move,
+                        root_device=root_device,
+                        recovering=recovering,
+                        protected=protected,
+                        progress=progress,
+                    )
+                    progress.completed += 1
+            except Refusal as error:
+                kept = recovering or progress.completed > 0 or progress.dirty
+                if not kept:
+                    _remove_marker(marker_directory, lock, marker_bytes)
+                raise Refusal(
+                    error.code,
+                    error.message,
+                    {
+                        **(error.details or {}),
+                        "completed_moves": progress.completed,
+                        "recovery": "pending" if kept else "none",
+                    },
+                ) from error
+            _remove_marker(marker_directory, lock, marker_bytes)
+        finally:
+            os.close(lock)
     verification = (
         Workspace(root).verify() if identity["kind"] == "workspace" else Organization(root).verify()
     )
