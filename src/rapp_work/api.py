@@ -281,21 +281,18 @@ def _update(inputs: dict[str, Any]) -> dict[str, Any]:
 
 
 def _migrate(inputs: dict[str, Any]) -> dict[str, Any]:
+    # Proposal 0004 (not accepted): only an explicit successor input selects the
+    # pointer-only path; every other request takes the unchanged 1.0.0 path below.
+    if "successor" in inputs:
+        return _migrate_pointer_only(inputs)
     item = closed_object(
         inputs,
         required={"source", "target"},
-        optional={"apply", "hive", "plan", "plan_sha256", "successor"},
+        optional={"apply", "plan", "plan_sha256"},
         where="migrate input",
     )
     apply, plan_value, plan_sha256 = _apply_fields(item, operation="migrate")
     source, target = _root_input(item["source"]), _root_input(item["target"])
-    if "successor" in item:
-        return _migrate_pointer_only(item, apply, plan_value, plan_sha256, source, target)
-    require(
-        "hive" not in item,
-        "REFUSE_INPUT_SHAPE",
-        "a migrate Hive description is accepted only with successor pointer-only",
-    )
     if not apply:
         plan = plan_migration(source, target)
         return {
@@ -313,20 +310,21 @@ def _migrate(inputs: dict[str, Any]) -> dict[str, Any]:
     )
 
 
-def _migrate_pointer_only(
-    item: dict[str, Any],
-    apply: bool,
-    plan_value: Any,
-    plan_sha256: Any,
-    source: Path,
-    target: Path,
-) -> dict[str, Any]:
+def _migrate_pointer_only(inputs: dict[str, Any]) -> dict[str, Any]:
+    item = closed_object(
+        inputs,
+        required={"source", "successor", "target"},
+        optional={"apply", "hive", "plan", "plan_sha256"},
+        where="migrate input",
+    )
     require(
         item["successor"] == POINTER_SUCCESSOR,
         "REFUSE_INPUT_SHAPE",
         "migrate successor must be pointer-only",
         allowed=[POINTER_SUCCESSOR],
     )
+    apply, plan_value, plan_sha256 = _apply_fields(item, operation="migrate")
+    source, target = _root_input(item["source"]), _root_input(item["target"])
     if not apply:
         plan = plan_pointer_successor(source, target, hive=item.get("hive"))
         return {

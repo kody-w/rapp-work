@@ -8,14 +8,15 @@
   repository-seeded Hive, or a source with a world id longer than 64
   characters, by exact authority-byte commitments, and write only
   `rapp-work-pointer-successor/1` plus the existing receipt and recovery
-  marker. New tokens: `rapp-work-pointer-successor/1`,
+  marker. A description is corroborated against the source's recognized Hive
+  records, including a Private Hive publication's genesis declaration found
+  through its current pointer; Git directories and Git internals are refused.
+  New tokens: `rapp-work-pointer-successor/1`,
   `rapp-work-pointer-successor-plan/1`, and
   `rapp-work-pointer-successor-source/1`. World ids of up to 128 characters
-  are accepted only inside the pointer token. Without `successor`, migration
-  is unchanged.
-- Conformance fix: SDK workspace identities and Organization pointer entries
-  now refuse world ids longer than 64 characters, so `update` can no longer
-  write a `rapp-work-sdk/1` record that its own schema forbids.
+  are accepted only inside the pointer token. Without `successor`, `migrate`,
+  `update` and `verify` are unchanged; the static API metadata (returned by
+  `status` and `discover`) lists the two new optional `migrate` inputs.
 - Intended release: 1.1.0, after owner acceptance. The package version is
   unchanged.
 

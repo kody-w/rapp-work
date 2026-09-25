@@ -44,7 +44,8 @@ requires both the complete plan object and its exact canonical SHA-256.
 pointer-only successor ([proposal 0004](proposals/0004-sdk-migration-successors.md),
 not accepted). `hive` is the closed description of a source without
 `rappid.json` and is accepted only while planning. Without `successor`,
-`migrate` behaves exactly as before and refuses `hive`.
+`migrate` runs its 1.0.0 code and refuses `hive` like any unknown input
+(`REFUSE_INPUT_KEYS`).
 
 ## Typed models
 

@@ -11,6 +11,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import unicodedata
 import warnings
 from pathlib import Path
 from types import SimpleNamespace
@@ -167,6 +168,60 @@ def identity_workspace(root: Path, world: str) -> Path:
     )
     (root / "notes.md").write_bytes(b"# Legacy notes\n")
     return root
+
+
+def synthetic_publication(
+    root: Path,
+    hive: dict[str, Any],
+    *,
+    pointer_hive: str | None = None,
+) -> dict[str, str]:
+    """A minimal Private Hive publication: current pointer, Mother chain index, genesis frame."""
+
+    declaration = {
+        "authority_channel_id": hive["authority_channel"]["id"],
+        "channels": [{**hive["authority_channel"], "role": "authority", "writeback": True}],
+        "created_utc": "2026-08-01T09:00:00.000Z",
+        "hive_rappid": hive["hive_rappid"],
+        "members": [],
+        "policy": {},
+        "rooms": [],
+        "schema": "rapp-hive/1-declaration",
+        "world_id": hive["world_id"],
+    }
+    genesis = build_frame(
+        kind="hive.declaration",
+        stream_id=hive["hive_rappid"],
+        seq=0,
+        utc="2026-08-01T09:00:00.000Z",
+        payload=declaration,
+        prev=None,
+    ).to_dict()
+    tip = "c" * 64
+    stream = pointer_hive or hive["hive_rappid"]
+    paths = {
+        "chain": f"chains/{tip}.json",
+        "current": "refs/current.json",
+        "genesis": f"objects/wave/{genesis['frame_hash']}.json",
+    }
+    files = {
+        paths["chain"]: {
+            "frames": [genesis["frame_hash"], tip],
+            "schema": "rapp-private-hive-chain/1",
+            "stream_id": stream,
+        },
+        paths["current"]: {
+            "hive_rappid": stream,
+            "mother": {"frame_hash": tip, "seq": 2},
+            "schema": "rapp-private-hive-current/1",
+        },
+        paths["genesis"]: genesis,
+    }
+    root.mkdir(mode=0o700)
+    for relative, value in files.items():
+        (root / relative).parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        (root / relative).write_bytes(canonical_bytes(value))
+    return paths
 
 
 def plan(source: Path, target: Path, hive: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -429,6 +484,92 @@ def test_pointer_changed_source_refuses_before_any_write(sandbox: Path) -> None:
     assert snapshot(target) == completed
 
 
+def change_during_staging(
+    monkeypatch: pytest.MonkeyPatch,
+    path: Path,
+    content: bytes,
+) -> None:
+    """Rewrite one source file right after staging writes the receipt, before activation."""
+
+    write = migration_module._write_staged
+
+    def staged(staging: Path, relative: str, data: bytes) -> None:
+        write(staging, relative, data)
+        if relative == ".rapp-work/migration-receipt.json":
+            path.write_bytes(content)
+
+    monkeypatch.setattr(migration_module, "_write_staged", staged)
+
+
+def test_source_change_during_staging_is_refused_before_activation(
+    sandbox: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source, target = sandbox / "seeded", sandbox / "successor"
+    hive = seeded_hive(source)
+    planned = planned_ok(source, target, hive)
+    plan_hash = planned["result"]["plan_sha256"]
+    staging = target.parent / f".{target.name}.rapp-work-migrate-{plan_hash[:24]}"
+    change_during_staging(monkeypatch, source / "POLICY.md", POLICY + b"Changed while staging.\n")
+    during = apply(source, target, planned)
+    refused(during, "REFUSE_MIGRATION_SOURCE_CHANGED")
+    assert during["refusal"]["message"] == "migration source authority changed during staging"
+    assert not target.exists()
+    assert staging.is_dir()
+    monkeypatch.undo()
+    (source / "POLICY.md").write_bytes(POLICY)
+    resumed = apply(source, target, planned)
+    assert resumed["status"] == "applied", resumed["refusal"]
+    assert not staging.exists()
+
+    workspace = identity_workspace(sandbox / "workspace", "example-world")
+    default_target = sandbox / "default-successor"
+    default = migrate({"source": str(workspace), "target": str(default_target)})
+    identity = (workspace / "rappid.json").read_bytes()
+    change_during_staging(monkeypatch, workspace / "rappid.json", identity + b"\n")
+    changed = migrate(
+        {
+            "apply": True,
+            "plan": default["result"]["plan"],
+            "plan_sha256": default["result"]["plan_sha256"],
+            "source": str(workspace),
+            "target": str(default_target),
+        }
+    )
+    refused(changed, "REFUSE_MIGRATION_SOURCE_CHANGED")
+    assert changed["refusal"]["message"] == "migration source authority changed during staging"
+    assert not default_target.exists()
+
+
+def test_byte_identical_source_directory_swap_is_refused(sandbox: Path) -> None:
+    source, target = sandbox / "seeded", sandbox / "successor"
+    hive = seeded_hive(source)
+    planned = planned_ok(source, target, hive)
+    original = sandbox / "seeded-original"
+    source.rename(original)
+    shutil.copytree(original, source, symlinks=True)
+    source.chmod(stat.S_IMODE(original.stat().st_mode))
+    replanned = planned_ok(source, sandbox / "other-successor", hive)
+    old_binding = planned["result"]["plan"]["source_binding"]
+    new_binding = replanned["result"]["plan"]["source_binding"]
+    assert new_binding["authority_files"] == old_binding["authority_files"]
+    assert new_binding["root_identity"] != old_binding["root_identity"]
+    refused(apply(source, target, planned), "REFUSE_MIGRATION_SOURCE_CHANGED")
+    assert not target.exists()
+
+    workspace = identity_workspace(sandbox / "workspace", "w" * 80)
+    identified = planned_ok(workspace, sandbox / "workspace-successor")
+    moved = sandbox / "workspace-original"
+    workspace.rename(moved)
+    shutil.copytree(moved, workspace, symlinks=True)
+    workspace.chmod(stat.S_IMODE(moved.stat().st_mode))
+    refused(
+        apply(workspace, sandbox / "workspace-successor", identified),
+        "REFUSE_MIGRATION_SOURCE_CHANGED",
+    )
+    assert not (sandbox / "workspace-successor").exists()
+
+
 def test_pointer_plan_hash_and_tamper_gates(sandbox: Path) -> None:
     source, target = sandbox / "seeded", sandbox / "successor"
     hive = seeded_hive(source)
@@ -613,10 +754,13 @@ def test_pointer_opt_in_and_input_contract(sandbox: Path) -> None:
     )
     refused(without_opt_in, "REFUSE_INPUT_KEYS")
     refused(apply(source, target, planned, hive=hive), "REFUSE_APPLY_REQUIRED")
-    refused(
-        migrate({"hive": hive, "source": str(source), "target": str(target)}),
-        "REFUSE_INPUT_SHAPE",
-    )
+    as_on_main = migrate({"hive": hive, "source": str(source), "target": str(target)})
+    refused(as_on_main, "REFUSE_INPUT_KEYS")
+    assert as_on_main["refusal"] == {
+        "code": "REFUSE_INPUT_KEYS",
+        "details": {"missing": [], "unknown": ["hive"]},
+        "message": "migrate input has a non-closed key set",
+    }
     refused(
         migrate({"source": str(source), "successor": "copy", "target": str(target), "hive": hive}),
         "REFUSE_INPUT_SHAPE",
@@ -627,7 +771,29 @@ def test_pointer_opt_in_and_input_contract(sandbox: Path) -> None:
     default = migrate({"source": str(workspace), "target": str(sandbox / "default-successor")})
     assert default["status"] == "planned"
     refused(apply(workspace, sandbox / "default-successor", default), "REFUSE_INPUT_KEYS")
-    refused(plan(workspace, sandbox / "w-successor", hive), "REFUSE_POINTER_SOURCE")
+    described = plan(workspace, sandbox / "w-successor", hive)
+    refused(described, "REFUSE_POINTER_SOURCE")
+    assert "omit the Hive description" in described["refusal"]["message"]
+    assert plan(workspace, sandbox / "w-successor")["status"] == "planned"
+
+    estate = sandbox / "estate"
+    estate.mkdir(mode=0o700)
+    (estate / "rappid.json").write_bytes(
+        canonical_bytes(
+            {
+                "kind": "protocol-estate",
+                "name": "Example estate",
+                "rappid": mint_rappid("example", "example-estate"),
+                "schema": "rapp/1",
+            }
+        )
+    )
+    for extra in ({}, {"successor": "pointer-only"}, {"successor": "pointer-only", "hive": hive}):
+        refusal = migrate({"source": str(estate), "target": str(sandbox / "e"), **extra})
+        refused(refusal, "REFUSE_MIGRATION_SOURCE")
+        assert refusal["refusal"]["message"] == (
+            "migration supports only workspace or Organization sources"
+        )
 
     for change, code in (
         ({"unexpected": True}, "REFUSE_INPUT_KEYS"),
@@ -663,6 +829,8 @@ def test_pointer_opt_in_and_input_contract(sandbox: Path) -> None:
         "example.org/team-a",
         "\u00e9" * 128,
         "\u4e16\u754c" * 64,
+        "\u00dcn\u00efc\u00f6d\u00e9 W\u00f6rld",
+        "\U0001f30d example",
     ],
 )
 def test_pointer_world_grammar_accepts(value: str) -> None:
@@ -683,6 +851,22 @@ def test_pointer_world_grammar_accepts(value: str) -> None:
         "a\u202eb",
         "a\u2066b",
         "a\ud800b",
+        "a\u200bb",
+        "a\u2028b",
+        "a\u2029b",
+        "a\ufeffb",
+        "a\u00adb",
+        "a\u2060b",
+        "a\u034fb",
+        "a\u180eb",
+        "a\u3164b",
+        "a\ufe0fb",
+        "a\U000e0041b",
+        "a\U000e0100b",
+        "a\u0378b",
+        "a\ufdd0b",
+        "a\U0010ffffb",
+        "a\u1dfa\u0301",
         5,
         None,
     ],
@@ -691,6 +875,33 @@ def test_pointer_world_grammar_refuses(value: Any) -> None:
     with pytest.raises(Refusal) as error:
         migration_module.pointer_world_id(value, "world")
     assert error.value.code == "REFUSE_POINTER_WORLD"
+
+
+def test_pointer_world_grammar_matches_the_unicode_database() -> None:
+    """Every Cc, Cf, Cs, Zl, Zp or unassigned code point is refused; so are the fixed ranges."""
+
+    fixed = {
+        code_point
+        for low, high in migration_module.POINTER_WORLD_FORBIDDEN
+        for code_point in range(low, high + 1)
+    }
+    refused_categories = {"Cc", "Cf", "Cn", "Cs", "Zl", "Zp"}
+    mismatches = []
+    for code_point in range(0x110000):
+        character = chr(code_point)
+        expected = not (
+            code_point in fixed
+            or unicodedata.category(character) in refused_categories
+            or unicodedata.normalize("NFC", character) != character
+        )
+        try:
+            migration_module.pointer_world_id(character, "world")
+            accepted = True
+        except Refusal:
+            accepted = False
+        if accepted != expected:
+            mismatches.append(f"U+{code_point:04X}")
+    assert mismatches == []
 
 
 @pytest.mark.parametrize("length", [1, 64, 65, 128, 129])
@@ -726,7 +937,93 @@ def test_pointer_world_boundaries_end_to_end(sandbox: Path, length: int) -> None
         refused(default, "REFUSE_MIGRATION_SOURCE")
 
 
-def test_long_world_is_refused_everywhere_else(sandbox: Path) -> None:
+def integrated_long_world_workspace(root: Path) -> Path:
+    """A workspace that SDK 1.0.0's ``update`` integrated although its world id is 80 long.
+
+    SDK 1.0.0 writes that ``.rapp-work/sdk.json``, and this branch leaves the default path
+    unchanged; proposal 0004 section 13 reports the record mismatch as pre-existing drift.
+    """
+
+    identity_workspace(root, WORLD80)
+    planned = update({"root": str(root)})
+    assert planned["status"] == "planned", planned["refusal"]
+    applied = update(
+        {
+            "apply": True,
+            "plan": planned["result"]["plan"],
+            "plan_sha256": planned["result"]["plan_sha256"],
+            "root": str(root),
+        }
+    )
+    assert applied["status"] == "applied", applied["refusal"]
+    return root
+
+
+def test_long_world_default_behavior_matches_sdk_1_0_0(sandbox: Path) -> None:
+    integrated = integrated_long_world_workspace(sandbox / "integrated")
+    assert status({"root": str(integrated)})["result"]["classification"] == "workspace"
+    checked = verify({"root": str(integrated)})
+    assert checked["status"] == "ok", checked["refusal"]
+    assert checked["result"]["subject"]["status"] == "verified"
+    assert update({"root": str(integrated)})["status"] == "planned"
+
+    sdk_record = integrated / ".rapp-work/sdk.json"
+    original = sdk_record.read_bytes()
+    tampered = original.replace(b'"network_default":"disabled"', b'"network_default":"enabled"')
+    assert tampered != original
+    sdk_record.write_bytes(tampered)
+    refused(verify({"root": str(integrated)}), "REFUSE_MANAGED_DRIFT")
+    sdk_record.write_bytes(original)
+    skill = integrated / ".github/skills/rapp-work-sdk/SKILL.md"
+    saved = skill.read_bytes()
+    skill.write_bytes(saved + b"\n# injected\n")
+    refused(verify({"root": str(integrated)}), "REFUSE_MANAGED_DRIFT")
+    skill.write_bytes(saved)
+    assert verify({"root": str(integrated)})["result"]["subject"]["status"] == "verified"
+
+    bare = identity_workspace(sandbox / "bare", WORLD80)
+    before = snapshot(bare)
+    assert status({"root": str(bare)})["result"]["classification"] == "workspace"
+    refused(verify({"root": str(bare)}), "REFUSE_SDK_PROFILE")
+    assert Workspace.load(bare).identity["world_id"] == WORLD80
+    assert snapshot(bare) == before
+
+    organization = sandbox / "organization"
+    request = {
+        "kind": "organization",
+        "mode": "solo",
+        "owner_label": "example",
+        "root": str(organization),
+        "slug": "org",
+        "world_id": "w" * 64,
+    }
+    planned_org = scaffold(request)
+    applied_org = scaffold(
+        {
+            **request,
+            "apply": True,
+            "plan": planned_org["result"]["plan"],
+            "plan_sha256": planned_org["result"]["plan_sha256"],
+        }
+    )
+    assert applied_org["status"] == "applied"
+    registry = organization / "workspaces.json"
+    value = json.loads(registry.read_text(encoding="utf-8"))
+    value["workspaces"] = [
+        {
+            "active": True,
+            "mode": "solo",
+            "name": "long",
+            "path": str(bare),
+            "rappid": mint_rappid("example", "long"),
+            "world_id": WORLD80,
+        }
+    ]
+    registry.write_bytes(canonical_bytes(value))
+    assert Organization.load(organization).pointers()[0]["world_id"] == WORLD80
+
+
+def test_pointer_successor_is_not_a_workspace_and_other_labels_stay_64(sandbox: Path) -> None:
     request = {
         "kind": "workspace",
         "mode": "solo",
@@ -737,50 +1034,6 @@ def test_long_world_is_refused_everywhere_else(sandbox: Path) -> None:
     }
     refused(scaffold(request), "REFUSE_LABEL")
     assert scaffold({**request, "world_id": "w" * 64})["status"] == "planned"
-
-    long_label = identity_workspace(sandbox / "long-label", "w" * 65)
-    before = snapshot(long_label)
-    refused(update({"root": str(long_label)}), "REFUSE_IDENTITY")
-    observed = status({"root": str(long_label)})
-    assert observed["result"]["classification"] == "legacy-workspace"
-    checked = verify({"root": str(long_label)})
-    assert checked["result"]["subject"]["status"] == "verified-legacy-identity-only"
-    assert snapshot(long_label) == before
-    with pytest.raises(Refusal) as error:
-        Workspace.load(long_label)
-    assert error.value.code == "REFUSE_IDENTITY"
-
-    organization = sandbox / "organization"
-    org_request = {**request, "kind": "organization", "root": str(organization), "slug": "org"}
-    org_request["world_id"] = "w" * 64
-    planned_org = scaffold(org_request)
-    assert (
-        scaffold(
-            {
-                **org_request,
-                "apply": True,
-                "plan": planned_org["result"]["plan"],
-                "plan_sha256": planned_org["result"]["plan_sha256"],
-            }
-        )["status"]
-        == "applied"
-    )
-    registry = organization / "workspaces.json"
-    value = json.loads(registry.read_text(encoding="utf-8"))
-    value["workspaces"] = [
-        {
-            "active": True,
-            "mode": "solo",
-            "name": "long",
-            "path": str(long_label),
-            "rappid": mint_rappid("example", "long"),
-            "world_id": "w" * 65,
-        }
-    ]
-    registry.write_bytes(canonical_bytes(value))
-    with pytest.raises(Refusal) as error:
-        Organization.load(organization).pointers()
-    assert error.value.code == "REFUSE_ORGANIZATION"
 
     source, target = sandbox / "seeded", sandbox / "successor"
     hive = seeded_hive(source)
@@ -806,7 +1059,9 @@ def test_long_world_is_refused_everywhere_else(sandbox: Path) -> None:
         ("github", "https://github.com/example-owner/example-hive"),
         ("sharepoint", "https://example.com/sites/example/hive"),
         ("nas", "https://example.com:8443/share/example-hive"),
+        ("nas", "nas-share:example/hive"),
         ("local", ".rapp-hive/outbox"),
+        ("local", "outbox"),
         ("local", "private-filesystem:example-store"),
         ("custom", "example-carrier:hive/main"),
     ],
@@ -820,20 +1075,36 @@ def test_authority_channel_accepts_credential_free_locators(kind: str, locator: 
     ("kind", "locator"),
     [
         ("github", "https://user:secret@github.com/example-owner/example-hive"),
+        ("github", "https://@github.com/example-owner/example-hive"),
+        ("github", "https://github.com/example-owner/example-hive@main"),
         ("github", "https://github.com/example-owner/example-hive.git"),
         ("github", "https://example.com/example-owner/example-hive"),
         ("github", "https://github.com/example-owner/.."),
+        # rapp-hive/1's own conformance locator: scp-style SSH carries user information,
+        # a documented limit of the pointer grammar (proposal 0004, section 11).
+        ("github", "git@example.invalid:example/private-hive.git"),
         ("sharepoint", "https://example.com/hive?access_token=synthetic"),
         ("sharepoint", "https://example.com/hive#fragment"),
         ("nas", "http://example.com/share"),
+        ("nas", "http:example.com/share"),
+        ("nas", "https:example.com/share"),
         ("nas", "ftp://example.com/share"),
         ("nas", "file:///share/hive"),
+        ("nas", "ssh:example.com/hive"),
+        ("lan", "git:example.com/hive"),
         ("lan", "git@example.com:owner/hive"),
+        ("local", "file:/share/hive"),
+        ("local", "file:share/hive"),
+        ("local", "C:/share/hive"),
+        ("local", "c:/share/hive"),
+        ("local", "c:share"),
+        ("local", "outbox:"),
         ("local", "/absolute/path/hive"),
         ("local", "../outside"),
         ("local", "with space"),
         ("local", "tab\there"),
         ("custom", "caf\u00e9"),
+        ("custom", "example-carrier:hive/../main"),
         ("custom", ""),
         ("custom", "a" * 2049),
     ],
@@ -860,11 +1131,28 @@ def test_authority_path_rules(sandbox: Path) -> None:
         (".git/config", "REFUSE_POINTER_AUTHORITY"),
         (".GIT/HEAD", "REFUSE_POINTER_AUTHORITY"),
         ("vendor/.git/HEAD", "REFUSE_POINTER_AUTHORITY"),
+        (".g\u200cit/config", "REFUSE_POINTER_AUTHORITY"),
+        (".git\ufeff/config", "REFUSE_POINTER_AUTHORITY"),
+        ("\u202e.git/config", "REFUSE_POINTER_AUTHORITY"),
+        (".git./config", "REFUSE_POINTER_AUTHORITY"),
+        (".git /config", "REFUSE_POINTER_AUTHORITY"),
+        (".Git. . /config", "REFUSE_POINTER_AUTHORITY"),
+        ("GIT~1/config", "REFUSE_POINTER_AUTHORITY"),
+        ("git~2/HEAD", "REFUSE_POINTER_AUTHORITY"),
+        ("\uff0e\uff47\uff49\uff54/config", "REFUSE_POINTER_AUTHORITY"),
+        (".git::$INDEX_ALLOCATION/config", "REFUSE_PATH"),
         ("../outside.json", "REFUSE_PATH"),
         ("/etc/hosts", "REFUSE_PATH"),
         ("a:b.json", "REFUSE_PATH"),
     ):
-        refused(plan(source, sandbox / "bad", {**hive, "authority_paths": [path]}), code)
+        refusal = plan(source, sandbox / "bad", {**hive, "authority_paths": [path]})
+        refused(refusal, code)
+        if code == "REFUSE_POINTER_AUTHORITY":
+            assert refusal["refusal"]["message"] == (
+                "Git internals are never source authority and are never read"
+            ), path
+    for lookalike in (".github/workflows/ci.yml", ".gitignore", "git/notes.md", ".git.d/notes"):
+        assert migration_module._authority_path(lookalike) == lookalike
 
     outside = sandbox / "outside.json"
     outside.write_bytes(b"{}")
@@ -886,6 +1174,46 @@ def test_authority_path_rules(sandbox: Path) -> None:
         "REFUSE_PATH_UNSAFE",
     )
     assert not (sandbox / "bad").exists()
+
+
+def test_git_directories_are_never_pointer_sources(sandbox: Path) -> None:
+    source = sandbox / "seeded"
+    hive = seeded_hive(source)
+    described = {**hive, "authority_paths": ["HEAD", "config"]}
+    for root in (source / ".git", source / ".git" / "refs"):
+        refusal = plan(root, sandbox / "bad", described)
+        refused(refusal, "REFUSE_POINTER_SOURCE")
+        assert "Git directory" in refusal["refusal"]["message"]
+    inside = identity_workspace(source / ".git" / "workspace", "example-world")
+    refused(plan(inside, sandbox / "bad"), "REFUSE_POINTER_SOURCE")
+
+    bare = sandbox / "example-hive.git"
+    subprocess.run(
+        ["git", "init", "--bare", "--quiet", "--template=", str(bare)],
+        check=True,
+        capture_output=True,
+        env={
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "HOME": str(sandbox),
+            "LC_ALL": "C",
+            "PATH": os.environ.get("PATH", ""),
+        },
+    )
+    for root in (bare, bare / "refs"):
+        refusal = plan(root, sandbox / "bad", described)
+        refused(refusal, "REFUSE_POINTER_SOURCE")
+        assert refusal["refusal"]["details"] == {"path": str(bare)}
+
+    alias = sandbox / ".git." / "hive"
+    alias.mkdir(parents=True, mode=0o700)
+    (alias / "POLICY.md").write_bytes(POLICY)
+    refused(
+        plan(alias, sandbox / "bad", {**hive, "authority_paths": ["POLICY.md"]}),
+        "REFUSE_POINTER_SOURCE",
+    )
+    assert not (sandbox / "bad").exists()
+    assert planned_ok(source, sandbox / "successor", hive)["result"]["effects"] is False
 
 
 def test_description_is_corroborated_by_recognized_hive_records(sandbox: Path) -> None:
@@ -944,6 +1272,106 @@ def test_description_is_corroborated_by_recognized_hive_records(sandbox: Path) -
     assert not (sandbox / "bad").exists()
 
 
+def publication_hive() -> dict[str, Any]:
+    return {
+        "authority_channel": {
+            "id": "example-store",
+            "kind": "local",
+            "locator": "private-filesystem:example-store",
+        },
+        "authority_paths": ["refs/current.json"],
+        "hive_rappid": mint_rappid("example-owner", "example-published-hive"),
+        "world_id": WORLD80,
+    }
+
+
+def test_private_hive_current_pointer_is_followed_to_its_genesis(sandbox: Path) -> None:
+    hive = publication_hive()
+    source = sandbox / "publication"
+    paths = synthetic_publication(source, hive)
+    planned = planned_ok(source, sandbox / "successor", hive)
+    binding = planned["result"]["plan"]["source_binding"]
+    assert [entry["path"] for entry in binding["authority_files"]] == sorted(paths.values())
+    assert binding["described_paths"] == ["refs/current.json"]
+    assert apply(source, sandbox / "successor", planned)["status"] == "applied"
+
+    for change in (
+        {"hive_rappid": mint_rappid("example-owner", "another-hive")},
+        {"world_id": "another world"},
+        {"authority_channel": {**hive["authority_channel"], "id": "another-store"}},
+        {"authority_channel": {**hive["authority_channel"], "kind": "nas"}},
+    ):
+        contradicted = plan(source, sandbox / "bad", {**hive, **change})
+        refused(contradicted, "REFUSE_POINTER_CLAIM")
+        assert contradicted["refusal"]["details"] == {"path": paths["genesis"]}
+
+    other = sandbox / "other-pointer"
+    synthetic_publication(other, hive, pointer_hive=mint_rappid("example-owner", "another-hive"))
+    by_pointer = plan(other, sandbox / "bad", hive)
+    refused(by_pointer, "REFUSE_POINTER_CLAIM")
+    assert by_pointer["refusal"]["details"] == {"path": "refs/current.json"}
+    assert "current pointer" in by_pointer["refusal"]["message"]
+    assert not (sandbox / "bad").exists()
+
+
+def test_unfollowable_private_hive_current_pointer_is_refused(sandbox: Path) -> None:
+    hive = publication_hive()
+
+    def rewrite(root: Path, relative: str, change: Any) -> None:
+        value = json.loads((root / relative).read_text(encoding="utf-8"))
+        change(value)
+        (root / relative).write_bytes(canonical_bytes(value))
+
+    def no_mother(root: Path, paths: dict[str, str]) -> None:
+        rewrite(root, paths["current"], lambda value: value.pop("mother"))
+
+    def chain_missing(root: Path, paths: dict[str, str]) -> None:
+        (root / paths["chain"]).unlink()
+
+    def chain_of_another_stream(root: Path, paths: dict[str, str]) -> None:
+        other = mint_rappid("example-owner", "another-stream")
+        rewrite(root, paths["chain"], lambda value: value.update(stream_id=other))
+
+    def chain_with_another_tip(root: Path, paths: dict[str, str]) -> None:
+        rewrite(root, paths["chain"], lambda value: value["frames"].append("d" * 64))
+
+    def empty_chain(root: Path, paths: dict[str, str]) -> None:
+        rewrite(root, paths["chain"], lambda value: value.update(frames=[]))
+
+    def genesis_missing(root: Path, paths: dict[str, str]) -> None:
+        (root / paths["genesis"]).unlink()
+
+    def genesis_not_a_declaration(root: Path, paths: dict[str, str]) -> None:
+        rewrite(root, paths["genesis"], lambda value: value.update(kind="hive.object"))
+
+    breakages = (
+        (no_mother, "current"),
+        (chain_missing, "chain"),
+        (chain_of_another_stream, "chain"),
+        (chain_with_another_tip, "chain"),
+        (empty_chain, "chain"),
+        (genesis_missing, "genesis"),
+        (genesis_not_a_declaration, "genesis"),
+    )
+    for index, (breakage, where) in enumerate(breakages):
+        source = sandbox / f"broken-{index}"
+        paths = synthetic_publication(source, hive)
+        breakage(source, paths)
+        refusal = plan(source, sandbox / "bad", hive)
+        refused(refusal, "REFUSE_POINTER_AUTHORITY")
+        assert refusal["refusal"]["details"] == {"path": paths[where]}, breakage.__name__
+
+    opaque = sandbox / "opaque"
+    (opaque / "refs").mkdir(parents=True, mode=0o700)
+    (opaque / "refs/current.json").write_bytes(b'{"schema":"example-pointer/1"}')
+    (opaque / "POLICY.md").write_bytes(POLICY)
+    unrecognized = planned_ok(opaque, sandbox / "successor", {**hive, "authority_paths": ["POLICY.md"]})
+    assert [
+        entry["path"] for entry in unrecognized["result"]["plan"]["source_binding"]["authority_files"]
+    ] == ["POLICY.md", "refs/current.json"]
+    assert not (sandbox / "bad").exists()
+
+
 def test_pointer_record_token_is_closed() -> None:
     record = {
         "authority_channel": {"id": "origin", "kind": "local", "locator": "outbox"},
@@ -980,10 +1408,40 @@ def test_pointer_record_token_is_closed() -> None:
             {"authority_channel": {"id": "origin", "kind": "local", "locator": "a@b"}},
             "REFUSE_POINTER_CHANNEL",
         ),
+        (
+            {"authority_files": [{"bytes": 16 * 1024 * 1024 + 1, "path": "a", "sha256": "a" * 64}]},
+            "REFUSE_POINTER_RECORD",
+        ),
+        (
+            {
+                "authority_files": [
+                    {"bytes": 16 * 1024 * 1024, "path": f"part-{index}", "sha256": "a" * 64}
+                    for index in range(5)
+                ]
+            },
+            "REFUSE_POINTER_RECORD",
+        ),
+        (
+            {
+                "authority_files": [
+                    {"bytes": 1, "path": f"file-{index:04d}", "sha256": "a" * 64}
+                    for index in range(513)
+                ]
+            },
+            "REFUSE_POINTER_RECORD",
+        ),
     ):
         with pytest.raises(Refusal) as error:
             migration_module.validate_pointer_record({**record, **change})
         assert error.value.code == code, change
+    at_limits = {
+        "authority_files": [
+            {"bytes": 16 * 1024 * 1024, "path": f"part-{index}", "sha256": "a" * 64}
+            for index in range(4)
+        ]
+        + [{"bytes": 0, "path": f"zero-{index:03d}", "sha256": "a" * 64} for index in range(508)]
+    }
+    assert migration_module.validate_pointer_record({**record, **at_limits})
 
 
 def _deprecated_compat() -> tuple[Any, Any]:
@@ -1053,13 +1511,18 @@ def test_historical_private_hive_repositories(sandbox: Path) -> None:
 
     checkout = sandbox / "hive-repository"
     shutil.copytree(sandbox / "publication", checkout)
-    (checkout / "owner-anchor.json").write_bytes(canonical_bytes(anchor))
     git_seed(checkout)
+    assert not (checkout / "owner-anchor.json").exists()
     before = snapshot(checkout)
     refused(
         migrate({"source": str(checkout), "target": str(sandbox / "successor")}),
         "REFUSE_PATH_UNSAFE",
     )
+    current = json.loads((checkout / "refs/current.json").read_text(encoding="utf-8"))
+    assert current["schema"] == "rapp-private-hive-current/1"
+    chain = f"chains/{current['mother']['frame_hash']}.json"
+    frames = json.loads((checkout / chain).read_text(encoding="utf-8"))["frames"]
+    assert frames[0] == anchor["genesis_frame_hash"]
     genesis = f"objects/wave/{anchor['genesis_frame_hash']}.json"
     hive = {
         "authority_channel": {
@@ -1067,29 +1530,48 @@ def test_historical_private_hive_repositories(sandbox: Path) -> None:
             "kind": "local",
             "locator": "private-filesystem:example-store",
         },
-        "authority_paths": [genesis],
+        "authority_paths": ["refs/current.json"],
         "hive_rappid": anchor["hive_rappid"],
         "world_id": anchor["world_id"],
     }
-    other = mint_rappid("example-owner", "other")
-    by_frame = plan(checkout, sandbox / "bad", {**hive, "hive_rappid": other})
-    refused(by_frame, "REFUSE_POINTER_CLAIM")
-    assert by_frame["refusal"]["details"] == {"path": genesis}
-    another_world = {**hive, "authority_paths": ["refs/current.json"], "world_id": "other-world"}
-    by_anchor = plan(checkout, sandbox / "bad", another_world)
-    refused(by_anchor, "REFUSE_POINTER_CLAIM")
-    assert by_anchor["refusal"]["details"] == {"path": "owner-anchor.json"}
+    unrelated = {
+        "authority_channel": {
+            "id": "unrelated",
+            "kind": "github",
+            "locator": "https://github.com/example-other/unrelated",
+        },
+        "authority_paths": ["refs/current.json"],
+        "hive_rappid": mint_rappid("example-other", "unrelated-hive"),
+        "world_id": "Some Other World",
+    }
+    refused(plan(checkout, sandbox / "bad", unrelated), "REFUSE_POINTER_CLAIM")
+    for change in (
+        {"hive_rappid": mint_rappid("example-owner", "other")},
+        {"world_id": "other-world"},
+        {"authority_channel": {**hive["authority_channel"], "id": "other-store"}},
+        {"authority_channel": {**hive["authority_channel"], "locator": "other:store"}},
+    ):
+        contradicted = plan(checkout, sandbox / "bad", {**hive, **change})
+        refused(contradicted, "REFUSE_POINTER_CLAIM")
+        assert contradicted["refusal"]["details"] == {"path": genesis}
     planned = planned_ok(checkout, sandbox / "successor", hive)
     bound = [
         entry["path"] for entry in planned["result"]["plan"]["source_binding"]["authority_files"]
     ]
-    assert bound == sorted([genesis, "owner-anchor.json", "refs/current.json"])
+    assert bound == sorted([chain, genesis, "refs/current.json"])
+    assert planned["result"]["plan"]["source_binding"]["described_paths"] == ["refs/current.json"]
     assert apply(checkout, sandbox / "successor", planned)["status"] == "applied"
     record = pointer(sandbox / "successor")
     assert record["source_rappid"] == anchor["hive_rappid"]
     assert record["authority_channel"] == hive["authority_channel"]
     assert listing(sandbox / "successor") == SUCCESSOR_FILES
     assert snapshot(checkout) == before
+
+    (checkout / "owner-anchor.json").write_bytes(canonical_bytes(anchor))
+    anchored = planned_ok(checkout, sandbox / "anchored-successor", hive)
+    assert "owner-anchor.json" in [
+        entry["path"] for entry in anchored["result"]["plan"]["source_binding"]["authority_files"]
+    ]
 
 
 def test_cli_pointer_only_plan_and_exact_apply(sandbox: Path) -> None:
@@ -1117,6 +1599,11 @@ def test_cli_pointer_only_plan_and_exact_apply(sandbox: Path) -> None:
         return value
 
     base = ("--source", str(source), "--target", str(target), "--successor", "pointer-only")
+    unread = sandbox / "never-read.json"
+    lone_hive = run("--source", str(source), "--target", str(target), "--hive", str(unread))
+    refused(lone_hive, "REFUSE_CLI_ARGUMENTS")
+    assert lone_hive["operation"] == "cli"
+    assert not unread.exists()
     planned = run(*base, "--hive", str(description))
     assert planned["status"] == "planned", planned["refusal"]
     plan_file = sandbox / "plan.json"
@@ -1204,6 +1691,11 @@ def test_proposed_schemas_match_the_reference_implementation(sandbox: Path) -> N
         {"source_world_id": "a\x1fb"},
         {"source_world_id": "a\x85b"},
         {"source_world_id": "a\u202eb"},
+        {"source_world_id": "a\u200bb"},
+        {"source_world_id": "a\u2028b"},
+        {"source_world_id": "a\u3164b"},
+        {"source_world_id": "a\ufe0fb"},
+        {"source_world_id": "a\U000e0041b"},
         {"grants_authority": True},
         {"content_copied": True},
         {"execution": "on-demand"},
@@ -1215,6 +1707,13 @@ def test_proposed_schemas_match_the_reference_implementation(sandbox: Path) -> N
         {"source_kind": "workspace"},
         {"source_profile": "rapp-hive/1"},
         {"authority_files": []},
+        {"authority_files": [{"bytes": 16777217, "path": "a", "sha256": "a" * 64}]},
+        {
+            "authority_files": [
+                {"bytes": 1, "path": f"file-{index:04d}", "sha256": "a" * 64}
+                for index in range(513)
+            ]
+        },
         {"source_binding_sha256": "X" * 64},
         {"source_rappid": "example-seeded-hive"},
     ):
@@ -1243,6 +1742,16 @@ def test_proposed_schemas_match_the_reference_implementation(sandbox: Path) -> N
         assert not source_schema.is_valid(forged_binding), change
         with pytest.raises(Refusal):
             migration_module._check_pointer_binding(forged_binding)
+    operator_binding = plans[0]["source_binding"]
+    duplicated = {**operator_binding, "described_paths": ["POLICY.md", "POLICY.md"]}
+    assert not source_schema.is_valid(duplicated)
+    with pytest.raises(Refusal):
+        migration_module._check_pointer_binding(duplicated)
+    unsorted = {**operator_binding, "described_paths": ["seed.json", "POLICY.md"]}
+    assert source_schema.is_valid(unsorted)
+    with pytest.raises(Refusal) as error:
+        migration_module._check_pointer_binding(unsorted)
+    assert error.value.code == "REFUSE_MIGRATION_PLAN"
 
     action = plans[0]["actions"][0]
     for change in (
@@ -1262,3 +1771,25 @@ def test_proposed_schemas_match_the_reference_implementation(sandbox: Path) -> N
     with pytest.raises(Refusal) as error:
         migration_module.validate_pointer_record(decomposed)
     assert error.value.code == "REFUSE_POINTER_WORLD"
+    unassigned = {**described, "source_world_id": "a\u0378b"}
+    assert record_schema.is_valid(unassigned)
+    with pytest.raises(Refusal) as error:
+        migration_module.validate_pointer_record(unassigned)
+    assert error.value.code == "REFUSE_POINTER_WORLD"
+
+
+def test_proposed_world_pattern_is_the_implemented_fixed_ranges() -> None:
+    blocks = re.findall(
+        r"<!-- schema: (\S+) -->\n```json\n(.*?)\n```",
+        PROPOSAL.read_text(encoding="utf-8"),
+        re.S,
+    )
+    record_schema = json.loads(dict(blocks)["rapp-work-pointer-successor/1"])
+    ranges = [
+        chr(low) if low == high else f"{chr(low)}-{chr(high)}"
+        for low, high in migration_module.POINTER_WORLD_FORBIDDEN
+        if (low, high) != (0xD800, 0xDFFF)
+    ]
+    expected = "^[^" + "".join(ranges) + "]*$(?![\\s\\S])"
+    assert record_schema["$defs"]["legacyWorldId"]["pattern"] == expected
+    assert (0xD800, 0xDFFF) in migration_module.POINTER_WORLD_FORBIDDEN

@@ -35,17 +35,46 @@ POINTER_SOURCE_SCHEMA = "rapp-work-pointer-successor-source/1"
 POINTER_PLAN_SCHEMA = "rapp-work-pointer-successor-plan/1"
 POINTER_WORLD_MAX = 128
 POINTER_MAX_NAMED_PATHS = 256
+POINTER_MAX_AUTHORITY_FILES = 512
+POINTER_MAX_FILE_BYTES = 16 * 1024 * 1024
 POINTER_MAX_AUTHORITY_BYTES = 64 * 1024 * 1024
-# Code points refused in a legacy world id: C0, DEL, C1, UTF-16 surrogates, and the
-# explicit bidirectional controls, so a reviewed plan cannot display a spoofed world.
+# Code points refused in a legacy world id, as fixed ranges that do not depend on the
+# Unicode database: C0, DEL, C1, UTF-16 surrogates, and every code point that Unicode
+# 15.1 (and 16.0) classifies as a format character (Cf, which includes the bidirectional
+# controls), a line or paragraph separator (Zl, Zp), or Default_Ignorable_Code_Point.
+# They are invisible or reorder text, so a reviewed plan could display a spoofed world.
 POINTER_WORLD_FORBIDDEN = (
     (0x0000, 0x001F),
     (0x007F, 0x009F),
+    (0x00AD, 0x00AD),
+    (0x034F, 0x034F),
+    (0x0600, 0x0605),
     (0x061C, 0x061C),
-    (0x200E, 0x200F),
-    (0x202A, 0x202E),
-    (0x2066, 0x2069),
+    (0x06DD, 0x06DD),
+    (0x070F, 0x070F),
+    (0x0890, 0x0891),
+    (0x08E2, 0x08E2),
+    (0x115F, 0x1160),
+    (0x17B4, 0x17B5),
+    (0x180B, 0x180F),
+    (0x200B, 0x200F),
+    (0x2028, 0x202E),
+    (0x2060, 0x206F),
+    (0x3164, 0x3164),
     (0xD800, 0xDFFF),
+    (0xFE00, 0xFE0F),
+    (0xFEFF, 0xFEFF),
+    (0xFFA0, 0xFFA0),
+    (0xFFF0, 0xFFFB),
+    (0x110BD, 0x110BD),
+    (0x110CD, 0x110CD),
+    (0x13430, 0x1343F),
+    (0x1BCA0, 0x1BCA3),
+    (0x1D173, 0x1D17A),
+    (0xE0000, 0xE0FFF),
+)
+POINTER_WORLD_FORBIDDEN_PATTERN = re.compile(
+    "[" + "".join(f"\\U{low:08x}-\\U{high:08x}" for low, high in POINTER_WORLD_FORBIDDEN) + "]"
 )
 HIVE_AUTHORITY_PATHS = (
     ".rapp-hive/authority.json",
@@ -62,9 +91,12 @@ HIVE_AUTHORITY_PATHS = (
     "refs/current.json",
     "registry.json",
 )
+PRIVATE_HIVE_CURRENT_PATH = "refs/current.json"
+PRIVATE_HIVE_CURRENT_SCHEMA = "rapp-private-hive-current/1"
 HIVE_CHANNEL_KINDS = ("custom", "github", "lan", "local", "nas", "sharepoint")
 HIVE_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?")
 LOCATOR_SEGMENT = r"[A-Za-z0-9._~%!$&()*+,;=:-]+"
+RELATIVE_SEGMENT = r"[A-Za-z0-9._~%!$&()*+,;=-]+"
 GITHUB_LOCATOR = re.compile(
     r"https://github\.com/[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_.-]{1,100}"
 )
@@ -72,8 +104,13 @@ HTTPS_LOCATOR = re.compile(
     r"https://[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?(?::[0-9]{1,5})?"
     rf"(?:/(?:{LOCATOR_SEGMENT})?)*"
 )
-OPAQUE_LOCATOR = re.compile(rf"[a-z][a-z0-9+.-]{{0,31}}:{LOCATOR_SEGMENT}(?:/{LOCATOR_SEGMENT})*")
-RELATIVE_LOCATOR = re.compile(rf"{LOCATOR_SEGMENT}(?:/{LOCATOR_SEGMENT})*")
+OPAQUE_LOCATOR = re.compile(
+    rf"([a-z][a-z0-9+.-]{{1,31}}):{LOCATOR_SEGMENT}(?:/{LOCATOR_SEGMENT})*"
+)
+RELATIVE_LOCATOR = re.compile(rf"{RELATIVE_SEGMENT}(?:/{RELATIVE_SEGMENT})*")
+# Schemes with a hierarchical URL form are not opaque locators: only https URLs are
+# accepted, and only in the URL form.
+HIERARCHICAL_SCHEMES = frozenset({"file", "ftp", "ftps", "git", "http", "https", "sftp", "ssh"})
 LOCATOR_FORBIDDEN = frozenset("@?#\\\"'<>`{}|^[]")
 SOURCE_AUTHORITY_PATHS = (
     ".rapp-hive/baseline.json",
@@ -94,21 +131,22 @@ def pointer_world_id(value: Any, where: str) -> str:
 
     The grammar is a strict subset of the RAPP Workspace/1 world id (1 to 128
     characters, no control characters) inside the RAPP I-JSON domain (NFC, Unicode
-    scalar values), additionally refusing C1 and bidirectional controls. It is never a
-    label, path, name, instruction-file value, or hash input.
+    scalar values). It also refuses the fixed invisible and reordering ranges in
+    ``POINTER_WORLD_FORBIDDEN`` and code points that are unassigned in the running
+    Unicode database, so a world id accepted under an older database is accepted under
+    every newer one (Unicode's normalization stability policy). It is never a label,
+    path, name, instruction-file value, or hash input.
     """
 
     require(
         isinstance(value, str)
         and 1 <= len(value) <= POINTER_WORLD_MAX
-        and not any(
-            low <= ord(character) <= high
-            for character in value
-            for low, high in POINTER_WORLD_FORBIDDEN
-        )
+        and not POINTER_WORLD_FORBIDDEN_PATTERN.search(value)
+        and all(unicodedata.category(character) != "Cn" for character in value)
         and unicodedata.normalize("NFC", value) == value,
         "REFUSE_POINTER_WORLD",
-        f"{where} must be 1 to {POINTER_WORLD_MAX} NFC characters without control characters",
+        f"{where} must be 1 to {POINTER_WORLD_MAX} assigned NFC characters without "
+        "control, format, separator, or default-ignorable characters",
         length=len(value) if isinstance(value, str) else None,
     )
     return str(value)
@@ -497,9 +535,12 @@ def authority_locator(value: Any, kind: str) -> str:
     elif "://" in value:
         valid = bool(HTTPS_LOCATOR.fullmatch(value))
         where = value.split("://", 1)[1].partition("/")[2]
+    elif (opaque := OPAQUE_LOCATOR.fullmatch(value)) is not None:
+        valid = opaque.group(1) not in HIERARCHICAL_SCHEMES
+        where = value.split(":", 1)[1]
     else:
-        valid = bool(OPAQUE_LOCATOR.fullmatch(value) or RELATIVE_LOCATOR.fullmatch(value))
-        where = value.split(":", 1)[1] if OPAQUE_LOCATOR.fullmatch(value) else value
+        valid = bool(RELATIVE_LOCATOR.fullmatch(value))
+        where = value
     require(
         valid and _locator_components_safe(where),
         "REFUSE_POINTER_CHANNEL",
@@ -522,11 +563,49 @@ def authority_channel(value: Any) -> dict[str, str]:
     return {"id": channel_id, "kind": kind, "locator": authority_locator(item["locator"], kind)}
 
 
+def _git_equivalent(component: str) -> bool:
+    """Whether one path component can name a Git directory on some file system.
+
+    This covers Git's own equivalences (``is_hfs_dotgit`` and ``is_ntfs_dotgit``) and
+    more: invisible and default-ignorable code points are dropped (HFS+ ignores some),
+    compatibility forms and letter case are folded, an NTFS stream suffix and trailing
+    dots and spaces are dropped, and NTFS short names ``GIT~<n>`` count.
+    """
+
+    visible = POINTER_WORLD_FORBIDDEN_PATTERN.sub("", component)
+    folded = unicodedata.normalize("NFKC", visible).casefold().split(":", 1)[0].rstrip(". ")
+    return folded == ".git" or bool(re.fullmatch(r"git~[0-9]+", folded))
+
+
+def _looks_like_git_directory(path: Path) -> bool:
+    """Git's own directory test (``is_git_directory``), by existence only: nothing is read."""
+
+    return all(os.path.lexists(path / name) for name in ("HEAD", "objects", "refs"))
+
+
+def _pointer_source_root(source: Path) -> Path:
+    root = assert_no_symlinks(absolute_path(source))
+    require(
+        not any(_git_equivalent(part) for part in root.parts[1:]),
+        "REFUSE_POINTER_SOURCE",
+        "a pointer-only source is never a Git directory or inside one",
+        path=str(root),
+    )
+    for candidate in (root, *root.parents):
+        require(
+            not _looks_like_git_directory(candidate),
+            "REFUSE_POINTER_SOURCE",
+            "a pointer-only source is never a Git directory or inside one",
+            path=str(candidate),
+        )
+    return root
+
+
 def _authority_path(value: Any) -> str:
     require(isinstance(value, str), "REFUSE_POINTER_AUTHORITY", "authority path must be text")
     relative = safe_relative(value)
     require(
-        all(part.casefold() != ".git" for part in PurePosixPath(relative).parts),
+        not any(_git_equivalent(part) for part in PurePosixPath(relative).parts),
         "REFUSE_POINTER_AUTHORITY",
         "Git internals are never source authority and are never read",
         path=relative,
@@ -567,6 +646,79 @@ def hive_description(value: Any) -> dict[str, Any]:
     }
 
 
+def _json_object(raw: bytes) -> dict[str, Any] | None:
+    try:
+        value = strict_json_loads(raw, where="source authority record")
+    except Refusal:
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _carried_declaration(value: dict[str, Any]) -> dict[str, Any] | None:
+    """The ``rapp-hive/1-declaration`` a record is, or that a ``hive.declaration`` frame carries."""
+
+    payload = value.get("payload")
+    if value.get("schema") == "rapp-hive/1-declaration":
+        return value
+    if (
+        set(value) == FRAME_KEYS
+        and value.get("spec") == "rapp/1"
+        and value.get("kind") == "hive.declaration"
+        and isinstance(payload, dict)
+        and payload.get("schema") == "rapp-hive/1-declaration"
+    ):
+        return payload
+    return None
+
+
+def _publication_references(current: bytes, read: Callable[[str], bytes]) -> None:
+    """Follow a Private Hive current pointer to its Mother chain index and genesis frame.
+
+    Exactly two content-addressed references are followed and nothing is verified or
+    replayed: this only locates the Hive's founding declaration so that a description
+    can be corroborated against it. It is not authentication.
+    """
+
+    pointer = _json_object(current)
+    if pointer is None or pointer.get("schema") != PRIVATE_HIVE_CURRENT_SCHEMA:
+        return
+    mother = pointer.get("mother")
+    tip = mother.get("frame_hash") if isinstance(mother, dict) else None
+    require(
+        isinstance(tip, str) and bool(HEX64.fullmatch(tip)),
+        "REFUSE_POINTER_AUTHORITY",
+        "the Private Hive current pointer does not name its Mother frame",
+        path=PRIVATE_HIVE_CURRENT_PATH,
+    )
+    chain_path = f"chains/{tip}.json"
+    chain = _json_object(read(chain_path))
+    frames = chain.get("frames") if chain is not None else None
+    genesis_hash = frames[0] if isinstance(frames, list) and frames else None
+    require(
+        chain is not None
+        and chain.get("schema") == "rapp-private-hive-chain/1"
+        and chain.get("stream_id") == pointer.get("hive_rappid")
+        and isinstance(frames, list)
+        and bool(frames)
+        and frames[-1] == tip
+        and isinstance(genesis_hash, str)
+        and bool(HEX64.fullmatch(genesis_hash)),
+        "REFUSE_POINTER_AUTHORITY",
+        "the Private Hive Mother chain index does not name the Hive's genesis frame",
+        path=chain_path,
+    )
+    genesis_path = f"objects/wave/{genesis_hash}.json"
+    genesis = _json_object(read(genesis_path))
+    require(
+        genesis is not None
+        and set(genesis) == FRAME_KEYS
+        and _carried_declaration(genesis) is not None,
+        "REFUSE_POINTER_AUTHORITY",
+        "the Private Hive genesis frame is not a rapp-hive/1 declaration frame",
+        path=genesis_path,
+    )
+
+
 def _read_authority(
     root: Path,
     fixed: tuple[str, ...],
@@ -586,17 +738,29 @@ def _read_authority(
         if path.exists() or path.is_symlink():
             selected.add(relative)
     contents: dict[str, bytes] = {}
-    total = 0
+
+    def read(relative: str) -> bytes:
+        if relative not in contents:
+            path = root / relative
+            require(
+                path.exists() or path.is_symlink(),
+                "REFUSE_POINTER_AUTHORITY",
+                "a file that the Private Hive current pointer names is missing",
+                path=relative,
+            )
+            contents[relative] = read_regular(path, limit=POINTER_MAX_FILE_BYTES)
+            require(
+                sum(map(len, contents.values())) <= POINTER_MAX_AUTHORITY_BYTES,
+                "REFUSE_POINTER_AUTHORITY",
+                "bound source authority exceeds the byte limit",
+                limit=POINTER_MAX_AUTHORITY_BYTES,
+            )
+        return contents[relative]
+
     for relative in sorted(selected):
-        raw = read_regular(root / relative)
-        total += len(raw)
-        require(
-            total <= POINTER_MAX_AUTHORITY_BYTES,
-            "REFUSE_POINTER_AUTHORITY",
-            "bound source authority exceeds the byte limit",
-            limit=POINTER_MAX_AUTHORITY_BYTES,
-        )
-        contents[relative] = raw
+        read(relative)
+    if PRIVATE_HIVE_CURRENT_PATH in contents:
+        _publication_references(contents[PRIVATE_HIVE_CURRENT_PATH], read)
     require(
         bool(contents),
         "REFUSE_POINTER_AUTHORITY",
@@ -622,25 +786,10 @@ def _corroborate(contents: dict[str, bytes], description: dict[str, Any]) -> Non
     for relative, raw in sorted(contents.items()):
         if not relative.endswith(".json"):
             continue
-        try:
-            value = strict_json_loads(raw, where="source authority record")
-        except Refusal:
+        value = _json_object(raw)
+        if value is None:
             continue
-        if not isinstance(value, dict):
-            continue
-        payload = value.get("payload")
-        if value.get("schema") == "rapp-hive/1-declaration":
-            declaration: dict[str, Any] | None = value
-        elif (
-            set(value) == FRAME_KEYS
-            and value.get("spec") == "rapp/1"
-            and value.get("kind") == "hive.declaration"
-            and isinstance(payload, dict)
-            and payload.get("schema") == "rapp-hive/1-declaration"
-        ):
-            declaration = payload
-        else:
-            declaration = None
+        declaration = _carried_declaration(value)
         if declaration is not None:
             require(
                 declaration.get("hive_rappid") == description["hive_rappid"]
@@ -658,6 +807,13 @@ def _corroborate(contents: dict[str, bytes], description: dict[str, Any]) -> Non
                 "Hive description differs from the source's Private Hive owner anchor",
                 path=relative,
             )
+        elif value.get("schema") == PRIVATE_HIVE_CURRENT_SCHEMA:
+            require(
+                value.get("hive_rappid") == description["hive_rappid"],
+                "REFUSE_POINTER_CLAIM",
+                "Hive description differs from the source's Private Hive current pointer",
+                path=relative,
+            )
 
 
 def _commitments(contents: dict[str, bytes]) -> list[dict[str, Any]]:
@@ -670,15 +826,16 @@ def _commitments(contents: dict[str, bytes]) -> list[dict[str, Any]]:
 def pointer_source_binding(root: Path, hive: Any = None) -> dict[str, Any]:
     """Bind a pointer-only successor source without copying or interpreting its state."""
 
-    root = assert_no_symlinks(absolute_path(root))
+    root = _pointer_source_root(root)
     identity_path = root / "rappid.json"
     if identity_path.exists() or identity_path.is_symlink():
+        identity = _source_identity(root, pointer=True)
         require(
             hive is None,
             "REFUSE_POINTER_SOURCE",
-            "a source with rappid.json is described by its own identity; omit the Hive description",
+            "a source with a Workspace or Organization rappid.json is described by that "
+            "identity file; omit the Hive description",
         )
-        identity = _source_identity(root, pointer=True)
         contents = _read_authority(root, SOURCE_AUTHORITY_PATHS, [])
         raw_identity = strict_json_loads(contents["rappid.json"], where="source identity")
         require(
@@ -782,8 +939,13 @@ def _check_pointer_binding(binding: Any) -> dict[str, Any]:
     pointer_world_id(item["world_id"], "pointer-only source world_id")
     if operator:
         authority_channel(item["authority_channel"])
-        for relative in item["described_paths"]:
-            _authority_path(relative)
+        described = [_authority_path(relative) for relative in item["described_paths"]]
+        require(
+            len(described) <= POINTER_MAX_NAMED_PATHS and described == sorted(set(described)),
+            "REFUSE_MIGRATION_PLAN",
+            f"pointer-only described paths must be 1 to {POINTER_MAX_NAMED_PATHS} unique, "
+            "sorted paths",
+        )
     else:
         _profile_text(item["profile"], "pointer-only source profile", "REFUSE_MIGRATION_PLAN")
     _check_commitments(
@@ -796,9 +958,9 @@ def _check_pointer_binding(binding: Any) -> dict[str, Any]:
 
 def _check_commitments(entries: Any, where: str, code: str) -> None:
     require(
-        isinstance(entries, list) and bool(entries),
+        isinstance(entries, list) and 1 <= len(entries) <= POINTER_MAX_AUTHORITY_FILES,
         code,
-        f"{where} authority files are missing",
+        f"{where} binds 1 to {POINTER_MAX_AUTHORITY_FILES} authority files",
     )
     paths: list[str] = []
     for raw in entries:
@@ -806,7 +968,7 @@ def _check_commitments(entries: Any, where: str, code: str) -> None:
         paths.append(safe_relative(entry["path"]))
         require(
             type(entry["bytes"]) is int
-            and 0 <= entry["bytes"] <= POINTER_MAX_AUTHORITY_BYTES
+            and 0 <= entry["bytes"] <= POINTER_MAX_FILE_BYTES
             and isinstance(entry["sha256"], str)
             and bool(HEX64.fullmatch(entry["sha256"])),
             code,
@@ -816,6 +978,12 @@ def _check_commitments(entries: Any, where: str, code: str) -> None:
         paths == sorted(set(paths)),
         code,
         f"{where} authority files must be unique and path sorted",
+    )
+    require(
+        sum(entry["bytes"] for entry in entries) <= POINTER_MAX_AUTHORITY_BYTES,
+        code,
+        f"{where} authority files exceed the byte limit",
+        limit=POINTER_MAX_AUTHORITY_BYTES,
     )
 
 

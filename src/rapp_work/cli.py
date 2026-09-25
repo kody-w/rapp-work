@@ -79,6 +79,15 @@ def _object(path: Path, *, where: str) -> dict[str, Any]:
     return cast(dict[str, Any], value)
 
 
+def _require_successor_for_hive(args: argparse.Namespace) -> None:
+    # Checked with the argument parse, as SDK 1.0.0 refuses the then-unknown --hive.
+    if getattr(args, "hive", None) is not None and getattr(args, "successor", None) is None:
+        raise Refusal(
+            "REFUSE_CLI_ARGUMENTS",
+            "--hive is accepted only with --successor pointer-only",
+        )
+
+
 def _inputs(args: argparse.Namespace) -> dict[str, Any]:
     operation = args.operation
     if operation in {"status", "verify"}:
@@ -100,8 +109,8 @@ def _inputs(args: argparse.Namespace) -> dict[str, Any]:
         value = {"source": args.source, "target": args.target}
         if args.successor is not None:
             value["successor"] = args.successor
-        if args.hive is not None:
-            value["hive"] = _object(args.hive, where="Hive description file")
+            if args.hive is not None:
+                value["hive"] = _object(args.hive, where="Hive description file")
     else:
         raise Refusal(
             "REFUSE_OPERATION",
@@ -128,6 +137,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     operation = "cli"
     try:
         args = parser().parse_args(argv)
+        _require_successor_for_hive(args)
         if args.version:
             result = {
                 "operation": "version",
