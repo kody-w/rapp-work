@@ -40,6 +40,11 @@ migrate(inputs)
 For effectful operations, omitting `apply` returns a plan. `apply: true`
 requires both the complete plan object and its exact canonical SHA-256.
 
+A `discover` result groups its inert records in `skills`, `plugins`, and
+`neurons`, and lists `refusals`. It adds an `agents` member of inert
+`rapp-work-discovered-agent/1` records only when it finds at least one
+Brainstem single-file agent (`*_agent.py`); see `rapp-work-sdk/1` §11.1.
+
 ## Typed models
 
 ```python
@@ -111,7 +116,8 @@ the compatibility implementation unless `allow_network=True`.
   historical GitHub publication requires explicit compatibility inputs.
 - SharePoint, public Git, owner rotation, key release, sealing, topology
   mutation, and Federation activation.
-- Plugin, skill, or Portable Neuron execution/install.
+- Plugin, skill, Portable Neuron, or single-file agent execution, loading, or
+  install.
 - Automatic repair of missing or modified SDK-owned files.
 - Race-prone effectful fallback on platforms without descriptor-relative
   no-follow primitives.

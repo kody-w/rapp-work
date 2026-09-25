@@ -145,13 +145,98 @@ source, and target. Foreign or ambiguous staging is never repaired or deleted.
 
 ## 11. Inert compatibility
 
-Portable Neurons, discovered plugins, and project skills are untrusted data.
-Discovery may parse bounded metadata and Python syntax, but MUST NOT import,
-execute, install, enable, or grant authority to discovered code.
+Portable Neurons, discovered plugins, project skills, and single-file agents
+are untrusted data. Discovery may parse bounded metadata and Python syntax, but
+MUST NOT import, execute, install, enable, or grant authority to discovered
+code.
 
 The historical workspace-manager and Private Hive implementations remain
 available only through explicit SDK compatibility wrappers and deprecated
 legacy paths. Those wrappers do not broaden their profile claims.
+
+### 11.1 Single-file agents
+
+A single-file agent is a Brainstem agent file: a regular file whose name ends
+with the exact, case-sensitive suffix `_agent.py`. For each one it can read
+safely, `discover` MUST record one `rapp-work-discovered-agent/1` object in
+the `agents` member of its result, in code-point order of `path` and then
+`root`; a file reached from several scanned roots yields one record per root.
+`discover` MUST omit `agents` when it records none, so a tree without such a
+file yields the same result bytes as before this section. Agent files count
+toward the same `max_entries` bound as every other entry. No existing record
+shape changes.
+
+A record has exactly these members:
+
+| Member | Value |
+|---|---|
+| `schema` | `rapp-work-discovered-agent/1` |
+| `path`, `root` | Absolute lexical paths, with no link resolved, of the file and of the scanned root it was found under |
+| `bytes`, `sha256` | Exact byte length and SHA-256 of the file |
+| `language` | `python` |
+| `role` | `base-class` for `basic_agent.py`, the shared base class; otherwise `agent` |
+| `live` | Boolean, defined below |
+| `syntax` | `parsed`, `invalid`, or `unsupported-encoding` |
+| `classes` | When `parsed`: the unique names, in code-point order, of classes defined directly in the module body whose base list names `BasicAgent`, as a name or as an attribute; otherwise `null` |
+| `manifest_status` | When `parsed`: `absent`, `literal`, `not-literal`, `ambiguous`, or `over-limit`; otherwise `null` |
+| `manifest` | When `literal`: an object with exactly `schema`, `name`, `version`, `display_name`, and `description`; otherwise `null` |
+| `executed` | `false` |
+| `authority` | `discovery-only` |
+| `treatment` | `inert-data` |
+
+`live` is `true` exactly when the file name does not begin with `.` and the
+file is directly inside the scanned root's live directory: the root itself
+when the root's final path component is `agents`, otherwise the root's child
+directory `agents`. This mirrors the Brainstem kernel, whose `load_agents()`
+loads only the top level of its agents directory through a flat `*_agent.py`
+glob; every subfolder is organization. `live` describes position only. The SDK
+never loads the file, and `live` does not claim that a Brainstem exists, uses
+that directory, or would load the file successfully.
+
+Discovery reads the source with a descriptor-relative no-follow read of at
+most 1 MiB. The source is `unsupported-encoding` when its bytes, after one
+optional UTF-8 byte-order mark, are not strict UTF-8, or when an encoding
+declaration on its first or second line names anything other than UTF-8
+(`utf-8`, `utf8`, or a `utf-8-` prefix, compared case-insensitively with `_`
+read as `-`). It is `invalid` when it contains a NUL code point or when the
+Python parser rejects it or reports it too complex. Otherwise it is `parsed`:
+the running interpreter's parser built a syntax tree. `parsed` does not claim
+that the module compiles, imports, or runs, and the host's warning filters do
+not change the verdict.
+
+`manifest_status` describes the name `__manifest__`, decided in this order.
+It is `absent` when nothing binds that name. It is `ambiguous` when anything
+other than exactly one direct module-body assignment (`__manifest__ = ...` or
+`__manifest__: T = ...`) binds, rebinds, deletes, or item- or
+attribute-assigns it, such as a second assignment, an assignment inside a
+block, a definition, or an import alias, or when that assignment's value is a
+dictionary display that repeats a constant top-level key (compared as Python
+values). It is `not-literal` when the value is not a dictionary display built
+only from constants, signed numeric constants, and nested lists, tuples, sets,
+and dictionaries with constant keys. It is `over-limit` when the display has
+more than 4,096 nodes or a depth over 16. Otherwise it is `literal`, except
+that a display that cannot be constructed as a value, such as a set that
+contains a list, is `not-literal`. Discovery MAY evaluate a display that
+passed every earlier test, and only as a literal; it MUST NOT evaluate any
+other expression. Each `manifest` member
+is the same-named string value when that value is a string of at most 1,024
+characters containing no surrogate or noncharacter code point, and `null`
+otherwise. The fields are the file's literal text, not the value a running
+module would hold.
+
+A file that cannot be read safely produces a refusal and no record: a symbolic
+link (`REFUSE_SYMLINK`), a non-regular or hard-linked entry
+(`REFUSE_PATH_TYPE`), a file over 1 MiB (`REFUSE_FILE_LIMIT`), a file that
+changes while it is read (`REFUSE_FILE_RACE`), an unreadable file
+(`REFUSE_PATH_UNSAFE`), or a path that is not valid UTF-8
+(`REFUSE_AGENT_NAME`, reported with an escaped path). A file whose module body
+defines more than 256 such classes, or such a class with a name longer than
+256 characters, is refused with `REFUSE_AGENT_METADATA`. Any other inspection
+failure is likewise a refusal with no record.
+
+A record is discovery, not authority. It does not load, enable, install, or
+authorize an agent. It is not a `rapp-work/1-catalog` item, and the canonical
+catalog kinds are unchanged.
 
 ## 12. Refusals
 

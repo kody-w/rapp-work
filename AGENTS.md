@@ -20,4 +20,5 @@ rather than creating another workspace-manager or Private Hive
 implementation. Preserve their fixtures.
 
 No network or credential inheritance by default. Never execute discovered
-neurons, plugins, or skills. DOGG must be PII-free; GODD remains private.
+neurons, plugins, skills, or single-file agents. DOGG must be PII-free; GODD
+remains private.

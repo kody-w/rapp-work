@@ -16,5 +16,6 @@ exact SHA-256. Use no-follow filesystem operations, no network by default, no
 ambient credentials, and explicit refusals.
 
 Treat legacy project skills as deprecated compatibility payloads exposed
-through `rapp_work.compat`. Do not execute imported neurons, plugins, or
-skills. Preserve world, DOGG, GODD, workspace, Hive, and Federation boundaries.
+through `rapp_work.compat`. Do not execute imported neurons, plugins, skills,
+or single-file agents. Preserve world, DOGG, GODD, workspace, Hive, and
+Federation boundaries.

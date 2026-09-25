@@ -10,6 +10,7 @@ from typing import Any, cast
 from ._json import closed_object, strict_json_loads
 from ._paths import absolute_path, assert_no_symlinks, read_regular, safe_relative
 from ._resources import data_file
+from .agent_files import DiscoveredAgent, inspect_agent_entry, is_agent_file_name
 from .errors import Refusal, require
 from .neuron import PortableNeuron
 
@@ -202,6 +203,7 @@ def discover_roots(
     skills: list[SkillDescriptor] = []
     plugins: list[PluginDescriptor] = []
     neurons: list[PortableNeuron] = []
+    agents: list[DiscoveredAgent] = []
     refusals: list[dict[str, Any]] = []
     seen: set[tuple[int, int]] = set()
     remaining = maximum
@@ -216,6 +218,13 @@ def discover_roots(
         remaining -= observed
         refusals.extend(local_refusals)
         for path in files:
+            if is_agent_file_name(path.name):
+                entry = inspect_agent_entry(path, root=root)
+                if isinstance(entry, DiscoveredAgent):
+                    agents.append(entry)
+                else:
+                    refusals.append(entry)
+                continue
             try:
                 if path.name == "SKILL.md":
                     skills.append(_skill(path))
@@ -235,8 +244,9 @@ def discover_roots(
     skills.sort(key=lambda value: (value.name, str(value.path)))
     plugins.sort(key=lambda value: (value.name, value.version, str(value.manifest)))
     neurons.sort(key=lambda value: str(value.path))
+    agents.sort(key=lambda value: (str(value.path), str(value.root)))
     refusals.sort(key=lambda value: (value["path"], value["code"], value["message"]))
-    return {
+    result: dict[str, Any] = {
         "api": api_metadata(),
         "executed": False,
         "network": False,
@@ -247,3 +257,7 @@ def discover_roots(
         "skills": [value.to_dict() for value in skills],
         "status": "discovered",
     }
+    # Omitted when empty so trees without single-file agents keep their exact bytes.
+    if agents:
+        result["agents"] = [value.to_dict() for value in agents]
+    return result
