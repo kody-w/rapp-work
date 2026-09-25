@@ -722,6 +722,10 @@ class HiveAcceptance:
             payload = receipt["payload"]
             require(all(item["kind"] == "hive.projection" and item["payload"]["channel_id"] == payload["channel_id"]
                         for item in chain), "projection: receipt stream/channel binding mismatch")
+            if self._roster_declarations:
+                # Proposal 0001: a cached walk may predate the roster in effect, so check the channel again here.
+                require(payload["channel_id"] in {channel["id"] for channel in self._declaration["channels"]},
+                        "projection.channel_id: unknown channel in the roster in effect")
             require(payload["status"] == "current", "projection: receipt is not current")
             require(payload["registry_seq"] == self.registry.sequence, "projection: authenticated registry sequence mismatch")
             require(payload["frame_head"] == self._head["frame_hash"], "projection: actual Mother Hive head mismatch")

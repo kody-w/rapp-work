@@ -1,7 +1,7 @@
 {
   "schema": "rapp-skill-lock/1",
   "name": "rapp-private-hive",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "protocol": {
     "name": "rapp-hive/1",
     "repository": "https://github.com/kody-w/RAPP",
@@ -19,7 +19,7 @@
     },
     {
       "path": "lib/private_hive/__init__.py",
-      "sha256": "95184f9b1ee85120a75637f3034cb7588f6cd06bd23e8f968ae30dddb395b9c3"
+      "sha256": "74585c42fc0e0ad2e76d3e285aad453f93b0c4eb401b7cd026489ea24f05cd2a"
     },
     {
       "path": "lib/private_hive/adapters/__init__.py",
@@ -123,7 +123,7 @@
     },
     {
       "path": "vendor/hive/reference/hive_acceptance.py",
-      "sha256": "d7df2969a4f7c0f57fdb3befc62d7985e525d412aaccd404aeee800fcb66f72a"
+      "sha256": "a993d942ebe10b72f74d45e4ed1e77b0d58cf889a52d98edb1dd2753f9d52388"
     },
     {
       "path": "vendor/hive/reference/rapp.py",

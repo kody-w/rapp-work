@@ -59,10 +59,15 @@ using the same closed `rapp-hive/1-declaration` schema only as the single next
 Mother frame, strictly later than the Mother head. The world, policy and owner
 stay the same, and every declared room keeps its area and access. With the
 opt-in, the roster that authorizes an unsettled mutation is the one in effect
-at the Mother head being extended, never the frame's self-asserted time.
-Accepted history is never re-evaluated. `roster-revoked` marks unsettled
-frames that an earlier accepted roster authorized but the current one does not.
+at the Mother head being extended, never the frame's self-asserted time, and a
+projection receipt's channel must be declared in the roster in effect when the
+receipt is accepted. Accepted history is never re-evaluated. `roster-revoked`
+marks unsettled frames that an earlier accepted roster authorized but the
+current one does not. A declaration never changes the registry: an admitted
+identity's frames verify only once the registry holds its key and stream
+genesis, and a removed member's key must stay registered so accepted history
+keeps verifying.
 
-`roster_declaration_conformance.py` holds the default-refusal, positive and
-refusal vectors. It also replays every authenticated vector with the opt-in
-enabled. `hive_conformance.py` runs it as check H21.
+`roster_declaration_conformance.py` holds the default-refusal, positive,
+refusal and registry-side vectors. It also replays every authenticated vector
+with the opt-in enabled. `hive_conformance.py` runs it as check H21.

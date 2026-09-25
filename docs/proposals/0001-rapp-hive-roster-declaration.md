@@ -34,11 +34,13 @@ Its effect is **prospective from its Mother position**. Every unsettled
 mutation is authorized against the roster in effect at the Mother head being
 extended, never against the frame's self-asserted time. Accepted history is
 never re-evaluated. No key set, field grammar, hash rule, kind, envelope or
-schema changes, so no token moves (§6).
+schema changes, so no token moves (§6). A declaration changes the roster, never
+the RAPP/1 registry: admitting an identity also needs its registry key and
+stream genesis, and a removed member's key stays registered (§3 item 13).
 
 The reference implementation is opt-in: `HiveAcceptance(...,
 roster_declarations=True)`. The default gate still refuses every later
-declaration, exactly as today. 90 new vectors cover both modes, and 18
+declaration, exactly as today. 93 new vectors cover both modes, and 20
 controlled mutations each turn critical vectors red.
 
 ## 2. Context: what is true today
@@ -90,11 +92,21 @@ above, and to the reference in `protocols/rapp-hive/1/reference/`.
   `tools/check.py` refuses a checked-in SPEC that differs from the signed pin.
   Editing the SPEC therefore needs the owner's re-signature. This proposal
   does not edit it.
+- **Registry keys and streams (RAPP/1 §10, §13.3).** A verifier discovers a
+  signer's key only from an active registry `spki` entry, and "every stream
+  registers its creation genesis". `HiveAcceptance` binds one
+  `RegistryAuthority` for its lifetime, so a registry refresh is a fresh gate
+  plus `restore()`. A bare `deprecated:true` retires a key for every artifact,
+  history included: `RegistryAuthority` skips deprecated entries, and the
+  pinned RAPP/1 registry reference (`vendor/rapp-1/rapp_registry.py`,
+  `Registry.signer_acceptable`) refuses "spki entry deprecated" at any time.
+  Only a RAPP/1 §10 re-anchor keeps earlier frames verifying ("earlier frames
+  verify as before"), and the direct-owner reference refuses re-anchor records.
 
 ## 3. Design and its justification
 
 The direction given for G1 was validated against the SPEC and the reference.
-It holds, with five refinements (marked **R1** to **R5**).
+It holds, with six refinements (marked **R1** to **R6**).
 
 1. **Same schema, same kind, same stream.** A later declaration is a complete
    `rapp-hive/1-declaration` payload in a signed `hive.declaration` frame on
@@ -136,9 +148,10 @@ It holds, with five refinements (marked **R1** to **R5**).
      `_candidate`, at the acceptance position.
    - The split keeps decisions independent of the verifier's cache. A live
      verifier that previewed a frame before a roster change and a verifier
-     restored from history reach the same decision. The whole-ancestry scope
-     keeps the existing guarantee that only authorized frames can create fork
-     evidence (vector `test_revoked_ancestry_cannot_block_or_latch_fork_evidence`,
+     restored from history reach the same decision. The same holds for
+     projection receipts (item 11). The whole-ancestry scope keeps the
+     existing guarantee that only authorized frames can create fork evidence
+     (vector `test_revoked_ancestry_cannot_block_or_latch_fork_evidence`,
      mutation M12).
 6. **Audiences follow the roster (R2).** §5 already requires an audience to be
    "a sorted, non-empty subset of both current Hive members and that room's
@@ -172,7 +185,10 @@ It holds, with five refinements (marked **R1** to **R5**).
    to the owner). This is the strict choice: it can be relaxed later, while a
    loose rule could never be tightened without invalidating accepted history.
    Member areas, roles (member ⇄ viewer) and channels may change freely within
-   the closed §3 grammar.
+   the closed §3 grammar. A role change affects only mutation authority
+   (§8.2). Key release depends on room membership and the slice audience
+   (§3.1), not on the role, so a member demoted to viewer who stays in a room
+   and in a slice's audience stays eligible for that slice.
 9. **The convergence lineage stays continuous (R5).** After a later
    declaration, `base_head_frame_hash` is the declaration frame, and
    `base_convergence_payload_hash` is the **last accepted convergence**. It is
@@ -194,10 +210,32 @@ It holds, with five refinements (marked **R1** to **R5**).
     channels and move `authority_channel_id`. Candidate channel observations
     and projection receipts must name a channel declared in the roster in
     effect. A removed channel's receipts stay history and can never again be
-    current. Locators remain transport metadata: no Hive identity or artifact
-    address changes.
+    current. The reference checks a receipt's channel against the roster in
+    effect each time the receipt is offered, not only in the chain walk,
+    because the walk may have been cached under an earlier roster. A verifier
+    that saw the receipt before the retiring declaration and one restored
+    after it therefore reach the same refusal. Locators remain transport
+    metadata: no Hive identity or artifact address changes.
 12. **No-op declarations** (only the time changes) are permitted. They advance
     the Mother head and nothing else (open question Q3).
+13. **Registry prerequisites (R6).** A later declaration changes the roster,
+    never the RAPP/1 §13 registry, and a registry change never changes the
+    roster. A member still signs with a key found only in an active registry
+    `spki` entry, on streams whose creation genesis is registered (§2).
+    - **Admission.** The owner first publishes a higher owner-signed registry
+      that registers the identity's key and the genesis of every stream it
+      will write (for an added channel, also its receipt stream). Verifiers
+      pick it up with a fresh gate and `restore()`. The reverse order is safe
+      but quarantines the identity's frames as `invalid-candidate` until the
+      refresh.
+    - **Removal** is a roster act, not a key act. The removed member's `spki`
+      entry stays active. Deprecating it would retire the key for history too
+      (§2): a verifier with that registry could no longer re-verify the Mother
+      history, so its `restore()` fails closed and latches. Key compromise
+      remains a RAPP/1 §10 tombstone.
+    - The reference does **not** require declared members to hold registry
+      keys. That rule would make a declaration's verdict depend on the
+      verifier's registry, which changes over time (open question Q11).
 
 Out of scope: owner succession and re-anchor (G6), folder-Hive membership
 (G8), key-service implementation (§14.2 already disclaims it) and SDK
@@ -248,11 +286,25 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 > reinterpreted under a later roster. Roster authority is judged at the
 > acceptance position (§8.2), never by a frame's self-asserted time.
 >
-> Removing an identity from the Hive, a room, or the `owner`/`member` roles
-> ends its future authority and future key release (§3.1, §12). It does not
-> remove accepted frames or their current effects, recall bytes the identity
-> already holds, or revoke its key; key compromise remains a RAPP/1 §13
-> tombstone. A member is still a keyed RAPPID.
+> Removing an identity from the Hive ends its future authority and its future
+> key release in every room. Removing it from a room ends its future authority
+> in that room and its future key release for that room's slices (§3.1, §12).
+> Demoting a `member` to `viewer` ends only its future mutation authority: a
+> viewer that remains a member of a room and of a slice's audience remains
+> eligible for that slice's key release. The owner is never removed or
+> demoted (item 3). A roster change does not remove accepted frames or their
+> current effects, recall bytes the identity already holds, or revoke its key.
+>
+> A later declaration does not change the RAPP/1 §13 registry. A member is
+> still a keyed RAPPID: its frames verify only through an active registry
+> `spki` entry, on streams whose creation genesis is registered (RAPP/1 §10,
+> §13.3). Before admitting an identity, the owner **SHOULD** publish a registry
+> that registers its key and the creation genesis of every stream it will
+> write; until then its frames are quarantined. The owner **MUST NOT**
+> deprecate the `spki` entry of a key that signed accepted Hive history, other
+> than through a RAPP/1 §10 re-anchor, including when its identity is removed:
+> a verifier that cannot resolve that key cannot re-verify the Mother history.
+> Key compromise remains a RAPP/1 §10 tombstone.
 
 ### 4.2 §3.1: key release uses the roster in effect
 
@@ -402,8 +454,10 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 > erase plaintext already decrypted by an authorized member, as required by
 > RAPP/1 section 9.2.1. Removing an identity from the Hive or from a room with
 > a later declaration (§3.2) is such a revocation: it ends that identity's
-> future authority and future key release, including for slices accepted
-> earlier, and cannot recall ciphertext, plaintext, or keys it already holds."
+> future authority and future key release there, including for slices accepted
+> earlier, and cannot recall ciphertext, plaintext, or keys it already holds.
+> Demotion to `viewer` ends only mutation authority and does not revoke key
+> release."
 
 ### 4.9 §14 and §14.2
 
@@ -535,7 +589,9 @@ Confirmed by the default-mode vectors and the registry vector:
   their current effects, un-publish anything, recall ciphertext, plaintext or
   keys already obtained, or revoke a key; key compromise needs a registry
   tombstone. Re-admission restores eligibility for earlier slices whose
-  audience names the identity. That is an explicit owner act.
+  audience names the identity. That is an explicit owner act. Demotion to
+  viewer is not removal: it ends mutation authority only, and key release
+  still follows room membership and the slice audience.
 - **Key-service freshness.** Mother head freshness is not self-certifying
   (RAPP/1 §14). A mirror can withhold a later declaration, and a key service
   on a stale head could still release to a removed identity. The proposed
@@ -551,6 +607,25 @@ Confirmed by the default-mode vectors and the registry vector:
 - **No fork evidence from unauthorized frames.** As in default mode, only
   frames authorized at the acceptance position enter fork detection. A removed
   member's frames, or anything depending on them, cannot latch a stream fork.
+- **Verdicts do not depend on the verifier's cache.** Every roster-dependent
+  verdict uses the roster in effect when it is asked: mutation authority in
+  `_candidate`, and a projection receipt's channel in `accept_projection`. A
+  chain walk may have been cached under an earlier roster, so it only
+  authenticates. `test_a_retired_channel_is_never_current_even_after_a_cached_walk`
+  walks a receipt before the declaration that retires its channel (mutation
+  M19). The other walk-time checks read only what no declaration can change
+  (Hive, world, owner, policy) or state that only grows (accepted
+  convergences).
+- **Registry side (§3 item 13).** A roster change cannot make an unregistered
+  key verify: an admitted identity's frames stay `invalid-candidate` until a
+  registry refresh registers its key and stream genesis
+  (`test_registry_refresh_across_an_admission`). Deprecating a removed
+  member's key fails closed: a verifier with that registry refuses to restore
+  the Hive's own head and latches
+  (`test_removal_keeps_the_removed_members_registry_key`). That is safe, but
+  it stops that verifier from restoring the Hive, so the proposed text forbids
+  it. A compromise tombstone keeps accepted history verifiable and refuses the
+  key's later signatures, as today.
 - **Signature variants.** A settled frame's exemption applies only to its
   exact verified bytes. A re-signed variant is re-checked for signer/producer
   binding in the walk (`test_resigned_variant_of_a_settled_frame_is_not_exempt`).
@@ -590,22 +665,41 @@ Confirmed by the default-mode vectors and the registry vector:
   6. Every adopting estate re-signs its own registry to the new pin, after its
      verifiers have been upgraded. An old verifier refuses the new registry,
      which fails closed.
+- **Operating a roster change after activation** (§3 item 13):
+  1. *Admission.* Re-sign the registry with a higher `registry_seq`, adding
+     the identity's `spki` entry and the creation `genesis` of each stream it
+     will write (for an added channel, also its receipt stream). Each verifier
+     builds a new `RegistryAuthority` with its persisted high-water mark as
+     `minimum_registry_seq`, then a fresh `HiveAcceptance`, and `restore()`s
+     the accepted Mother head. Then the owner signs the later declaration.
+  2. *Removal.* Sign the later declaration only, and keep the removed
+     identity's `spki` entry active. Converge wanted in-flight work first
+     (§3 item 6).
+  3. *Compromise.* Append a RAPP/1 §10 tombstone **and** remove the identity.
+     The tombstone refuses the key's signatures at or after `revoked_utc`; the
+     removal also refuses its unsettled frames stamped before that, which a
+     tombstone alone cannot (§7, back-dating). As today, a tombstone dated at
+     or before an accepted frame of that key makes that frame unverifiable;
+     RAPP/1 §14 advises advancing affected heads past `revoked_utc`.
+  4. *Member key rotation.* A RAPP/1 re-anchor mints a new RAPPID, and the
+     direct-owner reference refuses re-anchor records (G6). Until then,
+     register the new key as a new identity, admit it, and remove the old
+     identity while keeping its key active.
 - **Private Hive skill.** `rapp-private-hive` constructs default-mode gates,
   and its bundle verifier refuses "topology replacement". Its behavior is
-  unchanged. Only its vendored reference bytes and that file's lock entry
-  change on this branch; the skill version stays `3.2.0`
-  (§11 Q9). The skill's documentation calls lock updates a maintainer action
-  once source stabilizes. This one follows a deliberate reference change, not
-  a repair.
-- **G6 coordination.** G6 (owner succession) is expected to change
-  `RegistryAuthority` in the same `hive_acceptance.py`, and the vendored copy
-  and lock with it. Merge the two sequentially and regenerate the vendored
-  copy, the lock and `RELEASE-INVENTORY.json` after the second merge.
+  unchanged. Its vendored reference bytes change, so its version moves from
+  `3.2.0` to `3.2.1` (`lib/private_hive/__init__.py` and the lock): a version
+  label names exactly one byte set, and `embed_project_skill` reports that
+  version while it refuses a workspace embedded from other bytes (§11 Q9). The
+  skill's documentation calls lock updates a maintainer action once source
+  stabilizes. This one follows a deliberate reference change, not a repair.
+- **Merge coordination** with sibling proposals that edit the same files:
+  §13.1.
 
 ## 9. Conformance and test vectors
 
 `protocols/rapp-hive/1/reference/roster_declaration_conformance.py` contains
-90 vectors, all with real Ed25519 signatures over synthetic fixture keys.
+93 vectors, all with real Ed25519 signatures over synthetic fixture keys.
 `hive_conformance.py` runs it as check **H21**, and `tools/check.py` runs that.
 
 - **`DefaultGateRefusesLaterDeclarations` (4), normative today.** The default
@@ -614,7 +708,7 @@ Confirmed by the default-mode vectors and the registry vector:
   convergence stacked on one, is refused while the old head can still advance.
   `restore()` of a history containing a later declaration fails closed and
   latches. A byte-identical re-declaration is refused in both modes.
-- **`RosterDeclarationVectors` (19), proposal positives:**
+- **`RosterDeclarationVectors` (20), proposal positives:**
   - same closed schema and envelope;
   - add a member, then accept their earlier-refused candidate;
   - remove a member: their unsettled, back-dated and dependent frames are
@@ -626,11 +720,17 @@ Confirmed by the default-mode vectors and the registry vector:
   - pending dependents are released;
   - accepted frames of a removed member still conflict;
   - revoked ancestry latches no fork evidence;
-  - demotion to viewer;
-  - rooms: a room is added, a member is removed from a sealed room, and §3.1
-    key-release eligibility follows while the accepted slice stays;
+  - demotion to viewer: the viewer's next frame is `roster-revoked`, while the
+    roster in effect keeps it in its room, so the key-release model below
+    still counts it eligible for a slice whose audience names it;
+  - rooms: a room is added and a member is removed from a sealed room; the
+    accepted slice stays in the catalog, and under the key-release model below
+    the roster in effect no longer counts the removed member eligible;
   - authority channel switch, with current receipts at declaration heads,
     receipts for retired channels refused, and candidates' channels checked;
+  - a retired channel's receipt stays refused even when a live verifier
+    walked, and cached, its chain before the retiring declaration; a verifier
+    restored after it refuses it too;
   - base commitments across a declaration (and every stale variant);
   - declarations before the first convergence;
   - a no-op declaration;
@@ -642,6 +742,13 @@ Confirmed by the default-mode vectors and the registry vector:
   - a declaration racing a convergence through one compare-and-swap;
   - signature variants;
   - payload shape in walks.
+
+  **Key-release model.** The reference certifies no key release (§14.2). The
+  two key-release assertions therefore evaluate `key_release_eligible`, a
+  function defined in the vector file that models the proposed §3.1 rule, over
+  the roster in effect that the gate exposes (`gate.declaration`). They show
+  which roster a key service would read after the declaration. They do not
+  test a key service.
 - **`RosterDeclarationRefusals` (10):**
   - non-owner signers (member, viewer, outsider, a removed member);
   - a revoked owner key;
@@ -659,6 +766,21 @@ Confirmed by the default-mode vectors and the registry vector:
     head;
   - declarations offered as catalog candidates, in both modes, and
     wrong-kind entry points.
+- **`RegistrySideOfRosterChanges` (2)**, the registry prerequisites of §3
+  item 13. Unlike the other vectors, these build their own registries instead
+  of pre-registering every fixture key and stream:
+  - *a registry refresh across an admission.* Under a registry without the
+    admitted identity's key and dimension-stream genesis, its frame is
+    `invalid-candidate` although the roster names it. A fresh gate on a higher
+    owner-signed registry, with the old sequence as its high-water mark,
+    restores the same history (the later declaration included) to the same
+    checkpoint except the registry fields, and then accepts the frame;
+  - *removal keeps the removed member's key.* Re-signing the registry with
+    that key deprecated makes `restore()` of the Hive's own head fail closed
+    ("decisions differ") and latch. With a compromise tombstone instead,
+    `restore()` reaches the same checkpoint apart from the registry fields,
+    and the key's later frame is `invalid-candidate`, where the removal alone
+    makes it `roster-revoked`.
 - **`ProposalModeReplaysAuthenticatedVectors` (57).** All 56 existing
   authenticated vectors re-run with `roster_declarations=True`, plus a check
   that they really use the opt-in. This is the conservative-extension evidence.
@@ -670,17 +792,21 @@ effect and the head are unchanged.
 
 Each mutation changed one expression in a scratch copy of
 `reference/hive_acceptance.py`, and both suites were run against the copy. The
-unmutated copy passed 90 of 90 roster vectors and 64 of 64 authenticated
+unmutated copy passed 93 of 93 roster vectors and 64 of 64 authenticated
 vectors. Under every mutation, the default-mode authenticated suite stayed
-64 of 64 green. That is expected, because every mutation touches opt-in paths.
-M8 in particular shows the proposal does not disturb existing vectors.
+64 of 64 green. For M1 to M7 and M9 to M19 that is expected, because they
+touch opt-in paths. M8 makes the proposal the default, so its green default
+suite shows that the proposal does not disturb existing vectors. M20 changes
+the base `RegistryAuthority`, so it reaches the default path too. The default
+suite stays green under it because no existing vector pins the retirement of a
+deprecated key; the new removal vector now does.
 
 | ID | Mutation | Red roster vectors |
 | --- | --- | --- |
 | M1 | Declaration signer need not be the owner (`owner == registry.owner == signer` → `owner == registry.owner`) | `test_only_the_owner_signs_a_declaration` (4 subtests) |
 | M2 | `accept_declaration` skips the single-next-Mother-frame check | `test_a_declaration_is_the_single_next_mother_frame` |
 | M3 | Declaration time may equal the head (`>` → `>=`) | `test_declaration_time_is_envelope_time_and_strictly_after_the_head`, `test_identical_redeclaration_is_not_a_successor_in_either_mode` |
-| M4 | No roster check at the acceptance position | 12 vectors (14 failures counting subtests): 9 proposal positives and 3 replayed authenticated vectors (foreign Hive or world, sealed-room plaintext, unauthorized producer/viewer/area) |
+| M4 | No roster check at the acceptance position | 13 vectors (15 failures counting subtests): 10 proposal vectors and 3 replayed authenticated vectors (foreign Hive or world, sealed-room plaintext, unauthorized producer/viewer/area) |
 | M5 | `world_id` may change | `test_hive_world_policy_and_schema_are_immutable` |
 | M6 | Explicit owner-succession boundary removed | `test_the_owner_is_unique_and_unchanged` (2 subtests: the refusal is still made by the registry-owner check, but no longer names G6) |
 | M7 | A declared room may disappear or change area/access | `test_declared_rooms_persist_with_their_area_and_access` (3 subtests) |
@@ -691,10 +817,12 @@ M8 in particular shows the proposal does not disturb existing vectors.
 | M12 | Only the candidate tip is authorized, not its unsettled ancestry | `test_revoked_ancestry_cannot_block_or_latch_fork_evidence`, `test_pending_dependents_of_a_revoked_frame_are_released`, `test_remove_member_quarantines_unsettled_frames_and_keeps_history` |
 | M13 | Proposal-mode walk drops the signer/producer check | `test_resigned_variant_of_a_settled_frame_is_not_exempt` |
 | M14 | Proposal-mode walk drops the payload shape check | `test_unvalidated_payload_shape_cannot_enter_ancestry` |
-| M15 | Roster revocations classified as ordinary invalid candidates | 8 vectors (5 fail, 3 error) |
+| M15 | Roster revocations classified as ordinary invalid candidates | 9 vectors (6 fail, 3 error) |
 | M16 | Settled history is re-authorized against the roster in effect | `test_remove_member_quarantines_unsettled_frames_and_keeps_history`, `test_demotion_to_viewer_revokes_future_mutation_only`, `test_revoked_ancestry_cannot_block_or_latch_fork_evidence` |
-| M17 | `restore()` replays every Mother frame as a convergence | 2 vectors error (4 errors counting subtests: restore, and reconciliation at a declaration head) |
-| M18 | No manifest while the Mother head is a declaration | 2 vectors error (channel switch, restore) |
+| M17 | `restore()` replays every Mother frame as a convergence | 5 vectors error (7 errors counting subtests): restore, reconciliation at a declaration head, the cached retired-channel receipt, and both registry vectors |
+| M18 | No manifest while the Mother head is a declaration | 3 vectors error (channel switch, restore, the cached retired-channel receipt) |
+| M19 | `accept_projection` drops the acceptance-time channel check, so a walk cached under an earlier roster decides | `test_a_retired_channel_is_never_current_even_after_a_cached_walk` |
+| M20 | The base `RegistryAuthority` keeps a deprecated `spki` entry active (default path too) | `test_removal_keeps_the_removed_members_registry_key` |
 
 ## 10. Reference implementation and gating
 
@@ -702,8 +830,11 @@ M8 in particular shows the proposal does not disturb existing vectors.
 
 - `protocols/rapp-hive/1/reference/hive_acceptance.py`
 - its byte-exact vendored mirror
-  `.github/skills/rapp-private-hive/vendor/hive/reference/hive_acceptance.py`,
-  plus that file's entry in `.github/skills/rapp-private-hive/rapp/agent.lock.json`
+  `.github/skills/rapp-private-hive/vendor/hive/reference/hive_acceptance.py`
+- the skill version, `3.2.0` → `3.2.1`, in
+  `.github/skills/rapp-private-hive/lib/private_hive/__init__.py`, and
+  `.github/skills/rapp-private-hive/rapp/agent.lock.json` (its `version` and
+  the entries of the two changed files)
 - `protocols/rapp-hive/1/reference/roster_declaration_conformance.py` (new)
 - `protocols/rapp-hive/1/reference/hive_conformance.py` (check H21)
 - `protocols/rapp-hive/1/reference/README.md`
@@ -739,6 +870,8 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
   the pending backlog released for it.
 - The last-accepted-convergence base rule.
 - Manifest and current receipts at a declaration head.
+- A projection receipt's channel checked against the roster in effect at
+  acceptance, not only in a possibly cached chain walk.
 - A `restore()` that dispatches declarations to `accept_declaration`.
 
 ## 11. Open questions for the owner
@@ -764,11 +897,22 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
    convergences keep RAPP/1's "≥ head". Extend it to every Mother frame that
    follows a declaration?
 8. **Q8, declarations before the first convergence.** Allowed and tested. Keep?
-9. **Q9, skill version.** Bump the `rapp-private-hive` lock version (currently
-   `3.2.0`) when the changed vendored reference ships?
+9. **Q9, skill version.** The draft moves `rapp-private-hive` from `3.2.0` to
+   `3.2.1`, because its vendored reference bytes change and a version label
+   must name one byte set: `embed_project_skill` refuses a workspace embedded
+   from main's bytes ("existing project skill differs") and reports the
+   version in its receipt. It is a patch step because the skill's interface
+   and default behavior are unchanged. Keep `3.2.1`, prefer `3.3.0` for the
+   new opt-in capability, or pick one number for a combined release with G6
+   (§13.1)?
 10. **Q10, SDK exposure.** Should `rapp-work-sdk/1` expose roster declarations
     through its operations? This is out of scope here, and the SDK is
     unchanged.
+11. **Q11, registry keys of declared members.** The draft does not require a
+    declared member to hold an active registry key when the declaration is
+    accepted, because that would make a declaration's verdict depend on the
+    verifier's registry. Keep it operational guidance (§3 item 13), or make it
+    a checked rule for newly admitted identities?
 
 ## 12. Owner actions needed
 
@@ -783,9 +927,14 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
 3. Decide Q6, the default. If flipping: set `roster_declarations=True` by
    default, and turn `DefaultGateRefusesLaterDeclarations` into explicit
    `roster_declarations=False` vectors.
-4. Answer Q1 to Q10 (or accept the draft choices).
-5. Release as `rapp-work` 1.1.0, and merge it sequentially with G6 (§8).
-6. The lead relays the G1 status change to the organism: `open` → `proposed`.
+4. Answer Q1 to Q11 (or accept the draft choices).
+5. Release as `rapp-work` 1.1.0, merging in the order of §13.1.
+6. **Estate lead or owner:** the estate signing kit pins
+   `protocols/rapp-hive/1/reference/hive_acceptance.py` by SHA-256 at base
+   `29ead23` (`88184a7e…`). This branch changes that file, so refresh that pin
+   when the reference ships; on activation the kit's `rapp-hive/1` SPEC pin
+   moves too. This workstream does not edit the kit.
+7. The lead relays the G1 status change to the organism: `open` → `proposed`.
 
 **Ready-to-file pull request text** (for the owner; this workstream opens no
 PR):
@@ -797,10 +946,11 @@ PR):
 > mode, `HiveAcceptance(..., roster_declarations=True)`. The default gate still
 > refuses every later declaration. There is no SPEC, schema or registry change;
 > activation needs the owner to accept the text and re-sign the registry. The
-> new check H21 has 90 vectors: default refusal, proposal positives and
-> refusals, and a replay of all 56 authenticated vectors in proposal mode. 18
-> controlled mutations each turn critical vectors red. Local CI mirror: Python
-> 3.13 and 3.10.
+> new check H21 has 93 vectors: default refusal, proposal positives and
+> refusals, the registry side of roster changes, and a replay of all 56
+> authenticated vectors in proposal mode. 20 controlled mutations each turn
+> critical vectors red. The vendored `rapp-private-hive` copy moves to skill
+> version 3.2.1. Local CI mirror: Python 3.13 and 3.10.
 
 ## 13. Interactions with other gaps
 
@@ -810,7 +960,7 @@ PR):
   later declaration whose `owner` is the successor RAPPID, accepted only when
   the registry's time-scoped tenure (RAPP/1 §13.2) makes that successor the
   owner in effect at the declaration's `utc`. Until then, a tombstoned owner
-  key freezes the Mother stream (§7). Code coordination is covered in §8.
+  key freezes the Mother stream (§7). Code coordination is covered in §13.1.
 - **G8, folder-Hive members are names bound to keys.** G8 concerns folder
   Hives, whose members are names bound to keys by the folder Hive's signed
   history. This proposal does not change that and does not import name-bound
@@ -818,12 +968,57 @@ PR):
   RAPPIDs resolved through the RAPP/1 §13 registry (Art. 7). The two designs
   only look alike: both change membership through signed history.
 
+### 13.1 Related proposals and merge order
+
+Sibling experimental branches in `kody-w/rapp-work` that edit the same files
+as this one:
+
+- **`experimental/gap-g6-owner-succession`** (proposal 0006, G6) edits
+  `protocols/rapp-hive/1/reference/hive_acceptance.py` and its vendored
+  mirror: an opt-in RAPP/1 §13.2 succession mode in `RegistryAuthority`, an
+  `owner_at(utc)` method, a new `rapp_registry` import, and the tenured owner
+  in the signer checks, including the declaration owner check that this
+  branch also touches. It also edits `agent.lock.json` (adding
+  `vendor/hive/reference/rapp_registry.py`), `protocols/rapp-hive/1/reference/README.md`
+  and `hive_conformance.py`, where it adds checks **H21** and **H22**. It keeps
+  the skill version at `3.2.0`.
+- **`experimental/gap-g2-move-action`, `experimental/gap-g3-agent-discovery`,
+  `experimental/gap-g4-migration-successors`,
+  `experimental/gap-g7-instruction-inventory`,
+  `experimental/gap-g11-workspace-index` and
+  `experimental/gap-g17-brainstem-sdk-agent`** share only `CHANGELOG.md` (each
+  adds an unreleased entry) and `RELEASE-INVENTORY.json` (regenerated). None
+  touches the Hive reference.
+
+**Recommended order, if both are accepted: G6 first, then G1.** G6 supplies
+the owner-in-effect verifier that §3.2 item 2 names; in the direct-owner
+profile the two coincide, so G1 is correct on its own. When G1 is merged
+second:
+
+1. In the declaration branch of `_authorized`, keep G6's tenured owner check
+   (`owner == owner_at(utc) == signer`), G1's `_successor_invariants` call
+   before it, and the default-mode `payload == self._declaration` refusal
+   after it. Owner changes through a later declaration stay future work (G6
+   bullet above), so after an owner rotation in G6's succession mode, later
+   declarations are refused until that follow-up lets one name the successor.
+2. Renumber G1's conformance check from H21 to H23, here, in the reference
+   README and in the CHANGELOG entry.
+3. Keep both README sections and both CHANGELOG entries.
+4. Re-mirror the merged reference into the vendored copy, regenerate the lock
+   entries, choose one skill version for the combined bytes (§11 Q9), and run
+   `python3 tools/release_inventory.py --write`.
+5. Rerun both suites and this proposal's mutation table, whose anchors may
+   move.
+
+If G1 is merged first, the same points apply in reverse: G6's merge replaces
+`self.registry.owner` with the tenured owner in G1's declaration branch too.
+
 ## 14. Rollback
 
 - **Before activation.** Drop the branch. Nothing normative or signed was
   changed.
-- **Code.** Reverting the commit restores the previous reference bytes, the
-  vendored copy, the lock entry and the inventory.
+- **Code.** Reverting this branch's commits restores the previous reference
+  bytes, the vendored copy, the skill version and lock, and the inventory.
 - **After activation.** An estate that has accepted later declarations cannot
   return to a verifier that refuses them and still verify its own Mother
   history. The old verifier fails closed; it never silently mis-verifies. The
@@ -841,8 +1036,10 @@ PR):
   `authenticated_conformance.py`, `hive_conformance.py`,
   `roster_declaration_conformance.py` and `README.md`
 - RAPP/1 (`vendor/rapp-1/SPEC.md`) §7.4 to 7.6 (chaining, the consumer
-  checklist, heads and forks), §9.2.1 (revocation limits), §10 (tombstones),
-  §13.1 to 13.3 (registry, owner tenure, entry types) and §14 (security)
+  checklist, heads and forks), §9.2.1 (revocation limits), §10 (key discovery,
+  key lifecycle and tombstones), §13.1 to 13.3 (registry, owner tenure, entry
+  types) and §14 (security); the pinned RAPP/1 registry reference
+  `vendor/rapp-1/rapp_registry.py` (`Registry.signer_acceptable`)
 - RAPP/1 Protocol Constitution, `kody-w/rapp-1` `CONSTITUTION.md`, Articles 2,
   3, 4, 5, 6, 7, 8, 10 and 18
 - `SPEC.md` (`rapp-work/1`) §§6 and 11, `CONTRIBUTING.md`, `docs/RELEASE.md`

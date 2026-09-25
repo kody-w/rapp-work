@@ -178,6 +178,10 @@ def project(estate, gate, frame, manifest):
                                   artifact_resolver=lambda space, value: artifacts[(space, value)])
 
 
+def without_registry(checkpoint):
+    return {key: value for key, value in checkpoint.items() if not key.startswith("registry_")}
+
+
 class DefaultGateRefusesLaterDeclarations(unittest.TestCase):
     """Normative today: the only rapp-hive/1 declaration is the Mother's registered creation genesis."""
 
@@ -370,12 +374,16 @@ class RosterDeclarationVectors(unittest.TestCase):
         self.assertEqual(gate._forks, {})
 
     def test_demotion_to_viewer_revokes_future_mutation_only(self):
-        estate = Estate()
+        estate = Estate(sealed_room=True)
         first = estate.object("carol", 20, ["carol/key"])
         later = estate.object("carol", 30, ["carol/key"], previous=first)
+        secret = godd_slice(estate, "alice", 25, ["alice", "carol"], ["sealed/plan"],
+                            stream=estate.stream("alice", "slices"))
         gate = roster_gate(estate)
-        estate.commit(gate, propose(estate, gate, first, seconds=100))
+        estate.commit(gate, propose(estate, gate, first, secret, seconds=100))
         gate.accept_declaration(declare(estate, gate, with_roles(estate, gate, 150, carol="viewer"))["frame_hash"])
+        # Proposed section 3.2: a viewer still in the room and the audience stays eligible for key release.
+        self.assertTrue(key_release_eligible(gate.declaration, secret["payload"], estate.identities["carol"]))
         proposal = propose(estate, gate, first, later, seconds=200)
         self.assertEqual(reasons(proposal), {first["frame_hash"]: ("duplicate", "already-accepted"),
                                              later["frame_hash"]: ("quarantined", ROSTER_REVOKED)})
@@ -457,6 +465,34 @@ class RosterDeclarationVectors(unittest.TestCase):
         self.assertEqual((proposal["base_head_frame_hash"], proposal["base_convergence_payload_hash"]),
                          (d2["frame_hash"], c1["payload_hash"]))
         estate.commit(gate, proposal)
+
+    def test_a_retired_channel_is_never_current_even_after_a_cached_walk(self):
+        estate = Estate()
+        nas_genesis = receipt_genesis(estate, "nas-main", "nas-receipts")
+        gate = roster_gate(estate)
+        c1 = estate.commit(gate, propose(estate, gate, estate.a, seconds=100))
+        d1 = declare(estate, gate, roster(gate, 150, channels=gate.declaration["channels"] + [NAS]))
+        gate.accept_declaration(d1["frame_hash"])
+        d2 = declare(estate, gate, roster(gate, 170, channels=[item for item in gate.declaration["channels"]
+                                                                if item["id"] != "nas-main"]))
+        # The owner signs a nas-main receipt at head D2, with the manifest derived on a twin verifier.
+        twin = roster_gate(estate)
+        twin.restore(d1["frame_hash"])
+        twin.accept_declaration(d2["frame_hash"])
+        late, manifest = receipt(estate, twin, nas_genesis, "nas-main", 175, c1["payload_hash"])
+        fresh = roster_gate(estate)
+        fresh.restore(d2["frame_hash"])
+        with self.assertRaisesRegex(ValueError, "unknown channel"):
+            project(estate, fresh, late, manifest)
+        # A live verifier walks, and caches, the receipt chain while nas-main is still declared.
+        with self.assertRaisesRegex(ValueError, "actual Mother Hive head"):
+            project(estate, gate, late, manifest)
+        self.assertIn(late["frame_hash"], gate._chains)
+        gate.accept_declaration(d2["frame_hash"])
+        self.assertEqual(gate.checkpoint(), fresh.checkpoint())
+        with self.assertRaisesRegex(ValueError, "unknown channel in the roster in effect"):
+            project(estate, gate, late, manifest)
+        self.assertNotIn("nas-main", gate._receipt_heads)
 
     def test_convergence_base_commitments_across_a_declaration(self):
         estate = Estate()
@@ -816,6 +852,78 @@ class RosterDeclarationRefusals(unittest.TestCase):
                         gate.accept_declaration(convergence["frame_hash"])
 
 
+class RegistrySideOfRosterChanges(unittest.TestCase):
+    """Proposal 0001: the roster names identities; the RAPP/1 section 13 registry verifies their keys and streams."""
+
+    def test_registry_refresh_across_an_admission(self):
+        estate = Estate()
+        joined = estate.object("outsider", 20, ["outsider/key"])
+        outsider = estate.identities["outsider"]
+
+        def registry(sequence, *, admitted):
+            document = estate.registry(sequence)
+            if not admitted:
+                document["entries"] = [
+                    entry for entry in document["entries"]
+                    if outsider != entry.get("rappid") and entry.get("stream_id") != joined["stream_id"]
+                ]
+                document["sig"] = estate.sign({key: value for key, value in document.items() if key != "sig"})
+            return document
+
+        before = roster_gate(estate, registry(8, admitted=False))
+        estate.commit(before, propose(estate, before, estate.a, seconds=100))
+        before.accept_declaration(declare(estate, before, admit(estate, before, 150, "outsider"))["frame_hash"])
+        # The roster names the identity, but without its registry key and stream genesis its frames cannot verify.
+        self.assertEqual(reasons(propose(estate, before, joined, seconds=200)),
+                         {joined["frame_hash"]: ("quarantined", "invalid-candidate")})
+        # Refresh: a higher owner-signed registry, a fresh gate, and restore() of the history with the declaration.
+        authority = estate.authority(registry(9, admitted=True), minimum_registry_seq=before.registry.sequence)
+        after = HiveAcceptance(authority, estate.hive, lambda address: estate.chains[address],
+                               roster_declarations=True)
+        restored = after.restore(before.head["frame_hash"])
+        self.assertEqual(restored["registry_seq"], 9)
+        self.assertEqual(without_registry(restored), without_registry(before.checkpoint()))
+        self.assertEqual(after.declaration, before.declaration)
+        proposal = propose(estate, after, joined, seconds=200)
+        self.assertEqual(reasons(proposal), {joined["frame_hash"]: ("accepted", "verified")})
+        estate.commit(after, proposal)
+
+    def test_removal_keeps_the_removed_members_registry_key(self):
+        estate = Estate()
+        bob = estate.identities["bob"]
+        late = estate.object("bob", 160, ["bob/late"], previous=estate.b)
+        gate = roster_gate(estate)
+        estate.commit(gate, propose(estate, gate, estate.a, estate.b, seconds=100))
+        gate.accept_declaration(declare(estate, gate, without(estate, gate, 150, "bob"))["frame_hash"])
+        head = gate.head["frame_hash"]
+
+        def resigned(entry=None, *, deprecate=None):
+            document = estate.registry(9)
+            for item in document["entries"]:
+                if item["type"] == "spki" and item["rappid"] == deprecate:
+                    item["deprecated"] = True
+            if entry is not None:
+                document["entries"].append(entry)
+            document["sig"] = estate.sign({key: value for key, value in document.items() if key != "sig"})
+            return roster_gate(estate, document)
+
+        # A deprecated key is retired for history too (RAPP/1 section 13.3): re-verification fails closed.
+        retired = resigned(deprecate=bob)
+        with self.assertRaisesRegex(ValueError, "decisions differ"):
+            retired.restore(head)
+        with self.assertRaisesRegex(ValueError, "failed history recovery"):
+            retired.checkpoint()
+        # A compromise tombstone keeps accepted history verifiable and refuses later signatures.
+        tombstone = {"type": "tombstone", "rappid": bob, "revoked_utc": stamp(155)}
+        tombstone["sig"] = estate.sign(tombstone)
+        revoked = resigned(tombstone)
+        self.assertEqual(without_registry(revoked.restore(head)), without_registry(gate.checkpoint()))
+        self.assertEqual(reasons(propose(estate, gate, late, seconds=200)),
+                         {late["frame_hash"]: ("quarantined", ROSTER_REVOKED)})
+        self.assertEqual(reasons(propose(estate, revoked, late, seconds=200)),
+                         {late["frame_hash"]: ("quarantined", "invalid-candidate")})
+
+
 class _ProposalModeGate(HiveAcceptance):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, roster_declarations=True, **kwargs)
@@ -838,7 +946,7 @@ def run():
     suite = unittest.TestSuite([
         unittest.defaultTestLoader.loadTestsFromTestCase(case)
         for case in (DefaultGateRefusesLaterDeclarations, RosterDeclarationVectors, RosterDeclarationRefusals,
-                     ProposalModeReplaysAuthenticatedVectors)
+                     RegistrySideOfRosterChanges, ProposalModeReplaysAuthenticatedVectors)
     ])
     return unittest.TextTestRunner(verbosity=2).run(suite)
 

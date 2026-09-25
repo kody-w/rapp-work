@@ -9,16 +9,20 @@
   single next Mother frame. The owner can then add or remove members, change
   roles and room membership, add rooms, and switch channels. Roster authority
   is judged at the acceptance position. Accepted history is never re-evaluated.
+  A declaration changes the roster, never the RAPP/1 registry; the proposal
+  gives the registry order for admissions and removals.
 - The reference `HiveAcceptance` gains an explicit, keyword-only
   `roster_declarations=False` opt-in, `accept_declaration(frame_hash)`, and a
-  read-only `declaration` property. The default gate still refuses every later
-  declaration. Its behavior is unchanged, and the 56 existing authenticated
-  vectors are unchanged.
+  read-only `declaration` property. With the opt-in, a projection receipt's
+  channel is also checked against the roster in effect when it is accepted.
+  The default gate still refuses every later declaration. Its behavior is
+  unchanged, and the 56 existing authenticated vectors are unchanged.
 - Added `protocols/rapp-hive/1/reference/roster_declaration_conformance.py`
-  (90 vectors, run as Hive check H21). It covers default refusal, positive
-  and refusal vectors with real Ed25519 signatures, and a replay of every
-  authenticated vector in proposal mode. Mirrored the reference into the
-  vendored `rapp-private-hive` copy and updated its lock entry.
+  (93 vectors, run as Hive check H21). It covers default refusal, positive
+  and refusal vectors with real Ed25519 signatures, the registry side of
+  roster changes, and a replay of every authenticated vector in proposal mode.
+  Mirrored the reference into the vendored `rapp-private-hive` copy, moved
+  that skill to version 3.2.1, and updated its lock.
 - The SPEC, schema, signed registry and every signed pin are unchanged.
   Activation needs the owner to accept the text and re-sign the registry.
   Intended release: `rapp-work` 1.1.0.
