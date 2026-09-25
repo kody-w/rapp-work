@@ -37,9 +37,9 @@ KINDS = {  # where: (kind, required fields, optional fields)
     "health.md": ("health", "name", ""),
     "glossary.md": ("glossary", "name", ""),
     "lock.md": ("lock", "name definition pins cite phases steps", ""),
-    "clean-pull.md": ("pull", "name phase command measured mentions", ""),
+    "clean-pull.md": ("pull", "name phase command measured mentions", "door"),
 }
-LISTS = {"lines", "check", "tree", "loop", "definition", "pins", "phases", "steps", "mentions"}
+LISTS = {"lines", "check", "tree", "loop", "definition", "pins", "phases", "steps", "mentions", "door"}
 STATUS = {  # each word of health.md, the first words of every `health` and `status`: (stroke, fill), Open Color
     "in force": ("#2f9e44", "#b2f2bb"), "specified": ("#0c8599", "#c5f6fa"), "experimental": ("#e67700", "#ffe8cc"),
     "candidate": ("#f08c00", "#fff3bf"), "planned": ("#6741d9", "#e5dbff"), "gap": ("#c92a2a", "#ffc9c9"),
@@ -237,6 +237,12 @@ def validate(t):
         if not m:
             refuse(pull["where"], "each `mentions` item reads `<repository>: <files that mention it>`")
         pull["counts"].append((m[1], int(m[2])))
+    pull["doors"] = []
+    for item in pull.get("door", []):  # the front door: how people find RAPP/1, each item led by its health word
+        word, sep, text = item.partition(": ")
+        if not sep or word not in STATUS:
+            refuse(pull["where"], "each `door` item reads `<health word>: words`, the word one of " + ", ".join(STATUS))
+        pull["doors"].append((word, text))
     if not any(pull["name"].lower() in step.lower() for step in lock["plan"][pull["phase"] - 1]["steps"]):
         refuse(pull["where"], f"no phase {pull['phase']} step in lock.md says “{pull['name'].lower()}”; add it to one")
     for x in t["layer"] + t["part"] + t["crossing"] + [t["dogfood"]]:
@@ -815,12 +821,12 @@ def excalidraw(d):
 
 # ---- the printable pages: US Letter landscape, one sheet each ------------------------------------
 
-CSS = """@page { size: 11in 8.5in; margin: 0.28in; }
+CSS = """@page { size: 11in 8.5in; margin: 0.25in; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; font-size: 7.4pt; line-height: 1.2;
        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.page { width: 10.44in; min-height: 7.9in; display: flex; flex-direction: column; gap: 0.06in; }
+.page { width: 10.5in; min-height: 7.96in; display: flex; flex-direction: column; gap: 0.06in; }
 header { display: flex; align-items: flex-end; justify-content: space-between; }
 h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .sub { font-size: 8.2pt; color: #333; margin-top: 2px; }
@@ -876,27 +882,29 @@ LOCK_CSS = """.lock { background: #fff; border-color: #495057; } .lock.done { ba
 .note.lead { margin: 0 0 3px 0; }
 .g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
      font-weight: 700; margin: 0 1px 1px 0; }
-.lockin h1 { font-size: 16pt; } .lockin .panel { font-size: 8.2pt; } .lockin .panel h2 { font-size: 10pt; }
+.lockin h1 { font-size: 16pt; } .lockin .panel { font-size: 8pt; } .lockin .panel h2 { font-size: 10pt; }
+.page.lockin { gap: 0.05in; }
 .decide { border: 2px solid #e67700; background: #fff4e6; border-radius: 9px; padding: 5px 10px 6px 10px; }
 .decide h2 { font-size: 10pt; margin: 0 0 3px 0; }
-.decide ol { margin: 0; padding-left: 16px; font-size: 8.6pt; } .decide li { margin: 0 0 2px 0; }
+.decide ol { margin: 0; padding-left: 16px; font-size: 8.4pt; } .decide li { margin: 0 0 1px 0; }
 .two { display: grid; grid-template-columns: 1.1fr 1fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
 .pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #862e9c; background: #f8f0fc;
-        border-radius: 7px; padding: 0 4px; margin: 0 1px 2px 0; font-size: 7pt; line-height: 1.3; }
+        border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.3; }
 .cite { margin-top: 2px; font-size: 7.2pt; color: #495057; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
-table.status td { padding: 1px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
+table.status td { padding: 0.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status td:nth-child(2) { width: 1.05in; }
 .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.1in; }
-.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 8pt; }
+.phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 7.6pt; }
 .phase h3 { font-size: 10pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
-.phase ul { margin: 0 0 3px 0; padding-left: 12px; } .phase li { margin: 0 0 1.5px 0; }
+.phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; }
 .strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.6pt; }
+.strip .door { margin-top: 1px; } .strip .chip { font-size: 6.2pt; line-height: 1.25; }
 .strip .m { display: inline-block; border: 1px solid #adb5bd; background: #f1f3f5; border-radius: 6px; padding: 0 4px;
             margin: 0 1px 1px 0; font-size: 7pt; line-height: 1.3; white-space: nowrap; }
 .register { display: grid; grid-template-columns: 1.12fr 1fr; column-gap: 0.25in; align-items: start; }
-table.reg { border-collapse: collapse; width: 100%; font-size: 7.3pt; line-height: 1.12; }
+table.reg { border-collapse: collapse; width: 100%; font-size: 7.2pt; line-height: 1.05; }
 table.reg td { padding: 0.5px 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.reg td:first-child { font-weight: 700; width: 28px; } table.reg td:nth-child(3) { width: 66px; }
 table.reg td:last-child { text-align: right; white-space: nowrap; width: 90px; color: #343a40; }
@@ -1030,9 +1038,11 @@ def pages(t):
         f'<td>{"".join(itemchip(item) for item in lk[x["n"]][1])}</td></tr>'
         for x in reversed(t["layer"]))
     counts = "".join(f'<span class="m">{e(repo)} <b>{k}</b></span>' for repo, k in pull["counts"])
+    doors = " \u00b7 ".join(f"{chip(word)} {inline(text)}" for word, text in pull["doors"])
     mentions = (f'<section class="strip"><b>{pull["phase"]} \u00b7 {e(smart(pull["name"]))}:</b> files on each default '
                 f'branch that mention \u201cexperimental\u201d ({inline(pull["command"])}), {e(pull["measured"])}: {counts} '
-                f'{inline(pull["body"])}</section>')
+                f'{inline(pull["body"])}' + (f'<div class="door"><b>One front door:</b> {doors}</div>' if doors else "")
+                + "</section>")
     cards = "".join(f'<div class="phase"><h3>{ph["n"]} \u00b7 {e(ph["title"])}</h3><div class="who">{who(ph)}</div>'
                     f'<ul>{steps(ph)}</ul><div>{"".join(gapchip(g) for g in ph["gaps"])}</div></div>' for ph in plan[1:])
     rows = [f'<tr><td>{e(g["id"])}</td><td>{inline(g["gap"])}</td><td>{chip(g["status"])}</td>'
@@ -1097,13 +1107,15 @@ def pins(lock):
 
 
 def mentions(t, short=False):
-    """The clean-pull count in one line: the date, each repository's files, and what the numbers mean."""
+    """The clean-pull check in one line: the date, each repository's files, what the numbers mean, the front door."""
     pull, counts = t["pull"], ", ".join(f"{repo} {k}" for repo, k in t["pull"]["counts"])
+    door = " \u00b7 ".join(f"**{word}:** {text}" for word, text in pull["doors"])
+    door = f" One front door: {door}." if door else ""
     if short:
-        return f"files that mention \u201cexperimental\u201d on each default branch, {pull['measured']}: {counts}. " \
-               "Mentions, not problems."
+        return (f"\u201cexperimental\u201d mentions per default branch, {pull['measured']}: {counts}. Mentions, not "
+                f"problems.{door}")
     return (f"on {pull['measured']}, {pull['command']} counted the files on each default branch that mention "
-            f"\u201cexperimental\u201d: {counts}. {pull['body']}")
+            f"\u201cexperimental\u201d: {counts}. {pull['body']}{door}")
 
 
 def genome(t, graph):
@@ -1136,7 +1148,7 @@ def genome(t, graph):
         ["ID", "Gap", "Status"], [[f"[{g['id']}](gaps/{g['stem']}.md)", g["gap"], status(g["status"])] for g in gaps])
     lock = t["lock"]
     L += ["", f"## {lock['name']}", ""] + [f"- {item}." for item in lock["definition"]]
-    L += ["", f"It pins {pins(lock)}. {lock['cite']}. Every step: [lock.md](lock.md)."]
+    L += ["", f"It pins {pins(lock)} (RAPP/1 \u00a7\u00a711.1, 13.3). Why, and every step: [lock.md](lock.md)."]
     L += table(["Phase", "Who acts", "Gaps it closes"], lock_plan(t, steps=False))
     L += ["", f"**{t['pull']['name']}** ([clean-pull.md](clean-pull.md)): {mentions(t, short=True)}"]
     L += ["", "## Journeys"] + table(

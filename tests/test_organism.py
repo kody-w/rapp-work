@@ -62,6 +62,7 @@ def test_rapp1_holds_only_what_is_in_force() -> None:
          "where nothing is experimental"),
         ("clean-pull.md", '"RAR: 50"', '"RAR: fifty"', "each `mentions` item reads"),
         ("clean-pull.md", "phase: 2", "phase: 3", "no phase 3 step in lock.md says"),
+        ("clean-pull.md", '"planned: the installer', '"maybe: the installer', "each `door` item reads"),
         ("lock.md", '"1: merge RAPP proposal 0001', '"2: merge RAPP proposal 0001', "names G18, which is no phase 2 gap"),
     ],
 )

@@ -164,6 +164,7 @@ A layer is healthy when it has a specification with an owner, a reference that r
 | G19 | The cloud Brainstem loads agents differently | `kody-w/RAPP` Tier 2, `rapp_swarm/` | RAPP proposal 0002, “the cloud Brainstem loads agents like the local one”, a draft on branch `experimental/proposal-0002-tier2-parity` (CI green). Its recommended option: top-level `*_agent.py` files only, and the 5-minute cache kept as a documented cloud detail | proposed | 1 | you |
 | G20 | The Brainstem app's path to the production ring | Release rings; `kody-w/RAPP` branch `experimental/brainstem-app` | Signed builds for macOS, Windows and Linux, a real week of use, then nightly, alpha, beta and the production ring | open | 5 | engineering |
 | G22 | “Workspace” names two things | RAPP Constitution Article XVII; RAPP Workspace/1 | Name one of them differently, or state how they relate | idea | 3 | spec owner |
+| G23 | The LTS Windows installer cannot pin the LTS kernel | `kody-w/rapp-installer` `install.ps1` at `brainstem-v0.6.9` | A version pin in `install.ps1`, in a later release: it takes `--version` since `brainstem-v0.6.14`, so the front door can give Windows users that installer pinned to `v0.6.9`, once that is tried on Windows | open | 2 | engineering |
 
 Changes to canonical bytes need an upstream revision in `kody-w/rapp-1` and a re-pin. [Root `SPEC.md`](SPEC.md) is historical and never edited.
 
@@ -182,19 +183,19 @@ The five phases, in order:
 | Phase | Who acts | Steps | Gaps it closes |
 |---|---|---|---|
 | 1. Decide | you, about an hour | merge RAPP proposal 0001 (G18), a documentation fix only: it is yours because RAPP reserves constitution merges for the maintainer (Articles XXVIII.4 and XXX.2); accept or refuse RAPP proposal 0002 (G19), Tier 2 loading: a draft on `experimental/proposal-0002-tier2-parity`; ratify the RAPP Work Constitution and its Part V (G8, G9) | G8, G9, G18, G19 |
-| 2. Zero drift, clean pull | engineering | fix RAPP's and RAR's non-conformant eggs, and RAR's bounded scan; give rapp-model-hive's frames a trusted anchor; re-sweep until all 10 repos are clean (the dogfood); keep the default pull clean: default branches and the LTS install carry only in-force parts; experiments stay on experimental branches or in newest | — |
+| 2. Zero drift, clean pull | engineering | fix RAPP's and RAR's non-conformant eggs, and RAR's bounded scan; give rapp-model-hive's frames a trusted anchor; re-sweep until every repo of the RAPP/1 stack is certified (the dogfood); keep the default pull clean: default branches and the LTS install carry only in-force parts; experiments stay on experimental branches or in newest; one front door keeps the network unified and tracked; pin the Windows LTS install (G23) | G23 |
 | 3. Close the specification gaps | spec owner | rapp-hive/1 (G1, G6); rapp-work-sdk/1 (G2, G3, G4, G7); rapp-work/1 (G5, G10, G11, G22); a gap that cannot close in time waits for a later RAPP, with the owner's sign-off | G1, G2, G3, G4, G5, G6, G7, G10, G11, G22 |
 | 4. Switch it on | estate owner | sign the RAPP/1 LTS release scope: its LTS `grail-kernel` entry, plus a successor scope for the newest kernel (G15); sign the protocol pins; activate `rapp-work/1` (G16): the Organization must be in force for RAPP/1 to be healthy throughout; give the Brainstem an SDK agent (G17) | G15, G16, G17 |
 | 5. Graduate into RAPP/1 | engineering, through the rings | graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20); then Hive Mind, once an estate accepts `rapp-federation/1`, and the Release rings, once phase 4 activates them and a graduation uses them; merge what graduated; the rest stays out of what people pull; tag the lock once the clean-pull check passes again; sweep for drift on a schedule | G12, G13, G14, G20 |
 
-**Keep the default pull clean** (phase 2): on 2026-09-25, `git grep -l -i experimental origin/HEAD` counted the files on each default branch that mention “experimental”: RAR 50, RAPP 45, rapp-workspace 26, rapp-hive-hub 19, rapp-installer 9, rapp-model-hive 8, hive-hub 6, lisppy 1, rapp-1 0, rapp-work 0. Raw word hits, and some are legitimate, such as folder names: mentions, not problems. Run it again at lock time.
+**Keep the default pull clean** (phase 2): on 2026-09-25, `git grep -l -i experimental origin/HEAD` counted the files on each default branch that mention “experimental”: RAR 50, RAPP 45, rapp-workspace 26, rapp-hive-hub 19, rapp-installer 9, rapp-model-hive 8, hive-hub 6, lisppy 1, rapp-1 0, rapp-work 0. Raw word hits, and some are legitimate, such as folder names: mentions, not problems. Run it again at lock time. One front door: **planned:** the installer README's “Start here” leads with the RAPP/1 LTS install (`kody-w/rapp-installer#48`, open) · **planned:** every RAPP repo shows its earned RAPP/1 badge and a “Start here” link (a PR open in each) · **experimental:** the drift sweep sets each status, and `kody-w/rapp-hive-public` publishes the portfolio: the RAPP/1 stack is 12 of 15 certified.
 
 What each layer still needs, top to bottom:
 
 | Layer | Into RAPP/1 |
 |---|---|
 | 6 You | nothing to graduate |
-| 5 Brainstem | 4 to graduate (G17, G18, G19, G20) |
+| 5 Brainstem | 5 to graduate (G17, G18, G19, G20, G23) |
 | 4 Your device | 7 to graduate (G2, G3, G4, G7, G13, G14, G22) |
 | 3 Hive | 6 to graduate (G1, G6, G8, G9, G12, Public copy) |
 | 2 Organization | 4 to graduate (G5, G10, G11, G16) |

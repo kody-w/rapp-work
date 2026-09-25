@@ -20,7 +20,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                                  ▲ ask · propose · confirm the exact plan
                                                  ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ RAR             │           │ 5 · BRAINSTEM              [4 to graduate] │
+│ RAR             │           │ 5 · BRAINSTEM              [5 to graduate] │
 │ one-file        │           │ the one surface you talk to                │
 │ agents, read    │           ├──────────────┬─────────────────────────────┤
 │ first           │─copy in──►│ BRAINSTEM    │ BRAINSTEM                   │
@@ -128,7 +128,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | # | Layer | What it is | Health | Into RAPP/1 |
 |---|---|---|---|---|
 | 6 | [You](layers/6-you.md) | “Give me my Brainstem.” You talk and confirm; every change is shown in plain words first | — | nothing to graduate |
-| 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force | 4 to graduate (G17, G18, G19, G20) |
+| 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force | 5 to graduate (G17, G18, G19, G20, G23) |
 | 4 | [Your device](layers/4-your-device.md) | Your copy of each Hive, your read-only references and your private workspaces, with one key per device per Hive | experimental | 7 to graduate (G2, G3, G4, G7, G13, G14, G22) |
 | 3 | [Hive](layers/3-hive.md) | Where the members share work: a folder Hive (experimental) or a `rapp-hive/1` Private Hive (in force, and the organization's one Hive today) | in force | 6 to graduate (G1, G6, G8, G9, G12, Public copy) |
 | 2 | [Organization](layers/2-organization.md) | The accountable body: one owner, one world, one policy, one release scope, and exactly one Hive. Its body stream holds catalogs, Hive vectors, migrations, receipts, observations and rollbacks | specified (G10, G16) | 4 to graduate (G5, G10, G11, G16) |
@@ -196,6 +196,7 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 | [G19](gaps/G19.md) | The cloud Brainstem loads agents differently | proposed |
 | [G20](gaps/G20.md) | The Brainstem app's path to the production ring | open |
 | [G22](gaps/G22.md) | “Workspace” names two things | idea |
+| [G23](gaps/G23.md) | The LTS Windows installer cannot pin the LTS kernel | open |
 
 ## RAPP/1 LTS: what it takes to lock the whole thing
 
@@ -203,17 +204,17 @@ health: [in force] [specified] [exp] [candidate] [planned] [idea] [own shape]
 - Everything in it is in force, and nothing in it is experimental.
 - Newest releases get their own successor scopes. Experiments live only there until they graduate.
 
-It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Workspace/1, `rapp-work-sdk/1`, `rapp-registry/1.0`, `rapp-cicd/1`, `rapp-deploy/1`, and the agents and apps that ship with it. RAPP/1 §11.1: a release scope's pin is “a permanent compatibility anchor, not a moving release channel”, and “A successor uses a new `release_scope`”. §13.3: no two `grail-kernel` entries share a scope. Every step: [lock.md](lock.md).
+It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Workspace/1, `rapp-work-sdk/1`, `rapp-registry/1.0`, `rapp-cicd/1`, `rapp-deploy/1`, and the agents and apps that ship with it (RAPP/1 §§11.1, 13.3). Why, and every step: [lock.md](lock.md).
 
 | Phase | Who acts | Gaps it closes |
 |---|---|---|
 | 1. Decide | you, about an hour | G8, G9, G18, G19 |
-| 2. Zero drift, clean pull | engineering | — |
+| 2. Zero drift, clean pull | engineering | G23 |
 | 3. Close the specification gaps | spec owner | G1, G2, G3, G4, G5, G6, G7, G10, G11, G22 |
 | 4. Switch it on | estate owner | G15, G16, G17 |
 | 5. Graduate into RAPP/1 | engineering, through the rings | G12, G13, G14, G20 |
 
-**Keep the default pull clean** ([clean-pull.md](clean-pull.md)): files that mention “experimental” on each default branch, 2026-09-25: RAR 50, RAPP 45, rapp-workspace 26, rapp-hive-hub 19, rapp-installer 9, rapp-model-hive 8, hive-hub 6, lisppy 1, rapp-1 0, rapp-work 0. Mentions, not problems.
+**Keep the default pull clean** ([clean-pull.md](clean-pull.md)): “experimental” mentions per default branch, 2026-09-25: RAR 50, RAPP 45, rapp-workspace 26, rapp-hive-hub 19, rapp-installer 9, rapp-model-hive 8, hive-hub 6, lisppy 1, rapp-1 0, rapp-work 0. Mentions, not problems. One front door: **planned:** the installer README's “Start here” leads with the RAPP/1 LTS install (`kody-w/rapp-installer#48`, open) · **planned:** every RAPP repo shows its earned RAPP/1 badge and a “Start here” link (a PR open in each) · **experimental:** the drift sweep sets each status, and `kody-w/rapp-hive-public` publishes the portfolio: the RAPP/1 stack is 12 of 15 certified.
 
 ## Journeys
 

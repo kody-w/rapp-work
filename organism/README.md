@@ -19,7 +19,7 @@ It also says what it takes to lock RAPP/1, the one LTS release of the whole stac
 | `health.md` | The health words every `health` and `status` starts with |
 | `glossary.md` | The other words this map uses, one per line |
 | `lock.md` | RAPP/1 LTS: what it is and pins, and five phases of steps that lock it |
-| `clean-pull.md` | The clean-pull check: files on each default branch that mention “experimental” |
+| `clean-pull.md` | The clean-pull check: files on each default branch that mention “experimental”, and the front door where people find RAPP/1 |
 | `views/` | Generated: `graph.txt`, `organism.svg`, `organism.excalidraw`, `one-page.html`, `lock-in.html`, and their printed `one-page.pdf`, `lock-in.pdf` and `rapp-lock-in.pdf` (both pages) |
 | `tools/build.py` | The builder: Python 3.10 or newer, standard library only |
 
@@ -96,7 +96,7 @@ The builder refuses with the file and the fix when something is wrong: an unknow
 | `dogfood.md` | `name`, `health`, `tree`, `loop` |
 | `health.md`, `glossary.md` | `name`; each word is a body line `- **word:** meaning` |
 | `lock.md` | `name`, `definition`, `pins`, `cite`, `phases` (`Title: who` or `Title: who, note`), `steps` (`<phase>: words`) |
-| `clean-pull.md` | `name`, `phase`, `command`, `measured` (YYYY-MM-DD), `mentions` (`<repository>: <files>`) |
+| `clean-pull.md` | `name`, `phase`, `command`, `measured` (YYYY-MM-DD), `mentions` (`<repository>: <files>`), [`door` (`<health word>: words`)] |
 
 - `health` and `status` start with a word from `health.md`: in force, specified, experimental, candidate, planned, gap, idea, open, proposed or own shape. Words after it are notes. `—` means none.
 - `color` is an Open Color family: gray, orange, green, blue or purple.
