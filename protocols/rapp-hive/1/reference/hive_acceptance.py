@@ -4,6 +4,10 @@ The caller supplies a fresh section-13 registry, an out-of-band owner anchor,
 and a resolver returning the complete registered-genesis-to-tip byte sequence.
 No candidate summary, shape-validation result, or caller-supplied catalog is a
 trust input. Persist checkpoint() atomically with the accepted artifacts.
+
+`roster_declarations=True` enables draft proposal 0001 (owner-signed later
+declarations). It is an explicit opt-in that the specification has not
+accepted; the default gate refuses every declaration after the genesis.
 """
 
 from __future__ import annotations
@@ -21,6 +25,11 @@ from rapp_profile import bounded_int, canonical_object, exact_keys, hex64, parti
 
 CATALOG_KINDS = {"hive.object", "hive.godd-slice", "hive.reconciliation"}
 FORK_REASONS = {"stream-fork", "fork-ancestor"}
+ROSTER_REVOKED = "roster-revoked"
+
+
+class RosterRevoked(ValueError):
+    """Proposal 0001: an earlier accepted roster authorized this unsettled mutation; the one in effect does not."""
 
 
 class RegistryAuthority:
@@ -134,14 +143,18 @@ class RegistryAuthority:
 class HiveAcceptance:
     """One local Mother Hive compare-and-swap gate, not a payload-shape validator."""
 
-    def __init__(self, registry: RegistryAuthority, hive_rappid: str, resolve_chain):
+    def __init__(self, registry: RegistryAuthority, hive_rappid: str, resolve_chain, *,
+                 roster_declarations: bool = False):
         require(isinstance(registry, RegistryAuthority), "authenticated registry authority is required")
         require(callable(resolve_chain), "frame byte resolver is required")
+        require(isinstance(roster_declarations, bool), "roster declarations: expected an explicit boolean opt-in")
         self.registry = registry
         self._resolve = resolve_chain
         self._lock = threading.RLock()
         self._hive = H.rappid(hive_rappid, "Mother Hive")
+        self._roster_declarations = roster_declarations
         self._declaration = None
+        self._rosters = []
         self._chains = {}
         self._frames = {}
         self._ancestry = {}
@@ -153,6 +166,7 @@ class HiveAcceptance:
         self._forks = {}
         self._receipt_heads = {}
         self._convergences = {}
+        self._last_convergence = None
         self._catalogs = {}
         self._restore_failed = False
         require(self._hive in registry._genesis, "Mother Hive: no registered genesis")
@@ -162,6 +176,7 @@ class HiveAcceptance:
         self._head = genesis[0]
         self._mother = [self._head["frame_hash"]]
         self._retained[self._head["frame_hash"]] = self._head
+        self._rosters.append(self._declaration)
         self._catalog = H.catalog_payload(self._declaration, self._accepted)
         self._catalogs[particle_hash(self._catalog)] = self._catalog
 
@@ -169,6 +184,12 @@ class HiveAcceptance:
     def head(self) -> dict:
         with self._lock:
             return copy.deepcopy(self._head)
+
+    @property
+    def declaration(self) -> dict:
+        """The roster in effect at the accepted Mother head (always the genesis unless proposal 0001 is enabled)."""
+        with self._lock:
+            return copy.deepcopy(self._declaration)
 
     @property
     def catalog(self) -> dict:
@@ -196,36 +217,24 @@ class HiveAcceptance:
             require(frame["stream_id"] == payload["hive_rappid"] == self._hive,
                     "declaration: Mother Hive stream binding mismatch")
             owner = next(member["rappid"] for member in payload["members"] if member["role"] == "owner")
+            if self._declaration is not None and self._roster_declarations:
+                self._successor_invariants(payload, owner)
             require(owner == self.registry.owner == signer, "declaration: owner authorization mismatch")
-            if self._declaration is not None:
+            if self._declaration is not None and not self._roster_declarations:
                 require(payload == self._declaration, "declaration: unaccepted policy replacement")
             return True
         require(self._declaration is not None, "Hive declaration must be authenticated first")
         declaration = self._declaration
         require(payload.get("hive_rappid", payload.get("source_hive_rappid")) == self._hive,
                 "frame: foreign Hive")
-        members = {member["rappid"]: member for member in declaration["members"]}
         if kind in {"hive.object", "hive.godd-slice"}:
-            validator = H.validate_shared_object if kind == "hive.object" else H.validate_godd_slice
-            validator(payload, declaration)
-            require(signer == payload["producer_rappid"], "frame: signer/producer mismatch")
-            require(signer in members and members[signer]["role"] in {"owner", "member"},
-                    "frame: producer is not authorized to mutate")
-            room = next(room for room in declaration["rooms"] if room["id"] == payload["room_id"])
-            require(signer in room["members"], "frame: producer is outside the room")
-            if kind == "hive.object":
-                if room["access"] == "sealed":
-                    require(
-                        payload["object"]["protection"] == "sealed-room"
-                        and payload["object"]["space"] == "rapp/1:egg-manifest",
-                        "frame: sealed room object is not encrypted",
-                    )
-                path = payload["object"]["target_path"]
-                areas = [members[signer]["area"], room["area"]]
-                if members[signer]["role"] == "owner":
-                    areas.extend(member["area"] for member in declaration["members"])
-                require(any(path.startswith(area + "/") for area in areas),
-                        "frame: producer cannot mutate the target area")
+            if self._roster_declarations:
+                # Proposal 0001: shape and signer here; _candidate judges roster authority at the acceptance position.
+                exact_keys(payload, H.OBJECT_KEYS if kind == "hive.object" else H.SLICE_KEYS, kind)
+                H._validate_sources_and_mutations(payload, kind)
+                require(signer == payload["producer_rappid"], "frame: signer/producer mismatch")
+                return True
+            self._mutation_authorized(frame, signer, declaration)
         elif kind == "hive.reconciliation":
             H.validate_reconciliation(payload, declaration)
             require(signer == payload["resolver_rappid"] == self.registry.owner,
@@ -244,6 +253,54 @@ class HiveAcceptance:
         else:
             raise ValueError("frame: this acceptance gate only consumes declarations, catalog mutations and receipts")
         return True
+
+    def _mutation_authorized(self, frame: dict, signer: str, declaration: dict) -> None:
+        payload, kind = frame["payload"], frame["kind"]
+        members = {member["rappid"]: member for member in declaration["members"]}
+        validator = H.validate_shared_object if kind == "hive.object" else H.validate_godd_slice
+        validator(payload, declaration)
+        require(signer == payload["producer_rappid"], "frame: signer/producer mismatch")
+        require(signer in members and members[signer]["role"] in {"owner", "member"},
+                "frame: producer is not authorized to mutate")
+        room = next(room for room in declaration["rooms"] if room["id"] == payload["room_id"])
+        require(signer in room["members"], "frame: producer is outside the room")
+        if kind == "hive.object":
+            if room["access"] == "sealed":
+                require(
+                    payload["object"]["protection"] == "sealed-room"
+                    and payload["object"]["space"] == "rapp/1:egg-manifest",
+                    "frame: sealed room object is not encrypted",
+                )
+            path = payload["object"]["target_path"]
+            areas = [members[signer]["area"], room["area"]]
+            if members[signer]["role"] == "owner":
+                areas.extend(member["area"] for member in declaration["members"])
+            require(any(path.startswith(area + "/") for area in areas),
+                    "frame: producer cannot mutate the target area")
+
+    def _successor_invariants(self, payload: dict, owner: str) -> None:
+        """Proposal 0001: what no later declaration may change. An owner change is succession (gap G6)."""
+        genesis = self._rosters[0]
+        require(payload["world_id"] == genesis["world_id"], "declaration: world_id is immutable")
+        require(payload["policy"] == genesis["policy"], "declaration: the closed policy is immutable")
+        require(owner == next(member["rappid"] for member in genesis["members"] if member["role"] == "owner"),
+                "declaration: an owner change is succession (gap G6), not a roster declaration")
+
+    def _roster_check(self, frame: dict) -> None:
+        """Proposal 0001: authorize an unsettled mutation against the roster in effect at the Mother head."""
+        signer = R.parse_detached_jws(frame["sig"])[0]["kid"]
+        refusals = (ValueError, TypeError, KeyError, IndexError, StopIteration)
+        try:
+            self._mutation_authorized(frame, signer, self._declaration)
+        except refusals:
+            for earlier in self._rosters[:-1]:
+                try:
+                    self._mutation_authorized(frame, signer, earlier)
+                except refusals:
+                    continue
+                raise RosterRevoked(f"candidate: {ROSTER_REVOKED}: the declaration in effect no longer "
+                                    "authorizes this unsettled mutation") from None
+            raise
 
     def _chain(self, frame_hash: str) -> list[dict]:
         hex64(frame_hash, "frame address")
@@ -321,7 +378,12 @@ class HiveAcceptance:
         channels = {channel["id"] for channel in self._declaration["channels"]}
         require(candidate["source_channel_ids"] and set(candidate["source_channel_ids"]) <= channels,
                 "candidate: unknown source channel")
-        self._ancestors(frame["frame_hash"])
+        ancestry = self._ancestors(frame["frame_hash"])
+        if self._roster_declarations:
+            for value in sorted(ancestry | {frame["frame_hash"]}):
+                item = self._frames[value]
+                if value not in self._settled and item["kind"] in {"hive.object", "hive.godd-slice"}:
+                    self._roster_check(item)
         return frame
 
     def _components(self, frames: dict[str, dict]) -> list[set[str]]:
@@ -382,9 +444,11 @@ class HiveAcceptance:
         for value, candidate in by_hash.items():
             try:
                 valid[value] = self._candidate(candidate)
+            except RosterRevoked:
+                quarantine[value] = ROSTER_REVOKED
             except (ValueError, TypeError, KeyError, IndexError, RecursionError):
                 quarantine[value] = "invalid-candidate"
-        for value in set(self._pending) & set(quarantine):
+        for value in set(self._pending) & {value for value, reason in quarantine.items() if reason != ROSTER_REVOKED}:
             raise ValueError("convergence: unresolved candidate bytes or metadata changed")
         prior = self._settled
         positions = {}
@@ -490,6 +554,12 @@ class HiveAcceptance:
         catalog = H.catalog_payload(self._declaration, accepted)
         return decisions, sorted(resolutions, key=lambda item: item["mutation_key"]), catalog, accepted, valid, forks
 
+    def _base_convergence(self) -> str | None:
+        """The last accepted convergence particle; without the opt-in the head is always that convergence."""
+        if self._roster_declarations:
+            return self._last_convergence
+        return self._head["payload_hash"] if self._head["kind"] == "hive.convergence" else None
+
     def preview_convergence(self, candidates: list[dict], created_utc: str) -> dict:
         """A signing proposal only; this does not advance any accepted state."""
         with self._lock:
@@ -498,7 +568,7 @@ class HiveAcceptance:
             payload = {
                 "schema": H.CONVERGENCE_SCHEMA, "hive_rappid": self._hive, "created_utc": created_utc,
                 "base_head_frame_hash": self._head["frame_hash"],
-                "base_convergence_payload_hash": self._head["payload_hash"] if self._head["kind"] == "hive.convergence" else None,
+                "base_convergence_payload_hash": self._base_convergence(),
                 "base_catalog_hash": particle_hash(self._catalog),
                 "candidates": candidates,
                 "decisions": [{"frame_hash": candidate["frame_hash"], "status": "accepted", "reason_code": "proposal"}
@@ -525,7 +595,7 @@ class HiveAcceptance:
             payload = frame["payload"]
             require(payload["base_head_frame_hash"] == self._head["frame_hash"],
                     "convergence: stale base head")
-            base_convergence = self._head["payload_hash"] if self._head["kind"] == "hive.convergence" else None
+            base_convergence = self._base_convergence()
             require(payload["base_convergence_payload_hash"] == base_convergence, "convergence: stale base convergence")
             require(payload["base_catalog_hash"] == particle_hash(self._catalog), "convergence: stale base catalog")
             decisions, resolutions, catalog, accepted, valid, forks = self._evaluate(payload["candidates"])
@@ -568,6 +638,33 @@ class HiveAcceptance:
             self._mother.append(frame_hash)
             self._retained[frame_hash] = frame
             self._convergences[frame["payload_hash"]] = payload
+            self._last_convergence = frame["payload_hash"]
+            return {"status": "accepted", "authenticated": True, **self.checkpoint()}
+
+    def accept_declaration(self, frame_hash: str) -> dict:
+        """Proposal 0001 (opt-in, not accepted): an owner-signed later declaration as the single next Mother frame."""
+        with self._lock:
+            require(not self._restore_failed, "restore: failed history recovery")
+            require(self._roster_declarations,
+                    "declaration: a later declaration requires the explicit proposal 0001 opt-in")
+            require(frame_hash != self._head["frame_hash"], "declaration: Mother Hive frame replay")
+            chain = self._chain(frame_hash)
+            frame = chain[-1]
+            require(frame["kind"] == "hive.declaration" and frame["stream_id"] == self._hive,
+                    "declaration: wrong Mother Hive kind or stream")
+            require([item["frame_hash"] for item in chain[:-1]] == self._mother,
+                    "declaration: stale base or competing Mother Hive successor")
+            require(frame["utc"] > self._head["utc"], "declaration: created_utc must be strictly after the Mother head")
+            rooms = {room["id"]: room for room in frame["payload"]["rooms"]}
+            for room in self._declaration["rooms"]:
+                kept = rooms.get(room["id"])
+                require(kept is not None and kept["area"] == room["area"] and kept["access"] == room["access"],
+                        "declaration: a declared room persists with its area and access")
+            self._declaration = copy.deepcopy(frame["payload"])
+            self._rosters.append(self._declaration)
+            self._head = frame
+            self._mother.append(frame_hash)
+            self._retained[frame_hash] = frame
             return {"status": "accepted", "authenticated": True, **self.checkpoint()}
 
     def restore(self, mother_head_frame_hash: str) -> dict:
@@ -579,7 +676,10 @@ class HiveAcceptance:
                 chain = self._chain(mother_head_frame_hash)
                 require(chain[0]["frame_hash"] == self._head["frame_hash"], "restore: foreign genesis")
                 for frame in chain[1:]:
-                    self.accept_convergence(frame["frame_hash"])
+                    if self._roster_declarations and frame["kind"] == "hive.declaration":
+                        self.accept_declaration(frame["frame_hash"])
+                    else:
+                        self.accept_convergence(frame["frame_hash"])
                 return self.checkpoint()
             except Exception:
                 self._restore_failed = True
@@ -588,7 +688,9 @@ class HiveAcceptance:
     def artifact_manifest(self) -> dict:
         with self._lock:
             require(not self._restore_failed, "restore: failed history recovery")
-            require(self._head["kind"] == "hive.convergence", "manifest: no accepted convergence")
+            converged = (self._last_convergence is not None if self._roster_declarations
+                         else self._head["kind"] == "hive.convergence")
+            require(converged, "manifest: no accepted convergence")
             addresses = {("rapp/1:wave", value) for value in self._retained}
             addresses.update(("rapp/1:particle", value) for value in self._catalogs)
             addresses.add(("rapp/1:particle", particle_hash(self.registry._document)))
@@ -623,7 +725,8 @@ class HiveAcceptance:
             require(payload["status"] == "current", "projection: receipt is not current")
             require(payload["registry_seq"] == self.registry.sequence, "projection: authenticated registry sequence mismatch")
             require(payload["frame_head"] == self._head["frame_hash"], "projection: actual Mother Hive head mismatch")
-            require(payload["convergence_payload_hash"] == self._head["payload_hash"],
+            current = self._last_convergence if self._roster_declarations else self._head["payload_hash"]
+            require(payload["convergence_payload_hash"] == current,
                     "projection: current convergence mismatch")
             require(payload["catalog_hash"] == particle_hash(self._catalog), "projection: actual catalog mismatch")
             manifest = canonical_object(R._strict_json(manifest_bytes), "projection artifact manifest")

@@ -504,6 +504,15 @@ from authenticated_conformance import run
 authenticated = run()
 check("H20 real Ed25519 acceptance and schema/Python scalar vectors", authenticated.wasSuccessful())
 
+from roster_declaration_conformance import run as run_roster_declarations
+
+roster_declarations = run_roster_declarations()
+check(
+    "H21 draft proposal 0001 (not accepted): the default gate refuses later declarations; the explicit "
+    "opt-in passes its vectors and replays every authenticated vector",
+    roster_declarations.wasSuccessful(),
+)
+
 print("-" * 72)
 passed = sum(results)
 print(f"{len(results)} Hive checks | {passed} PASS | {len(results) - passed} FAIL")

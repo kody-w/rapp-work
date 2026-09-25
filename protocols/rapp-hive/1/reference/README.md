@@ -46,3 +46,23 @@ does not change accepted state or latch a fault. Only successful serialized
 Mother acceptance does. Neither registry refresh nor ordinary reconciliation
 clears a known fork. Owner resolution/re-genesis is not implemented by this
 bounded gate; no reset API is provided.
+
+## Draft proposal 0001: owner-signed later declarations (opt-in, not accepted)
+
+[`docs/proposals/0001-rapp-hive-roster-declaration.md`](../../../../docs/proposals/0001-rapp-hive-roster-declaration.md)
+proposes letting the owner change a Hive's members, room membership and
+channels with a later signed `hive.declaration` on the Mother stream. The SPEC
+has not accepted it, so `HiveAcceptance(...)` keeps refusing every declaration
+after the genesis. Only `HiveAcceptance(..., roster_declarations=True)` enables
+`accept_declaration(frame_hash)`, which accepts an owner-signed declaration
+using the same closed `rapp-hive/1-declaration` schema only as the single next
+Mother frame, strictly later than the Mother head. The world, policy and owner
+stay the same, and every declared room keeps its area and access. With the
+opt-in, the roster that authorizes an unsettled mutation is the one in effect
+at the Mother head being extended, never the frame's self-asserted time.
+Accepted history is never re-evaluated. `roster-revoked` marks unsettled
+frames that an earlier accepted roster authorized but the current one does not.
+
+`roster_declaration_conformance.py` holds the default-refusal, positive and
+refusal vectors. It also replays every authenticated vector with the opt-in
+enabled. `hive_conformance.py` runs it as check H21.
