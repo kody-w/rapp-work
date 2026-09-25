@@ -8,7 +8,7 @@
       "parent": "rapp-work/1",
       "activation": "workspace-integration-not-estate-authority",
       "spec_path": "protocols/rapp-work-sdk/1/SPEC.md",
-      "spec_sha256": "cf64a90f44427728966ba142d6ef42cdd31f08ad465badf86a93c969f0cb8ef1",
+      "spec_sha256": "370194df915b11f42ee5706b06feae7eb6b44254f28ae9a9f9fcbf9dbcec1018",
       "schema_path": "protocols/rapp-work-sdk/1/schema.json",
       "schema_sha256": "a931fe3ec14a8c02962f0680e5c831070c4054b3787f1aa427458f4403849029",
       "conformance": "tests/test_profiles.py"

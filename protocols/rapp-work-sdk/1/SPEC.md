@@ -42,6 +42,14 @@ effect requires all of:
 Unknown operation inputs and unsupported capabilities MUST be refused before
 effects. Output is canonical I-JSON with no floating-point values.
 
+`update` also plans file moves (§4.1) through two optional members of its
+closed input: `moves` plans a move plan, and `inverse_of` returns the exact
+inverse of a supplied move plan (§4.3). The two are mutually exclusive, are
+accepted only without `apply`, and are accepted by no other operation. An
+`update` apply whose plan has schema `rapp-work-move-plan/1` is applied under
+§4.2. Every other `update` plan remains a `rapp-work-release-plan/1`, whose
+shape, hash, and meaning are unchanged.
+
 ## 3. Offline and credential boundary
 
 No operation uses a network by default. Network locations, environment
@@ -62,6 +70,135 @@ refused.
 Create-only means no existing destination is replaced. SDK updates may replace
 only files named in the prior SDK-owned inventory and only when their exact
 current SHA-256 equals the plan precondition.
+
+A move creates its destination under the same create-only rule and removes its
+source name only after the destination is durable and verified. A move
+relocates bytes; it is not the source deletion refused by §12.
+
+### 4.1 Move plans
+
+A move plan relocates existing regular files inside one Workspace or
+Organization root. It carries hashes, not bytes. Its schema is
+`rapp-work-move-plan/1`, a closed object with exactly `schema`, `protocol`
+(`rapp-work/1`), `profile` (`rapp-work-sdk/1`), `network` (`false`),
+`operation` (`update`), `target`, `subject`, `preconditions`, and `moves`:
+
+- `target` is the root's absolute lexical path.
+- `subject` is exactly the root identity's `kind` (`workspace` or
+  `organization`), `rappid`, and `world_id`.
+- `preconditions` is exactly `identity_sha256` (of `rappid.json`),
+  `managed_sha256` (of `.rapp-work/managed.json`), and `root_identity` (the
+  root's `device`, `inode`, and permission `mode`).
+- `moves` holds 1 to 64 move actions sorted by `source`. Each is exactly
+  `operation` (`move`), `source`, `destination`, `sha256`, `bytes`, and `mode`
+  (the source's permission bits, 0 to 0o777). Sources total at most 64 MiB.
+
+The plan SHA-256 is the SHA-256 of the plan's canonical JSON. A
+`rapp-work-release-plan/1` never contains a move, and a move plan never
+contains a create or replace action.
+
+Planning refuses unless all of the following hold. A first apply replays every
+one before its first write. A resumed apply (§4.2) replays the same checks,
+except that it expects its own move marker and checks each file against the
+recovery states instead of 7 and 8.
+
+1. The root is reached without symlinks, its identity is a Workspace or
+   Organization, and its SDK integration verifies: the SDK-owned inventory
+   exists and matches, and `.rapp-work/sdk.json` equals the qualified record.
+   A legacy workspace first adopts the SDK through an ordinary update plan.
+2. No update or move recovery marker is pending.
+3. Each `source` and `destination` is a canonical relative path: 1 to 512
+   characters, `/`-separated, with no empty, `.`, or `..` component, no
+   leading or trailing `/`, no backslash, colon, or control character, and
+   equal to its normalized form.
+4. Neither is protected. After Unicode NFKC normalization and case folding, a
+   path is protected when any component begins with `.` (this covers
+   `.rapp-work`, `.rapp-hive`, `.git`, `.github`, and every other hidden
+   entry); when any component is `rappid.json`; when the whole path is
+   `organization.json`, `workspaces.json`, or `SPEC.md`; when the final
+   component is `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `SKILL.md`, or
+   `soul.md`, or ends in `.instructions.md`, `.prompt.md`, `.agent.md`, or
+   `.chatmode.md`; or when it names a file in the SDK-owned inventory.
+5. After the same folding, sources are distinct, destinations are distinct,
+   and no source is a destination, so moves never chain, swap, or alias on a
+   case- or normalization-insensitive filesystem.
+6. Every directory between the root and each file exists, is reached without
+   symlinks, is on the root's filesystem, and contains no entry named
+   `rappid.json` or `.git` (a nested identity or repository root). A move plan
+   never creates or removes a directory.
+7. Each source is a regular file with exactly one link, owned by the effective
+   user, without setuid, setgid, or sticky bits, at most 16 MiB, and on the
+   root's filesystem, and its current SHA-256, byte length, and mode equal the
+   plan.
+8. Each destination is absent: no file, directory, symlink, or other entry.
+9. `subject` and `preconditions` equal the root's current values.
+
+### 4.2 Applying a move plan
+
+After the replay, apply creates `.rapp-work/move-recovery.json` create-only
+with mode 0600. It is a closed `rapp-work-move-recovery/1` record of exactly
+`schema`, `plan`, and `plan_sha256`. The apply holds an exclusive advisory lock
+on the marker until it finishes. An apply that finds the marker locked refuses
+and changes nothing, and a resumed apply takes the lock before it reads the
+marker. Then, for each move in order, apply:
+
+1. links the destination to the source with one descriptor-relative,
+   no-follow, no-replace hard link, and refuses an existing destination,
+   another filesystem, or a filesystem without hard links;
+2. makes the link durable and verifies that both names are one file with the
+   planned bytes, SHA-256, and mode;
+3. removes the source name and makes that durable; and
+4. verifies that the destination is again a single-link file with the planned
+   bytes.
+
+After every move verifies, apply removes the marker. The file always has at
+least one verified name. An implementation without descriptor-relative
+no-follow hard links refuses move plans; it never falls back to a rename that
+can replace a destination.
+
+A marker for the same plan resumes apply. Each move must then be in one of
+three states: not started (the planned source and no destination), linked
+(both names are one planned file with two links), or done (no source and the
+planned destination with one link). Apply continues from those states. Any
+other state, a marker for another plan, or changed preconditions are refused,
+and the marker and every name stay in place for the owner. Foreign or
+ambiguous state is never repaired, deleted, or rewritten. A refusal before the
+first link removes the marker that apply created; a refusal after it keeps the
+marker.
+
+While a move marker is pending, `update` refuses to plan another move and
+refuses to apply any plan except that move plan.
+
+| Interrupted | State left | Next apply of the same plan |
+|---|---|---|
+| before the marker is created | unchanged | a first apply |
+| while the marker is written | nothing moved; the marker may be partial | refused; the owner removes the marker |
+| after the marker, before a link | marker; source | link, verify, unlink |
+| after a link | marker; one file with two names | verify, unlink the source |
+| after a source name is removed | marker; destination | verify, continue |
+| after every move | marker; every file moved | verify, remove the marker |
+
+A completed move plan is spent: when every source is absent and every
+destination holds its planned file, apply refuses and changes nothing. The
+plan applies again only when its preconditions hold again, for example after
+its inverse.
+
+### 4.3 Inverse
+
+The inverse of a move plan has the same `target`, `subject`, and
+`preconditions`. Every move's `source` and `destination` are exchanged, with
+the same `sha256`, `bytes`, and `mode`, and the moves are sorted by the new
+`source`. The inverse has its own hash and applies only through an explicit
+apply of that exact hash. The inverse of the inverse is the original plan,
+byte for byte. `update` with `inverse_of` returns the inverse without effects
+and without reading the moved files, so the owner can review a move and its
+undo together. Applying a plan and then its inverse restores every moved path,
+byte, and permission mode; directory timestamps are not restored.
+
+A move never leaves its root and never writes an Organization pointer. An
+Organization records whole workspace roots, and a move stays inside one root.
+Knowledge moves between Workspaces or worlds only by signed and approved
+copies.
 
 ## 5. RAPP/1 wrapper
 

@@ -16,7 +16,8 @@ from .constants import (
 from .discovery import api_metadata, discover_roots
 from .errors import Refusal, require
 from .migration import MigrationPlan, apply_migration, plan_migration
-from .plans import ReleasePlan
+from .moves import apply_move_plan, invert_move_plan, plan_moves
+from .plans import MovePlan, ReleasePlan
 from .profiles import ProfileRegistry, verify_source_estate
 from .rapp1 import rappid_valid
 from .workspace import (
@@ -254,19 +255,41 @@ def _update(inputs: dict[str, Any]) -> dict[str, Any]:
     item = closed_object(
         inputs,
         required={"root"},
-        optional={"apply", "plan", "plan_sha256"},
+        optional={"apply", "inverse_of", "moves", "plan", "plan_sha256"},
         where="update input",
     )
     apply, plan_value, plan_sha256 = _apply_fields(item, operation="update")
     root = _root_input(item["root"])
     if not apply:
-        plan = plan_update(root)
+        require(
+            not ("moves" in item and "inverse_of" in item),
+            "REFUSE_INPUT_SHAPE",
+            "update accepts moves or inverse_of, not both",
+        )
+        planned: ReleasePlan | MovePlan
+        if "moves" in item:
+            planned = plan_moves(root, item["moves"])
+        elif "inverse_of" in item:
+            planned = invert_move_plan(root, MovePlan.from_dict(item["inverse_of"]))
+        else:
+            planned = plan_update(root)
         return {
             "effects": False,
-            "plan": plan.to_dict(),
-            "plan_sha256": plan.sha256,
+            "plan": planned.to_dict(),
+            "plan_sha256": planned.sha256,
             "status": "planned",
         }
+    require(
+        "moves" not in item and "inverse_of" not in item,
+        "REFUSE_INPUT_SHAPE",
+        "update apply accepts only root, apply, the complete plan, and its exact plan_sha256",
+    )
+    if isinstance(plan_value, dict) and plan_value.get("schema") == MovePlan.SCHEMA:
+        return apply_move_plan(
+            MovePlan.from_dict(plan_value),
+            root=root,
+            plan_sha256=plan_sha256,
+        )
     plan = ReleasePlan.from_dict(plan_value)
     require(plan.operation == "update", "REFUSE_PLAN", "update requires an update plan")
     return apply_update(plan, root=root, plan_sha256=plan_sha256)

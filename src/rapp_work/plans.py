@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
+from pathlib import PurePosixPath
 from typing import Any, Literal
 
 from ._json import (
@@ -12,12 +14,19 @@ from ._json import (
     closed_object,
     decode_b64,
 )
-from ._paths import absolute_path, safe_relative
+from ._paths import MAX_FILE_BYTES, absolute_path, safe_relative
 from .errors import require
 from .rapp1 import rappid_valid, verify_detached_jws
 
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
+LABEL = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 ActionKind = Literal["create", "replace"]
+
+MAX_MOVES = 64
+MAX_MOVE_TOTAL_BYTES = 64 * 1024 * 1024
+PROTECTED_ROOT_FILES = frozenset({"organization.json", "spec.md", "workspaces.json"})
+INSTRUCTION_NAMES = frozenset({"agents.md", "claude.md", "gemini.md", "skill.md", "soul.md"})
+INSTRUCTION_SUFFIXES = (".agent.md", ".chatmode.md", ".instructions.md", ".prompt.md")
 
 
 @dataclass(frozen=True)
@@ -272,3 +281,277 @@ class SignedRelease:
             "signer_rappid": self.signer_rappid,
             "status": "verified",
         }
+
+
+def fold_path(value: str) -> str:
+    """Caseless, normalization-insensitive key used to detect aliases and protected names."""
+    return unicodedata.normalize("NFKC", unicodedata.normalize("NFKC", value).casefold())
+
+
+def canonical_move_path(value: Any) -> str:
+    path = safe_relative(value)
+    pure = PurePosixPath(path)
+    require(
+        bool(pure.parts) and pure.as_posix() == path,
+        "REFUSE_PATH",
+        "move path must be a canonical relative path",
+        path=path,
+    )
+    return path
+
+
+def move_path_protection(path: str) -> str | None:
+    """Return why a move may not name ``path``, or ``None`` when it is ordinary content."""
+    parts = [fold_path(part) for part in PurePosixPath(path).parts]
+    if any(part.startswith(".") for part in parts):
+        return "hidden-path"
+    if "rappid.json" in parts:
+        return "identity-file"
+    if len(parts) == 1 and parts[0] in PROTECTED_ROOT_FILES:
+        return "authority-file"
+    if parts[-1] in INSTRUCTION_NAMES or parts[-1].endswith(INSTRUCTION_SUFFIXES):
+        return "instruction-file"
+    return None
+
+
+def require_movable_path(value: Any) -> str:
+    path = canonical_move_path(value)
+    reason = move_path_protection(path)
+    require(
+        reason is None,
+        "REFUSE_MOVE_PROTECTED",
+        "move path names SDK authority, instruction, or hidden state",
+        path=path,
+        reason=reason,
+    )
+    return path
+
+
+def require_disjoint_moves(pairs: list[tuple[str, str]]) -> None:
+    sources = [fold_path(source) for source, _ in pairs]
+    destinations = [fold_path(destination) for _, destination in pairs]
+    require(
+        len(set(sources)) == len(sources)
+        and len(set(destinations)) == len(destinations)
+        and not set(sources) & set(destinations),
+        "REFUSE_MOVE_PLAN",
+        "move sources and destinations must be distinct and never chain, swap, or alias",
+    )
+
+
+@dataclass(frozen=True)
+class FileMove:
+    source: str
+    destination: str
+    sha256: str
+    size: int
+    mode: int
+
+    def __post_init__(self) -> None:
+        require_movable_path(self.source)
+        require_movable_path(self.destination)
+        require_disjoint_moves([(self.source, self.destination)])
+        require(
+            isinstance(self.sha256, str) and bool(HEX64.fullmatch(self.sha256)),
+            "REFUSE_MOVE_PLAN",
+            "move content hash must be 64 lowercase hexadecimal characters",
+            path=self.source,
+        )
+        require(
+            type(self.size) is int and 0 <= self.size <= MAX_FILE_BYTES,
+            "REFUSE_MOVE_PLAN",
+            "move byte length exceeds the sixteen MiB limit",
+            path=self.source,
+        )
+        require(
+            type(self.mode) is int and 0 <= self.mode <= 0o777,
+            "REFUSE_MOVE_PLAN",
+            "move mode must be permission bits without setuid, setgid, or sticky bits",
+            path=self.source,
+        )
+
+    def inverse(self) -> FileMove:
+        return FileMove(
+            source=self.destination,
+            destination=self.source,
+            sha256=self.sha256,
+            size=self.size,
+            mode=self.mode,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "bytes": self.size,
+            "destination": self.destination,
+            "mode": self.mode,
+            "operation": "move",
+            "sha256": self.sha256,
+            "source": self.source,
+        }
+
+    @classmethod
+    def from_dict(cls, value: Any) -> FileMove:
+        item = closed_object(
+            value,
+            required={"bytes", "destination", "mode", "operation", "sha256", "source"},
+            where="move action",
+        )
+        require(item["operation"] == "move", "REFUSE_MOVE_PLAN", "move action must be a move")
+        return cls(
+            source=item["source"],
+            destination=item["destination"],
+            sha256=item["sha256"],
+            size=item["bytes"],
+            mode=item["mode"],
+        )
+
+
+def _move_preconditions(value: Any) -> dict[str, Any]:
+    item = closed_object(
+        value,
+        required={"identity_sha256", "managed_sha256", "root_identity"},
+        where="move plan preconditions",
+    )
+    root = closed_object(
+        item["root_identity"],
+        required={"device", "inode", "mode"},
+        where="move plan root identity",
+    )
+    require(
+        all(
+            isinstance(item[key], str) and bool(HEX64.fullmatch(item[key]))
+            for key in ("identity_sha256", "managed_sha256")
+        )
+        and all(type(root[key]) is int and root[key] >= 0 for key in ("device", "inode", "mode")),
+        "REFUSE_MOVE_PLAN",
+        "move plan preconditions are invalid",
+    )
+    return {
+        "identity_sha256": item["identity_sha256"],
+        "managed_sha256": item["managed_sha256"],
+        "root_identity": {key: root[key] for key in ("device", "inode", "mode")},
+    }
+
+
+def _move_subject(value: Any) -> dict[str, Any]:
+    item = closed_object(value, required={"kind", "rappid", "world_id"}, where="move plan subject")
+    require(
+        item["kind"] in {"workspace", "organization"}
+        and rappid_valid(item["rappid"])
+        and isinstance(item["world_id"], str)
+        and bool(LABEL.fullmatch(item["world_id"])),
+        "REFUSE_MOVE_PLAN",
+        "move plan subject is invalid",
+    )
+    return {key: item[key] for key in ("kind", "rappid", "world_id")}
+
+
+@dataclass(frozen=True)
+class MovePlan:
+    """``rapp-work-move-plan/1``: relocate existing files; bytes stay where they are."""
+
+    target: str
+    subject: dict[str, Any]
+    preconditions: dict[str, Any]
+    moves: tuple[FileMove, ...]
+
+    SCHEMA = "rapp-work-move-plan/1"
+
+    def __post_init__(self) -> None:
+        require(
+            isinstance(self.target, str) and str(absolute_path(self.target)) == self.target,
+            "REFUSE_MOVE_PLAN",
+            "move plan target must be an absolute lexical path",
+        )
+        object.__setattr__(self, "subject", _move_subject(self.subject))
+        object.__setattr__(self, "preconditions", _move_preconditions(self.preconditions))
+        require(
+            isinstance(self.moves, tuple)
+            and 1 <= len(self.moves) <= MAX_MOVES
+            and all(isinstance(move, FileMove) for move in self.moves),
+            "REFUSE_MOVE_PLAN",
+            "move plan requires one to sixty-four moves",
+        )
+        sources = [move.source for move in self.moves]
+        require(
+            sources == sorted(sources),
+            "REFUSE_MOVE_PLAN",
+            "move plan moves must be sorted by source",
+        )
+        require_disjoint_moves([(move.source, move.destination) for move in self.moves])
+        require(
+            sum(move.size for move in self.moves) <= MAX_MOVE_TOTAL_BYTES,
+            "REFUSE_MOVE_PLAN",
+            "move plan exceeds the sixty-four MiB total bound",
+        )
+        canonical_bytes(self.to_dict())
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "moves": [move.to_dict() for move in self.moves],
+            "network": False,
+            "operation": "update",
+            "preconditions": {
+                "identity_sha256": self.preconditions["identity_sha256"],
+                "managed_sha256": self.preconditions["managed_sha256"],
+                "root_identity": dict(self.preconditions["root_identity"]),
+            },
+            "profile": "rapp-work-sdk/1",
+            "protocol": "rapp-work/1",
+            "schema": self.SCHEMA,
+            "subject": dict(self.subject),
+            "target": self.target,
+        }
+
+    @property
+    def sha256(self) -> str:
+        return canonical_sha256(self.to_dict())
+
+    def inverse(self) -> MovePlan:
+        """The exact undo: every move reversed, same bytes; the inverse of the inverse is self."""
+        return MovePlan(
+            target=self.target,
+            subject=dict(self.subject),
+            preconditions=self.to_dict()["preconditions"],
+            moves=tuple(
+                sorted((move.inverse() for move in self.moves), key=lambda move: move.source)
+            ),
+        )
+
+    @classmethod
+    def from_dict(cls, value: Any) -> MovePlan:
+        item = closed_object(
+            value,
+            required={
+                "moves",
+                "network",
+                "operation",
+                "preconditions",
+                "profile",
+                "protocol",
+                "schema",
+                "subject",
+                "target",
+            },
+            where="move plan",
+        )
+        require(
+            item["schema"] == cls.SCHEMA
+            and item["protocol"] == "rapp-work/1"
+            and item["profile"] == "rapp-work-sdk/1"
+            and item["network"] is False
+            and item["operation"] == "update",
+            "REFUSE_MOVE_PLAN",
+            "move plan contract mismatch",
+        )
+        require(
+            isinstance(item["moves"], list) and 1 <= len(item["moves"]) <= MAX_MOVES,
+            "REFUSE_MOVE_PLAN",
+            "move plan requires one to sixty-four moves",
+        )
+        return cls(
+            target=item["target"],
+            subject=item["subject"],
+            preconditions=item["preconditions"],
+            moves=tuple(FileMove.from_dict(move) for move in item["moves"]),
+        )

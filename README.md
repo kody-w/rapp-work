@@ -84,6 +84,10 @@ rapp-work update --root /path/to/workspace
 rapp-work migrate --source /path/to/old-workspace --target /path/to/successor
 ```
 
+`update --move SOURCE DESTINATION` instead plans an exact, reversible move of
+a file inside the root, such as loading or unloading an agent file, and
+`update --inverse-of PLAN_FILE` plans its undo. Both apply the same way.
+
 Migration is create-only. It preserves the source, binds recovery to exact
 source authority bytes, and performs a complete receipt/inventory replay before
 returning an existing migration as unchanged.

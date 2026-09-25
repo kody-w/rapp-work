@@ -46,7 +46,8 @@ payloads. New product behavior belongs in `src/rapp_work`.
 | `rapp_work.rapp1` | Exact pinned canonical Frame/canonicalization wrapper |
 | `rapp_work.profiles` | Canonical SDK parent descriptors plus distinct historical source-estate verification |
 | `rapp_work.workspace` | Workspace and pointer-only Organization models/templates |
-| `rapp_work.plans` | `FileAction`, `ReleasePlan`, and `SignedRelease` |
+| `rapp_work.plans` | `FileAction`, `ReleasePlan`, `SignedRelease`, `FileMove`, and `MovePlan` |
+| `rapp_work.moves` | Move plans: no-replace link, verify, unlink; plan-bound recovery; exact inverse |
 | `rapp_work.hive` | Complete-lineage Hive vectors and high-water verification |
 | `rapp_work.release` | Bounded immutable release observations |
 | `rapp_work.migration` | Create-only source-bound plans, receipts, and replay |
@@ -89,7 +90,11 @@ Scaffold and migration activate staging directories with an atomic no-replace
 primitive (`renameat2(RENAME_NOREPLACE)` on Linux or
 `renameatx_np`/`renamex_np(RENAME_EXCL)` on macOS); unsupported hosts refuse.
 Update replaces only prior SDK-owned bytes and uses an exact plan-bound
-recovery marker. Migration uses a retained source-bound marker and completed
+recovery marker. A move plan (`rapp-work-move-plan/1`) creates each destination
+as a descriptor-relative no-follow hard link, which never replaces, verifies
+that both names are one file with the planned bytes, and only then removes the
+source name, under a plan-bound `.rapp-work/move-recovery.json` marker that
+is locked for the whole apply. Its inverse is itself a plan with its own hash. Migration uses a retained source-bound marker and completed
 receipt.
 
 ## Filesystem model

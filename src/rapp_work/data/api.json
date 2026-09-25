@@ -64,6 +64,8 @@
       ],
       "optional_inputs": [
         "apply",
+        "inverse_of",
+        "moves",
         "plan",
         "plan_sha256"
       ]
@@ -89,6 +91,7 @@
     "network by default",
     "credential inheritance",
     "symlink or hardlink authority paths",
+    "replacing, cross-filesystem, or protected-path moves",
     "unreviewed plan hashes",
     "plugin, skill, or neuron execution",
     "parent authority mutation"

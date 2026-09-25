@@ -42,6 +42,14 @@ def parser() -> JSONArgumentParser:
 
     update = commands.add_parser("update")
     update.add_argument("--root", required=True)
+    update.add_argument(
+        "--move",
+        action="append",
+        dest="moves",
+        metavar=("SOURCE", "DESTINATION"),
+        nargs=2,
+    )
+    update.add_argument("--inverse-of", dest="inverse_of", type=Path)
     _apply_arguments(update)
 
     migrate = commands.add_parser("migrate")
@@ -87,6 +95,13 @@ def _inputs(args: argparse.Namespace) -> dict[str, Any]:
         }
     elif operation == "update":
         value = {"root": args.root}
+        if args.moves is not None:
+            value["moves"] = [
+                {"destination": destination, "source": source}
+                for source, destination in args.moves
+            ]
+        if args.inverse_of is not None:
+            value["inverse_of"] = _plan(args.inverse_of)
     elif operation == "migrate":
         value = {"source": args.source, "target": args.target}
     else:

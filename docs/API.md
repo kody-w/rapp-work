@@ -34,11 +34,49 @@ migrate(inputs)
 | `verify` | — | `root` |
 | `discover` | `roots` | `max_entries` |
 | `scaffold` | `root`, `kind`, `owner_label`, `slug`, `world_id`, `mode` | `apply`, `plan`, `plan_sha256` |
-| `update` | `root` | `apply`, `plan`, `plan_sha256` |
+| `update` | `root` | `apply`, `inverse_of`, `moves`, `plan`, `plan_sha256` |
 | `migrate` | `source`, `target` | `apply`, `plan`, `plan_sha256` |
 
 For effectful operations, omitting `apply` returns a plan. `apply: true`
 requires both the complete plan object and its exact canonical SHA-256.
+
+### Move plans
+
+`update` with `moves` plans a `rapp-work-move-plan/1` instead of an SDK
+integration update. Each move names a `source` and a `destination` relative to
+`root`, for example unloading an agent file from the live top of `agents/`:
+
+```python
+planned = update(
+    {
+        "root": "/absolute/path/example",
+        "moves": [
+            {
+                "source": "agents/example_agent.py",
+                "destination": "agents/experimental/example_agent.py",
+            }
+        ],
+    }
+)
+undo = update({"root": "/absolute/path/example", "inverse_of": planned["result"]["plan"]})
+```
+
+Apply either plan with `apply: true`, its complete plan, and its own exact
+`plan_sha256`; `moves` and `inverse_of` are refused together with `apply`. A
+move plan commits to each source's SHA-256, byte length, and mode. It never
+carries file bytes, creates or removes a directory, or replaces a destination,
+and it refuses hidden, identity, Organization, workspace-specification,
+instruction, and SDK-owned paths. The applied result has status `moved`.
+Applying a completed plan again is refused with `REFUSE_PLAN_APPLIED`. An
+interrupted apply leaves `.rapp-work/move-recovery.json`; applying the same
+plan again resumes it, and every other `update` apply is refused with
+`REFUSE_RECOVERY_PENDING` or `REFUSE_RECOVERY_BINDING` until it finishes. The
+marker is locked while an apply runs, so a concurrent apply is refused with
+`REFUSE_RECOVERY_BUSY`.
+
+The CLI equivalents are `rapp-work update --root ROOT --move SOURCE
+DESTINATION` (repeatable) and `rapp-work update --root ROOT --inverse-of
+PLAN_FILE`, applied with `--apply --plan PLAN_FILE --plan-sha256 HASH`.
 
 ## Typed models
 
@@ -62,6 +100,9 @@ PortableNeuron
 FilesystemTransport
 PrivateGitTransport
 ```
+
+`FileMove` and `MovePlan` (`rapp-work-move-plan/1`) live in `rapp_work.plans`;
+they are not top-level exports.
 
 Both transport types expose `publication_plan(...)`. `publish(...)` retains its
 existing effect inputs and additionally requires that complete `ReleasePlan`
@@ -113,5 +154,7 @@ the compatibility implementation unless `allow_network=True`.
   mutation, and Federation activation.
 - Plugin, skill, or Portable Neuron execution/install.
 - Automatic repair of missing or modified SDK-owned files.
+- Move plans that create or remove directories, move directories, leave their
+  root, or carry a signature; repair of an ambiguous interrupted move.
 - Race-prone effectful fallback on platforms without descriptor-relative
   no-follow primitives.
