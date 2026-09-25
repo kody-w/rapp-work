@@ -5,7 +5,7 @@ eleven-key frame envelope.
 
 | Protocol | Purpose | Conformance |
 |---|---|---|
-| [`rapp-work-sdk/1`](rapp-work-sdk/1/SPEC.md) | Installable SDK and workspace integration profile; package-qualified, not silent signed-estate activation | `python3 -m pytest -q tests/test_profiles.py tests/test_sdk_workspace.py` |
+| [`rapp-work-sdk/1`](rapp-work-sdk/1/SPEC.md) | Installable SDK and workspace integration profile; package-qualified, not silent signed-estate activation | `python3 -m pytest -q tests/test_profiles.py tests/test_sdk_workspace.py tests/test_registry_succession.py` |
 | [`rapp-hive/1`](rapp-hive/1/SPEC.md) | Sovereign Private Hives, sealed GODD rooms, Dream Catcher convergence, and storage portability | `python3 rapp-hive/1/reference/hive_conformance.py` |
 | [`rapp-federation/1`](rapp-federation/1/SPEC.md) | The universal logical Hive Mind and consent-bound, delay-tolerant business federation | `python3 rapp-federation/1/reference/conformance.py --report rapp-federation/1/conformance-results.json` |
 

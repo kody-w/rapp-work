@@ -123,7 +123,7 @@
     },
     {
       "path": "vendor/hive/reference/hive_acceptance.py",
-      "sha256": "88184a7e74f475b87dfe55069942f55b82efb1ac36469ca47ea7507fa78119f7"
+      "sha256": "2d5ff1d36c86b8fe983a3dde391ccc59aeb5225c72b4fc5671b7db2bc207f043"
     },
     {
       "path": "vendor/hive/reference/rapp.py",
@@ -136,6 +136,10 @@
     {
       "path": "vendor/hive/reference/rapp_profile.py",
       "sha256": "fb1c974373d81c4689d0d3226da68528a318fcee4a29ce12ffda4305bcfbbe24"
+    },
+    {
+      "path": "vendor/hive/reference/rapp_registry.py",
+      "sha256": "eec22844a32874cdb21772fc804db29220d2e2f052be9ca8a8049f2162ce95d2"
     },
     {
       "path": "vendor/hive/schema.json",

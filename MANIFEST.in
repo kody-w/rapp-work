@@ -8,6 +8,7 @@ include MANIFEST.in
 include README.md
 include RELEASE-INVENTORY.json
 include RAPP1_PIN.json
+include RAPP1_REGISTRY_PIN.json
 include RAPP_WORK_PIN.json
 include SECURITY.md
 include SPEC.md

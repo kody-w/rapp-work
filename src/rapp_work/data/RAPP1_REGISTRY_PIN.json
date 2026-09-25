@@ -1,0 +1,8 @@
+{
+  "schema": "rapp-work-parent-registry-pin/1",
+  "protocol": "rapp/1",
+  "repository": "https://github.com/kody-w/rapp-1",
+  "commit": "591e014ad39e223b00ab343ae26e5d9a867ebeee",
+  "reference_path": "rapp_registry.py",
+  "reference_sha256": "eec22844a32874cdb21772fc804db29220d2e2f052be9ca8a8049f2162ce95d2"
+}

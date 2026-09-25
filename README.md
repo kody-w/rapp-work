@@ -135,6 +135,10 @@ See [the exact API surface](docs/API.md).
 - `RAPP1_PIN.json` pins accepted canonical RAPP/1 revision
   `591e014ad39e223b00ab343ae26e5d9a867ebeee` and the exact vendored
   `SPEC.md` / `rapp.py` bytes.
+- `RAPP1_REGISTRY_PIN.json` pins that revision's `rapp_registry.py`. The
+  explicit `rapp_work.registry` submodule uses it for read-only verification of
+  RAPP/1 owner succession, compromise re-anchor, and registry lineages; the SDK
+  never signs or rewrites a registry.
 - `RAPP_WORK_PIN.json` pins the canonical `rapp-work/1` specification and
   schema at that same `kody-w/rapp-1` revision. The packaged canonical mirrors
   are `src/rapp_work/data/rapp-work-1-SPEC.md` and

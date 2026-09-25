@@ -23,7 +23,9 @@ payloads. New product behavior belongs in `src/rapp_work`.
 
 1. **Pinned RAPP/1** — `RAPP1_PIN.json` authenticates exact `SPEC.md` and
    `rapp.py` bytes at accepted canonical commit `591e014`. `rapp_work.rapp1`
-   checks both hashes before exposing the wrapper.
+   checks both hashes before exposing the wrapper. `RAPP1_REGISTRY_PIN.json`
+   authenticates that same revision's `rapp_registry.py`, which
+   `rapp_work.registry` checks before verifying owner succession.
 2. **Canonical SDK parent** — `RAPP_WORK_PIN.json` commits to the accepted
    `rapp-work/1` specification and schema under `protocols/rapp-work/1` in that
    same canonical `kody-w/rapp-1` revision. `ProfileRegistry` resolves exact
@@ -48,6 +50,7 @@ payloads. New product behavior belongs in `src/rapp_work`.
 | `rapp_work.workspace` | Workspace and pointer-only Organization models/templates |
 | `rapp_work.plans` | `FileAction`, `ReleasePlan`, and `SignedRelease` |
 | `rapp_work.hive` | Complete-lineage Hive vectors and high-water verification |
+| `rapp_work.registry` | Read-only RAPP/1 section 13 registry, owner-succession, and lineage verification (explicit submodule) |
 | `rapp_work.release` | Bounded immutable release observations |
 | `rapp_work.migration` | Create-only source-bound plans, receipts, and replay |
 | `rapp_work.discovery` | Bounded inert skill/plugin/neuron metadata discovery |

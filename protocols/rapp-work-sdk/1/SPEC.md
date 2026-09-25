@@ -77,6 +77,38 @@ The SDK delegates canonical particle, wave, chain, stream, and signature checks
 to that pinned implementation. Additive SDK metadata never enters the Frame
 envelope.
 
+### 5.1 Registry authority and owner succession
+
+`RAPP1_REGISTRY_PIN.json` pins the exact `rapp_registry.py` of the same
+accepted `kody-w/rapp-1` revision named by `RAPP1_PIN.json`. The SDK verifies
+those bytes, and binds their `rapp` import to the already verified parent,
+before use.
+
+`rapp_work.registry` verifies a signed `rapp/1-registry` document read-only.
+The caller supplies the entries member name, the out-of-band anchor RAPPID and
+SPKI, and a trusted tombstone issuance resolver keyed by the exact signed
+tombstone's particle hash. None of these is read from the document. The
+pinned reference decides every section 13.3 entry, owner tenure, lifecycle
+signature, and time-scoped key retirement. The SDK additionally requires that:
+
+1. the anchor is the current estate owner or a predecessor reachable only
+   through `case:"rotation"` re-anchor records; an owner `compromise` record
+   requires a newly distributed out-of-band anchor (RAPP/1 sections 13.1 and
+   13.2);
+2. every owner transition is a `rotation` or `compromise` record;
+3. the current estate owner key is registered and never deprecated,
+   superseded, or tombstoned;
+4. key retirement matches the SPKI tail, so a renamed RAPPID cannot revive a
+   superseded or tombstoned key; and
+5. a registry lineage is contiguous, and each later snapshot retains every
+   earlier `re-anchor` and `tombstone` entry and extends, never rewrites, the
+   verified owner lineage.
+
+A verified registry reports the owner in effect at an artifact time and
+supplies a signature verifier for `validate_frame` and `validate_chain`. This
+is verification only. The SDK never mints keys or signs, appends, or rewrites a
+registry, re-anchor, or tombstone, and adds no JSON operation.
+
 ## 6. Profiles
 
 `ProfileRegistry` records immutable descriptors for the pinned parent,
@@ -157,5 +189,9 @@ legacy paths. Those wrappers do not broaden their profile claims.
 
 Unsupported sharing, public Git, credential inheritance, implicit apply,
 unknown JSON members, parent-authority changes, plugin execution, neuron
-execution, source deletion, owner rotation, and unverified Hive rollback/fork
-acceptance are explicit refusals.
+execution, source deletion, performing owner rotation or compromise recovery
+(minting keys or signing or appending re-anchor, tombstone, or registry
+records), owner succession that does not descend from the out-of-band anchor
+through signed rotation, and unverified Hive rollback/fork acceptance are
+explicit refusals. Read-only verification of lawful RAPP/1 owner succession
+(section 5.1) is supported.

@@ -46,8 +46,10 @@ directories for release work.
 
 - distribution name/version and console entrypoint;
 - typed marker and static API/profile metadata;
-- exact root/package mirrors of `RAPP1_PIN.json` and `RAPP_WORK_PIN.json`;
-- exact vendored RAPP/1 implementation and packaged canonical RAPP Work
+- exact root/package mirrors of `RAPP1_PIN.json`, `RAPP1_REGISTRY_PIN.json`,
+  and `RAPP_WORK_PIN.json`;
+- exact vendored RAPP/1 implementation and registry reference (including the
+  `rapp-hive/1` reference copy) and packaged canonical RAPP Work
   specification/schema;
 - Hive/Federation profile fixtures;
 - legacy workspace-manager and Private Hive compatibility payloads;

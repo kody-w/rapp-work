@@ -87,6 +87,42 @@ specification and schema named by `RAPP_WORK_PIN.json`. Source-estate
 verification reports that SDK parent pin independently from the historical
 signed `rapp-work/1` entry committed by root `registry.json`.
 
+## Owner succession verification
+
+`rapp_work.registry` is an explicit read-only submodule, not part of the
+top-level stable API or the JSON operation set:
+
+```python
+from rapp_work.registry import verify_registry, verify_registry_lineage
+
+verified = verify_registry(
+    registry_bytes,
+    entries_member="entries",
+    anchor_rappid=anchor_rappid,        # distributed out of band
+    anchor_spki_der=anchor_spki_der,
+    tombstone_issued_at=resolver,       # trusted: particle hash -> issuance UTC
+    persisted_seq=None,
+    persisted_hash=None,
+)
+verified.owner_at(utc)                  # RAPP/1 section 13.2 owner in effect
+verified.signer_acceptable(kid, utc)    # key retirement matched by SPKI tail
+verified.signature_verifier()           # for validate_frame / validate_chain
+verify_registry_lineage(documents, ..., retained=None)
+pinned_registry_reference()
+```
+
+It delegates to the `rapp_registry.py` bytes pinned by
+`RAPP1_REGISTRY_PIN.json`. An anchor extends to a successor owner only through
+signed `rotation` records; owner compromise recovery requires a newly
+distributed anchor. A lineage must be contiguous and may only extend its
+succession and revocation history. Refusal codes are `REFUSE_REGISTRY`,
+`REFUSE_REGISTRY_ENTRY`, `REFUSE_REGISTRY_ANCHOR`,
+`REFUSE_REGISTRY_SUCCESSION`, `REFUSE_REGISTRY_ISSUANCE`,
+`REFUSE_REGISTRY_AUTHORITY`, `REFUSE_REGISTRY_OWNER`,
+`REFUSE_REGISTRY_ROLLBACK`, `REFUSE_REGISTRY_FORK`,
+`REFUSE_REGISTRY_LINEAGE`, and `REFUSE_REGISTRY_TIME`. The module never signs
+or writes anything.
+
 ## Compatibility namespace
 
 `rapp_work.compat` intentionally exports only:
@@ -109,8 +145,9 @@ the compatibility implementation unless `allow_network=True`.
 
 - Core hosted-Git network transport. The core adapter is local private Git;
   historical GitHub publication requires explicit compatibility inputs.
-- SharePoint, public Git, owner rotation, key release, sealing, topology
-  mutation, and Federation activation.
+- SharePoint, public Git, performing owner rotation or compromise recovery,
+  key release, sealing, topology mutation, and Federation activation. Owner
+  succession is verified read-only through `rapp_work.registry`.
 - Plugin, skill, or Portable Neuron execution/install.
 - Automatic repair of missing or modified SDK-owned files.
 - Race-prone effectful fallback on platforms without descriptor-relative

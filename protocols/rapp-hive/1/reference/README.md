@@ -11,6 +11,32 @@ resolver and an independently anchored `RegistryAuthority`. Structural payload
 validation is not acceptance. The [SPEC](../SPEC.md) defines the unchanged frame,
 catalog, convergence, and projection contracts.
 
+## Owner succession (opt-in)
+
+`RegistryAuthority` is direct-owner by default and still refuses any
+`re-anchor` entry. Passing `succession="rapp1-13.2"` together with a trusted
+`tombstone_issued_at(entry_hash)` resolver selects RAPP/1 section 13.2 tenure:
+the pinned `rapp_registry.py` (a byte copy of the reference named by
+`RAPP1_REGISTRY_PIN.json`) validates every section 13.3 entry and lifecycle
+signature, and every Hive signature is checked against the key history at the
+artifact's `utc`, matching retired keys by SPKI tail.
+
+- The out-of-band anchor may be the current estate owner or a predecessor
+  reachable only through signed `rotation` records. An owner `compromise`
+  record requires a newly distributed anchor.
+- Declarations, reconciliations, convergences, and projection receipts must be
+  signed by `owner_at(frame["utc"])`. History before a succession or a
+  compromise cutoff keeps verifying; the outgoing or compromised key is refused
+  after it. Membership in the immutable declaration is not inherited by a
+  successor identity.
+- Registry sequence floors and same-sequence commitments are unchanged.
+  Persist `owner_lineage` beside them and pass it back as
+  `retained_owner_lineage` so a later registry cannot rewrite accepted
+  succession.
+- `restore()` replays signed Mother history across a succession boundary.
+
+The vectors are in `succession_conformance.py` (check H22).
+
 ## Durable fork quarantine
 
 An authenticated same-stream/sequence fork is not a mutation conflict that an

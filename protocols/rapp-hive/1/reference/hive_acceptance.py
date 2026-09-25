@@ -4,6 +4,12 @@ The caller supplies a fresh section-13 registry, an out-of-band owner anchor,
 and a resolver returning the complete registered-genesis-to-tip byte sequence.
 No candidate summary, shape-validation result, or caller-supplied catalog is a
 trust input. Persist checkpoint() atomically with the accepted artifacts.
+
+The default registry authority is direct-owner and fails closed on succession.
+RAPP/1 section 13.2 owner tenure is verified only when the caller explicitly
+selects succession="rapp1-13.2" and supplies a trusted tombstone issuance
+resolver; the pinned RAPP/1 registry reference then decides every section-13
+entry, lifecycle signature, and time-scoped key retirement.
 """
 
 from __future__ import annotations
@@ -16,15 +22,19 @@ from pathlib import Path
 
 import rapp as R
 import rapp_hive as H
+import rapp_registry as REG
 from rapp_profile import bounded_int, canonical_object, exact_keys, hex64, particle_hash, require, utc
 
 
 CATALOG_KINDS = {"hive.object", "hive.godd-slice", "hive.reconciliation"}
 FORK_REASONS = {"stream-fork", "fork-ancestor"}
+SUCCESSION = "rapp1-13.2"
+OWNER_SUCCESSION_CASES = {"rotation", "compromise"}
+LIVE_UNTIL = "9999-12-31T23:59:59.999Z"
 
 
 class RegistryAuthority:
-    """Direct-owner section-13 verification; unsupported succession fails closed."""
+    """Direct-owner section-13 verification; succession fails closed unless explicitly enabled."""
 
     def __init__(
         self,
@@ -34,7 +44,19 @@ class RegistryAuthority:
         owner_spki_der: bytes,
         minimum_registry_seq: int = 0,
         same_sequence_hash: str | None = None,
+        succession: str | None = None,
+        tombstone_issued_at=None,
+        retained_owner_lineage=None,
     ):
+        require(succession is None or succession == SUCCESSION, "registry: unsupported succession mode")
+        if succession is None:
+            require(tombstone_issued_at is None and retained_owner_lineage is None,
+                    "registry: tombstone issuance and owner lineage require explicit succession verification")
+        else:
+            require(callable(tombstone_issued_at),
+                    "registry: succession verification requires a trusted tombstone issuance resolver")
+        self.succession = succession
+        self._reference = None
         require(isinstance(registry_bytes, bytes), "registry: expected bytes")
         document = canonical_object(R._strict_json(registry_bytes), "registry")
         require(document.get("schema") == "rapp/1-registry", "registry: wrong schema")
@@ -43,8 +65,12 @@ class RegistryAuthority:
         require(self.sequence >= minimum_registry_seq, "registry: rollback")
         H.rappid(owner_rappid, "out-of-band owner")
         unsigned = {key: value for key, value in document.items() if key != "sig"}
-        ok, why = R.verify_detached_jws(unsigned, document.get("sig"), owner_spki_der, owner_rappid)
-        require(ok, f"registry: signature refused: {why}")
+        if succession is None:
+            ok, why = R.verify_detached_jws(unsigned, document.get("sig"), owner_spki_der, owner_rappid)
+            require(ok, f"registry: signature refused: {why}")
+        else:
+            reference, lineage = self._verify_succession(document, owner_rappid, owner_spki_der,
+                                                         minimum_registry_seq, tombstone_issued_at)
         self.commitment = particle_hash(unsigned)
         if self.sequence == minimum_registry_seq:
             require(minimum_registry_seq == 0 or same_sequence_hash is not None,
@@ -53,6 +79,8 @@ class RegistryAuthority:
                 require(self.commitment == hex64(same_sequence_hash, "registry checkpoint"),
                         "registry: same-sequence fork")
         self.owner = owner_rappid
+        self.anchor = owner_rappid
+        self.owner_lineage = (owner_rappid,)
         self._document = document
         self._keys = {}
         self._genesis = {}
@@ -60,6 +88,9 @@ class RegistryAuthority:
         self._revoked = {}
         entries = document.get("entries")
         require(isinstance(entries, list), "registry.entries: expected array")
+        if succession is not None:
+            self._index_succession(reference, lineage, retained_owner_lineage)
+            return
         owners, profiles = [], []
         for entry in entries:
             require(isinstance(entry, dict), "registry.entries: expected object")
@@ -119,7 +150,93 @@ class RegistryAuthority:
         require(all(self._kinds.get(kind) == "body" for kind in H.KIND_SCHEMAS),
                 "registry: exact Hive kinds must be registered in the body family")
 
+    def _verify_succession(self, document, anchor, anchor_spki_der, minimum_registry_seq, tombstone_issued_at):
+        """RAPP/1 section 13.2 tenure through the pinned reference; an anchor extends only by rotation."""
+        require(isinstance(anchor_spki_der, bytes)
+                and R.Hb("rapp/1:rappid", anchor_spki_der) == R.rappid_parts(anchor)["hash"],
+                "registry: out-of-band anchor SPKI does not bind the anchor RAPPID")
+        try:
+            reference = REG.Registry(document.get("entries"))
+        except (ValueError, TypeError, KeyError) as error:
+            raise ValueError(f"registry: section-13 entry refused: {error}") from error
+        predecessors = {record["new_rappid"]: record for record in reference.reanchors}
+        lineage, transitions = [reference.estate_owner], []
+        while lineage[-1] in predecessors:
+            require(len(transitions) < len(reference.reanchors), "registry: re-anchor succession cycle")
+            record = predecessors[lineage[-1]]
+            require(record["case"] in OWNER_SUCCESSION_CASES,
+                    "registry: owner succession case is not verifiable by this reference")
+            transitions.append(record)
+            lineage.append(record["old_rappid"])
+        require(anchor in lineage, "registry: estate owner does not descend from the out-of-band anchor")
+        # RAPP/1 sections 13.1-13.2: root-key compromise cannot be expressed inside the registry it signs.
+        require(all(record["case"] == "rotation" for record in transitions[:lineage.index(anchor)]),
+                "registry: an out-of-band anchor extends only through signed rotation; "
+                "compromise recovery requires a new out-of-band anchor")
+        require(reference.spki_der(anchor) == anchor_spki_der,
+                "registry: out-of-band anchor SPKI is not the registered anchor key")
+
+        def issued_at(entry_hash):
+            try:
+                return tombstone_issued_at(entry_hash)
+            except (LookupError, OSError, TypeError, ValueError) as error:
+                raise ValueError(f"trusted issuance resolver refused: {error}") from error
+
+        status, loaded, why = REG.load_document(
+            document, entries_member="entries", trust_anchor=reference.estate_owner,
+            persisted_seq=minimum_registry_seq, tombstone_issued_at=issued_at,
+        )
+        require(status == "verified" and loaded is not None, f"registry: section-13 refusal: {why}")
+        ok, why = loaded._signer_acceptable(loaded.estate_owner, LIVE_UNTIL, match_key_aliases=True)
+        require(ok, f"registry: current estate owner key is not live: {why}")
+        return loaded, tuple(reversed(lineage))
+
+    def _index_succession(self, reference, lineage, retained_owner_lineage):
+        if retained_owner_lineage is not None:
+            retained = tuple(retained_owner_lineage)
+            require(lineage[:len(retained)] == retained, "registry: owner succession rewrites retained history")
+        self.owner_lineage = lineage
+        self._reference = reference
+        self.owner = reference.estate_owner
+        for entry in reference.entries:
+            if entry["type"] == "spki":
+                self._keys[entry["rappid"]] = reference.spki_der(entry["rappid"])
+        self._revoked = dict(reference.tombstones)
+        self._kinds = {kind: entry["family"] for kind, entry in reference.kinds.items() if not entry["deprecated"]}
+        for stream_id in reference.genesis:
+            registered = reference.registered_genesis(stream_id)
+            if registered is not None:
+                self._genesis[stream_id] = registered["frame_hash"]
+        profiles = [entry for entry in reference.entries
+                    if entry["type"] == "protocol" and entry["name"] == "rapp-hive/1" and not entry["deprecated"]]
+        require(len(profiles) == 1, "registry: exactly one active Hive profile is required")
+        spec_hash = hashlib.sha256((Path(__file__).resolve().parents[1] / "SPEC.md").read_bytes()).hexdigest()
+        require(profiles[0]["spec_hash"] == spec_hash, "registry: Hive profile specification hash mismatch")
+        require(all(self._kinds.get(kind) == "body" for kind in H.KIND_SCHEMAS),
+                "registry: exact Hive kinds must be registered in the body family")
+
+    def owner_at(self, stamp: str) -> str:
+        """The estate owner in effect at an artifact's authenticated time (RAPP/1 section 13.2)."""
+        if self._reference is None:
+            return self.owner
+        utc(stamp, "owner tenure time")
+        return self._reference.owner_at(stamp)
+
+    def _verify_tenured_signature(self, unsigned: dict, signature: str, expected_signer: str | None):
+        try:
+            signer = R.parse_detached_jws(signature)[0]["kid"]
+            stamp = unsigned.get("utc", unsigned.get("created_utc"))
+            utc(stamp, "signed artifact time")
+            # Retirement is matched by key tail, so renaming a RAPPID cannot revive a retired SPKI.
+            ok, why = self._reference._signer_acceptable(signer, stamp, match_key_aliases=True)
+            require(ok, f"signer refused: {why}")
+            return R.verify_detached_jws(unsigned, signature, self._reference.spki_der(signer), expected_signer)
+        except (ValueError, TypeError) as error:
+            return False, str(error)
+
     def verify_signature(self, unsigned: dict, signature: str, expected_signer: str | None = None):
+        if self._reference is not None:
+            return self._verify_tenured_signature(unsigned, signature, expected_signer)
         try:
             signer = R.parse_detached_jws(signature)[0]["kid"]
             require(signer in self._keys, "signer has no active registry SPKI")
@@ -191,12 +308,13 @@ class HiveAcceptance:
         payload, kind = frame["payload"], frame["kind"]
         stamp_key = "projected_utc" if kind == "hive.projection" else "created_utc"
         require(payload.get(stamp_key) == frame["utc"], "frame: payload/envelope time mismatch")
+        tenured = self.registry.owner_at(frame["utc"])
         if kind == "hive.declaration":
             H.validate_declaration(payload)
             require(frame["stream_id"] == payload["hive_rappid"] == self._hive,
                     "declaration: Mother Hive stream binding mismatch")
             owner = next(member["rappid"] for member in payload["members"] if member["role"] == "owner")
-            require(owner == self.registry.owner == signer, "declaration: owner authorization mismatch")
+            require(owner == tenured == signer, "declaration: owner authorization mismatch")
             if self._declaration is not None:
                 require(payload == self._declaration, "declaration: unaccepted policy replacement")
             return True
@@ -228,14 +346,14 @@ class HiveAcceptance:
                         "frame: producer cannot mutate the target area")
         elif kind == "hive.reconciliation":
             H.validate_reconciliation(payload, declaration)
-            require(signer == payload["resolver_rappid"] == self.registry.owner,
+            require(signer == payload["resolver_rappid"] == tenured,
                     "reconciliation: resolver is not authorized")
         elif kind == "hive.convergence":
             H.validate_convergence(payload, declaration)
-            require(frame["stream_id"] == self._hive and signer == self.registry.owner,
+            require(frame["stream_id"] == self._hive and signer == tenured,
                     "convergence: Mother Hive signer/stream authorization mismatch")
         elif kind == "hive.projection":
-            require(signer == self.registry.owner and frame["stream_id"] != self._hive,
+            require(signer == tenured and frame["stream_id"] != self._hive,
                     "projection: receipt signer/stream is not authorized")
             convergence = self._convergences.get(payload.get("convergence_payload_hash"))
             require(convergence is not None or (frame["seq"] == 0 and payload.get("status") in {"stale", "failed"}),
@@ -639,8 +757,10 @@ class HiveAcceptance:
                 require(isinstance(raw, bytes), "projection: expected artifact bytes")
                 if space == "rapp/1:egg-manifest":
                     egg, _ = R.read_egg(raw)
+                    created = egg.get("created_utc") if isinstance(egg, dict) else None
+                    owner = self.registry.owner_at(created) if R.utc_valid(created) else self.registry.owner
                     ok, step, why = R.verify_egg(raw, signature_verifier=self.registry.verify_signature,
-                                               estate_owner_rappid=self.registry.owner)
+                                               estate_owner_rappid=owner)
                     require(ok and egg["sig"] is not None and R.egg_address(egg) == value,
                             f"projection: signed egg refusal {step}: {why}")
                     for frame in self._retained.values():

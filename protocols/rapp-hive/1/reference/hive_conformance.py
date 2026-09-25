@@ -504,6 +504,23 @@ from authenticated_conformance import run
 authenticated = run()
 check("H20 real Ed25519 acceptance and schema/Python scalar vectors", authenticated.wasSuccessful())
 
+parent_pin = json.loads((repository_root / "RAPP1_PIN.json").read_text(encoding="utf-8"))
+registry_pin = json.loads((repository_root / "RAPP1_REGISTRY_PIN.json").read_text(encoding="utf-8"))
+reference_root = Path(__file__).resolve().parent
+check(
+    "H21 the profile reference carries the exact pinned RAPP/1 rapp.py and rapp_registry.py",
+    registry_pin["commit"] == parent_pin["commit"]
+    and hashlib.sha256((reference_root / "rapp.py").read_bytes()).hexdigest() == parent_pin["reference_sha256"]
+    and hashlib.sha256((reference_root / "rapp_registry.py").read_bytes()).hexdigest()
+    == registry_pin["reference_sha256"],
+)
+
+from succession_conformance import run as run_succession
+
+succession = run_succession()
+check("H22 opt-in RAPP/1 section 13.2 owner succession and compromise re-anchor vectors",
+      succession.wasSuccessful())
+
 print("-" * 72)
 passed = sum(results)
 print(f"{len(results)} Hive checks | {passed} PASS | {len(results) - passed} FAIL")

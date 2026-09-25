@@ -44,6 +44,14 @@ RAPP_WORK_PIN_KEYS = {
     "spec_path",
     "spec_sha256",
 }
+RAPP1_REGISTRY_PIN_KEYS = {
+    "commit",
+    "protocol",
+    "reference_path",
+    "reference_sha256",
+    "repository",
+    "schema",
+}
 
 
 def sha(path: Path) -> str:
@@ -75,6 +83,34 @@ require(
     "vendored RAPP/1 SPEC hash mismatch",
 )
 require(sha(VENDOR / "rapp.py") == pin["reference_sha256"], "vendored rapp.py hash mismatch")
+
+registry_pin = json.loads((ROOT / "RAPP1_REGISTRY_PIN.json").read_text(encoding="utf-8"))
+packaged_registry_pin = json.loads(
+    (ROOT / "src/rapp_work/data/RAPP1_REGISTRY_PIN.json").read_text(encoding="utf-8")
+)
+require(set(registry_pin) == RAPP1_REGISTRY_PIN_KEYS, "RAPP/1 registry reference pin is not closed")
+require(registry_pin == packaged_registry_pin, "root and packaged RAPP/1 registry reference pins differ")
+require(
+    registry_pin["schema"] == "rapp-work-parent-registry-pin/1"
+    and registry_pin["protocol"] == "rapp/1"
+    and registry_pin["repository"] == pin["repository"]
+    and registry_pin["commit"] == pin["commit"]
+    and registry_pin["reference_path"] == "rapp_registry.py",
+    "wrong RAPP/1 registry reference pin contract",
+)
+for reference_copy in (
+    VENDOR / "rapp_registry.py",
+    ROOT / "protocols/rapp-hive/1/reference/rapp_registry.py",
+    ROOT / ".github/skills/rapp-private-hive/vendor/hive/reference/rapp_registry.py",
+):
+    require(
+        sha(reference_copy) == registry_pin["reference_sha256"],
+        f"pinned rapp_registry.py copy differs: {reference_copy.relative_to(ROOT)}",
+    )
+require(
+    sha(ROOT / "protocols/rapp-hive/1/reference/rapp.py") == pin["reference_sha256"],
+    "Hive profile reference rapp.py differs from the pinned parent",
+)
 
 work_pin = json.loads((ROOT / "RAPP_WORK_PIN.json").read_text(encoding="utf-8"))
 packaged_work_pin = json.loads(

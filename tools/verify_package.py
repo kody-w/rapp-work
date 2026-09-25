@@ -38,6 +38,14 @@ RAPP_WORK_PIN_KEYS = {
     "spec_path",
     "spec_sha256",
 }
+RAPP1_REGISTRY_PIN_KEYS = {
+    "commit",
+    "protocol",
+    "reference_path",
+    "reference_sha256",
+    "repository",
+    "schema",
+}
 SDIST_METADATA = {
     "PKG-INFO",
     "setup.cfg",
@@ -93,13 +101,17 @@ def verify_wheel(path: Path) -> dict:
             "rapp_work/__main__.py",
             "rapp_work/py.typed",
             "rapp_work/data/RAPP1_PIN.json",
+            "rapp_work/data/RAPP1_REGISTRY_PIN.json",
             "rapp_work/data/RAPP_WORK_PIN.json",
             "rapp_work/data/api.json",
             "rapp_work/data/profiles.json",
             "rapp_work/data/rapp-work-1-SPEC.md",
             "rapp_work/data/rapp-work-1-schema.json",
             "rapp_work/_vendor_rapp1/rapp.py",
+            "rapp_work/_vendor_rapp1/rapp_registry.py",
+            "rapp_work/registry.py",
             "rapp_work/_protocols/rapp-hive/1/SPEC.md",
+            "rapp_work/_protocols/rapp-hive/1/reference/rapp_registry.py",
             "rapp_work/_protocols/rapp-federation/1/fixtures/ed25519-bilateral.json",
             "rapp_work/_legacy_skills/rapp-private-hive/scripts/deploy_hive.py",
             "rapp_work/_legacy_skills/rapp-workspace-manager/scripts/manage.py",
@@ -131,6 +143,25 @@ def verify_wheel(path: Path) -> dict:
             != pin["spec_sha256"]
         ):
             raise ValueError("wheel RAPP/1 parent pin mismatch")
+        registry_pin = closed_json(
+            archive.read("rapp_work/data/RAPP1_REGISTRY_PIN.json"),
+            RAPP1_REGISTRY_PIN_KEYS,
+            "wheel RAPP/1 registry reference pin",
+        )
+        if (
+            registry_pin["schema"] != "rapp-work-parent-registry-pin/1"
+            or registry_pin["protocol"] != "rapp/1"
+            or registry_pin["repository"] != pin["repository"]
+            or registry_pin["commit"] != pin["commit"]
+            or registry_pin["reference_path"] != "rapp_registry.py"
+        ):
+            raise ValueError("wheel RAPP/1 registry reference pin contract mismatch")
+        for packaged in (
+            "rapp_work/_vendor_rapp1/rapp_registry.py",
+            "rapp_work/_protocols/rapp-hive/1/reference/rapp_registry.py",
+        ):
+            if hashlib.sha256(archive.read(packaged)).hexdigest() != registry_pin["reference_sha256"]:
+                raise ValueError(f"wheel RAPP/1 registry reference mismatch: {packaged}")
         work_pin = closed_json(
             archive.read("rapp_work/data/RAPP_WORK_PIN.json"),
             RAPP_WORK_PIN_KEYS,
