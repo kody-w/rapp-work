@@ -65,8 +65,10 @@ receipt is accepted. Accepted history is never re-evaluated. `roster-revoked`
 marks unsettled frames that an earlier accepted roster authorized but the
 current one does not. A declaration never changes the registry: an admitted
 identity's frames verify only once the registry holds its key and stream
-genesis, and a removed member's key must stay registered so accepted history
-keeps verifying.
+genesis, so the owner registers them before the declaration and never records
+a quarantine caused only by a missing registry entry (a later registry would
+make `restore()` of that history fail closed). A removed member's key must stay
+registered so accepted history keeps verifying.
 
 `roster_declaration_conformance.py` holds the default-refusal, positive,
 refusal and registry-side vectors. It also replays every authenticated vector

@@ -240,6 +240,18 @@ class DefaultGateRefusesLaterDeclarations(unittest.TestCase):
             proposed.accept_declaration(same["frame_hash"])
         self.assertEqual(proposed.head, estate.mother)
 
+    def test_a_registered_genesis_not_signed_by_the_owner_is_refused_in_both_modes(self):
+        estate = Estate()
+        # Bob's key is registered and the registry names his frame as the Mother genesis, so only the declaration
+        # owner check can refuse it (proposal mutation M1 reaches the default path here).
+        forged = estate.frame("hive.declaration", estate.hive, estate.declaration, signer="bob")
+        self.assertEqual(estate.genesis[estate.hive], forged["frame_hash"])
+        for opt_in in (False, True):
+            with self.subTest(roster_declarations=opt_in), self.assertRaisesRegex(
+                    ValueError, "declaration: owner authorization mismatch"):
+                HiveAcceptance(estate.authority(), estate.hive, lambda address: estate.chains[address],
+                               roster_declarations=opt_in)
+
 
 class RosterDeclarationVectors(unittest.TestCase):
     """Proposal 0001 positive vectors, all with real Ed25519 signatures."""
@@ -852,31 +864,51 @@ class RosterDeclarationRefusals(unittest.TestCase):
                         gate.accept_declaration(convergence["frame_hash"])
 
 
+def admission_registries(estate):
+    """An outsider's frame, and registries that leave out or register its key and dimension-stream genesis."""
+    joined = estate.object("outsider", 20, ["outsider/key"])
+    outsider = estate.identities["outsider"]
+
+    def registry(sequence, *, admitted):
+        document = estate.registry(sequence)
+        if not admitted:
+            document["entries"] = [
+                entry for entry in document["entries"]
+                if outsider != entry.get("rappid") and entry.get("stream_id") != joined["stream_id"]
+            ]
+            document["sig"] = estate.sign({key: value for key, value in document.items() if key != "sig"})
+        return document
+
+    return joined, registry
+
+
 class RegistrySideOfRosterChanges(unittest.TestCase):
     """Proposal 0001: the roster names identities; the RAPP/1 section 13 registry verifies their keys and streams."""
 
+    def test_registry_first_admission(self):
+        estate = Estate()
+        joined, registry = admission_registries(estate)
+        # The owner's verifier already holds a registry with the identity's key and stream genesis (section 3 item 13).
+        gate = roster_gate(estate, registry(9, admitted=True))
+        estate.commit(gate, propose(estate, gate, estate.a, seconds=100))
+        gate.accept_declaration(declare(estate, gate, admit(estate, gate, 150, "outsider"))["frame_hash"])
+        proposal = propose(estate, gate, joined, seconds=200)
+        self.assertEqual(reasons(proposal), {joined["frame_hash"]: ("accepted", "verified")})
+        estate.commit(gate, proposal)
+        restored = roster_gate(estate, registry(9, admitted=True)).restore(gate.head["frame_hash"])
+        self.assertEqual(restored, gate.checkpoint())
+
     def test_registry_refresh_across_an_admission(self):
         estate = Estate()
-        joined = estate.object("outsider", 20, ["outsider/key"])
-        outsider = estate.identities["outsider"]
-
-        def registry(sequence, *, admitted):
-            document = estate.registry(sequence)
-            if not admitted:
-                document["entries"] = [
-                    entry for entry in document["entries"]
-                    if outsider != entry.get("rappid") and entry.get("stream_id") != joined["stream_id"]
-                ]
-                document["sig"] = estate.sign({key: value for key, value in document.items() if key != "sig"})
-            return document
-
+        joined, registry = admission_registries(estate)
         before = roster_gate(estate, registry(8, admitted=False))
         estate.commit(before, propose(estate, before, estate.a, seconds=100))
         before.accept_declaration(declare(estate, before, admit(estate, before, 150, "outsider"))["frame_hash"])
         # The roster names the identity, but without its registry key and stream genesis its frames cannot verify.
         self.assertEqual(reasons(propose(estate, before, joined, seconds=200)),
                          {joined["frame_hash"]: ("quarantined", "invalid-candidate")})
-        # Refresh: a higher owner-signed registry, a fresh gate, and restore() of the history with the declaration.
+        # No convergence records that quarantine, so a refresh still restores: a higher owner-signed registry, a
+        # fresh gate, and restore() of the history with the declaration.
         authority = estate.authority(registry(9, admitted=True), minimum_registry_seq=before.registry.sequence)
         after = HiveAcceptance(authority, estate.hive, lambda address: estate.chains[address],
                                roster_declarations=True)
@@ -887,6 +919,29 @@ class RegistrySideOfRosterChanges(unittest.TestCase):
         proposal = propose(estate, after, joined, seconds=200)
         self.assertEqual(reasons(proposal), {joined["frame_hash"]: ("accepted", "verified")})
         estate.commit(after, proposal)
+
+    def test_a_recorded_registry_quarantine_makes_a_later_refresh_fail_closed(self):
+        estate = Estate()
+        joined, registry = admission_registries(estate)
+        before = roster_gate(estate, registry(8, admitted=False))
+        estate.commit(before, propose(estate, before, estate.a, seconds=100))
+        before.accept_declaration(declare(estate, before, admit(estate, before, 150, "outsider"))["frame_hash"])
+        # The owner signs a convergence that records the quarantine caused only by the missing registry entries.
+        recorded = propose(estate, before, joined, seconds=200)
+        self.assertEqual(reasons(recorded), {joined["frame_hash"]: ("quarantined", "invalid-candidate")})
+        estate.commit(before, recorded)
+        # A registry that registers the key re-derives a different decision for that history: restore() fails
+        # closed and latches, so the owner must never record such a quarantine (section 3 item 13).
+        authority = estate.authority(registry(9, admitted=True), minimum_registry_seq=before.registry.sequence)
+        after = HiveAcceptance(authority, estate.hive, lambda address: estate.chains[address],
+                               roster_declarations=True)
+        with self.assertRaisesRegex(ValueError, "decisions differ"):
+            after.restore(before.head["frame_hash"])
+        with self.assertRaisesRegex(ValueError, "failed history recovery"):
+            after.checkpoint()
+        # The verifier that recorded it, and any other verifier on the old registry, still restores the history.
+        self.assertEqual(roster_gate(estate, registry(8, admitted=False)).restore(before.head["frame_hash"]),
+                         before.checkpoint())
 
     def test_removal_keeps_the_removed_members_registry_key(self):
         estate = Estate()

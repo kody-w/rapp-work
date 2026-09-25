@@ -40,7 +40,7 @@ stream genesis, and a removed member's key stays registered (§3 item 13).
 
 The reference implementation is opt-in: `HiveAcceptance(...,
 roster_declarations=True)`. The default gate still refuses every later
-declaration, exactly as today. 93 new vectors cover both modes, and 20
+declaration, exactly as today. 96 new vectors cover both modes, and 20
 controlled mutations each turn critical vectors red.
 
 ## 2. Context: what is true today
@@ -222,12 +222,28 @@ It holds, with six refinements (marked **R1** to **R6**).
     never the RAPP/1 §13 registry, and a registry change never changes the
     roster. A member still signs with a key found only in an active registry
     `spki` entry, on streams whose creation genesis is registered (§2).
-    - **Admission.** The owner first publishes a higher owner-signed registry
-      that registers the identity's key and the genesis of every stream it
-      will write (for an added channel, also its receipt stream). Verifiers
-      pick it up with a fresh gate and `restore()`. The reverse order is safe
-      but quarantines the identity's frames as `invalid-candidate` until the
-      refresh.
+    - **Admission.** Registry first, always. The owner first publishes a
+      higher owner-signed registry that registers the identity's key and the
+      genesis of every stream it will write (for an added channel, also its
+      receipt stream), adopts it in the verifier with which it signs
+      convergences (a fresh gate and `restore()`), and only then signs the
+      declaration. The order is required, not advisory. A convergence records
+      each candidate's decision as the deciding verifier's registry makes it,
+      and `restore()` re-derives every recorded decision under the restoring
+      verifier's registry. A convergence that records an identity's frame as
+      `invalid-candidate` only because the registry lacked its key or stream
+      genesis therefore breaks every verifier that later adopts a registry
+      registering them: its `restore()` finds that the decisions differ,
+      fails closed, and latches (vector
+      `test_a_recorded_registry_quarantine_makes_a_later_refresh_fail_closed`).
+      So the owner never records such a quarantine: until its own registry
+      registers the key and genesis, it leaves the identity's frames out of
+      its convergences (only unresolved conflict candidates must reappear,
+      `rapp-hive/1` §8.3). That hazard is a property of `rapp-hive/1`
+      acceptance on `main` too (a registry change that makes a recorded
+      quarantine verify, or a recorded acceptance fail, breaks `restore()`
+      under that registry); a later declaration only makes it easier to
+      reach, because admission is when a new key first appears.
     - **Removal** is a roster act, not a key act. The removed member's `spki`
       entry stays active. Deprecating it would retire the key for history too
       (§2): a verifier with that registry could no longer re-verify the Mother
@@ -298,9 +314,16 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 > A later declaration does not change the RAPP/1 §13 registry. A member is
 > still a keyed RAPPID: its frames verify only through an active registry
 > `spki` entry, on streams whose creation genesis is registered (RAPP/1 §10,
-> §13.3). Before admitting an identity, the owner **SHOULD** publish a registry
-> that registers its key and the creation genesis of every stream it will
-> write; until then its frames are quarantined. The owner **MUST NOT**
+> §13.3). Before admitting an identity, the owner **MUST** publish, and adopt
+> in the verifier with which it signs convergences, a registry that registers
+> its key and the creation genesis of every stream it will write. A
+> convergence **MUST NOT** record a frame as quarantined when the only reason
+> is that the deciding verifier's registry lacks the frame's signing key or
+> its stream's creation genesis; the owner leaves such a frame out of the
+> convergence until that registry registers them. A registry change that
+> makes a recorded quarantine verify, or makes a recorded acceptance fail,
+> makes every verifier holding it refuse to restore the Hive's history: its
+> `restore()` fails closed and latches. The owner **MUST NOT**
 > deprecate the `spki` entry of a key that signed accepted Hive history, other
 > than through a RAPP/1 §10 re-anchor, including when its identity is removed:
 > a verifier that cannot resolve that key cannot re-verify the Mother history.
@@ -617,15 +640,20 @@ Confirmed by the default-mode vectors and the registry vector:
   (Hive, world, owner, policy) or state that only grows (accepted
   convergences).
 - **Registry side (§3 item 13).** A roster change cannot make an unregistered
-  key verify: an admitted identity's frames stay `invalid-candidate` until a
-  registry refresh registers its key and stream genesis
-  (`test_registry_refresh_across_an_admission`). Deprecating a removed
-  member's key fails closed: a verifier with that registry refuses to restore
-  the Hive's own head and latches
-  (`test_removal_keeps_the_removed_members_registry_key`). That is safe, but
-  it stops that verifier from restoring the Hive, so the proposed text forbids
-  it. A compromise tombstone keeps accepted history verifiable and refuses the
-  key's later signatures, as today.
+  key verify: an admitted identity's frames stay `invalid-candidate` until the
+  deciding verifier's registry registers its key and stream genesis
+  (`test_registry_refresh_across_an_admission`); with the registry first, they
+  are accepted at once (`test_registry_first_admission`). Every registry
+  change that alters a recorded decision fails closed rather than
+  mis-verifying. Recording a missing-registry quarantine and then registering
+  the key makes a refreshed verifier refuse to restore the Hive and latch
+  (`test_a_recorded_registry_quarantine_makes_a_later_refresh_fail_closed`),
+  and deprecating a removed member's key does the same
+  (`test_removal_keeps_the_removed_members_registry_key`). Both are safe, but
+  they stop that verifier from restoring the Hive, so the proposed text
+  forbids both (registry first; never deprecate a key that signed accepted
+  history). A compromise tombstone keeps accepted history verifiable and
+  refuses the key's later signatures, as today.
 - **Signature variants.** A settled frame's exemption applies only to its
   exact verified bytes. A re-signed variant is re-checked for signer/producer
   binding in the walk (`test_resigned_variant_of_a_settled_frame_is_not_exempt`).
@@ -672,6 +700,8 @@ Confirmed by the default-mode vectors and the registry vector:
      builds a new `RegistryAuthority` with its persisted high-water mark as
      `minimum_registry_seq`, then a fresh `HiveAcceptance`, and `restore()`s
      the accepted Mother head. Then the owner signs the later declaration.
+     Until the owner's own verifier holds that registry, no convergence it
+     signs lists the identity's frames (§3 item 13).
   2. *Removal.* Sign the later declaration only, and keep the removed
      identity's `spki` entry active. Converge wanted in-flight work first
      (§3 item 6).
@@ -699,15 +729,17 @@ Confirmed by the default-mode vectors and the registry vector:
 ## 9. Conformance and test vectors
 
 `protocols/rapp-hive/1/reference/roster_declaration_conformance.py` contains
-93 vectors, all with real Ed25519 signatures over synthetic fixture keys.
+96 vectors, all with real Ed25519 signatures over synthetic fixture keys.
 `hive_conformance.py` runs it as check **H21**, and `tools/check.py` runs that.
 
-- **`DefaultGateRefusesLaterDeclarations` (4), normative today.** The default
+- **`DefaultGateRefusesLaterDeclarations` (5), normative today.** The default
   gate refuses `accept_declaration` without the opt-in and refuses a
   non-boolean opt-in. A later declaration offered as a convergence, or any
   convergence stacked on one, is refused while the old head can still advance.
   `restore()` of a history containing a later declaration fails closed and
-  latches. A byte-identical re-declaration is refused in both modes.
+  latches. A byte-identical re-declaration is refused in both modes. A
+  registered Mother genesis signed by a member key instead of the owner's is
+  refused in both modes, by the declaration owner check.
 - **`RosterDeclarationVectors` (20), proposal positives:**
   - same closed schema and envelope;
   - add a member, then accept their earlier-refused candidate;
@@ -766,15 +798,23 @@ Confirmed by the default-mode vectors and the registry vector:
     head;
   - declarations offered as catalog candidates, in both modes, and
     wrong-kind entry points.
-- **`RegistrySideOfRosterChanges` (2)**, the registry prerequisites of §3
+- **`RegistrySideOfRosterChanges` (4)**, the registry prerequisites of §3
   item 13. Unlike the other vectors, these build their own registries instead
   of pre-registering every fixture key and stream:
+  - *registry-first admission.* With the identity's key and dimension-stream
+    genesis registered before the declaration, its frame is accepted as soon
+    as the declaration is, and a fresh gate restores the result;
   - *a registry refresh across an admission.* Under a registry without the
     admitted identity's key and dimension-stream genesis, its frame is
-    `invalid-candidate` although the roster names it. A fresh gate on a higher
+    `invalid-candidate` although the roster names it. As long as no
+    convergence records that quarantine, a fresh gate on a higher
     owner-signed registry, with the old sequence as its high-water mark,
     restores the same history (the later declaration included) to the same
     checkpoint except the registry fields, and then accepts the frame;
+  - *a recorded registry quarantine.* Once a convergence records that
+    quarantine, the same refresh makes `restore()` fail closed ("decisions
+    differ") and latch, while a verifier on the old registry still restores
+    the history; this is why the proposed text requires the registry first;
   - *removal keeps the removed member's key.* Re-signing the registry with
     that key deprecated makes `restore()` of the Hive's own head fail closed
     ("decisions differ") and latch. With a compromise tombstone instead,
@@ -792,18 +832,22 @@ effect and the head are unchanged.
 
 Each mutation changed one expression in a scratch copy of
 `reference/hive_acceptance.py`, and both suites were run against the copy. The
-unmutated copy passed 93 of 93 roster vectors and 64 of 64 authenticated
+unmutated copy passed 96 of 96 roster vectors and 64 of 64 authenticated
 vectors. Under every mutation, the default-mode authenticated suite stayed
-64 of 64 green. For M1 to M7 and M9 to M19 that is expected, because they
-touch opt-in paths. M8 makes the proposal the default, so its green default
-suite shows that the proposal does not disturb existing vectors. M20 changes
-the base `RegistryAuthority`, so it reaches the default path too. The default
-suite stays green under it because no existing vector pins the retirement of a
-deprecated key; the new removal vector now does.
+64 of 64 green. For M2 to M7 and M9 to M19 that is expected, because they
+touch opt-in paths. M1 edits the declaration owner check, which also runs in
+default mode on the registered Mother genesis; no authenticated vector has a
+genesis signed by anyone but the owner, so the default-mode vector
+`test_a_registered_genesis_not_signed_by_the_owner_is_refused_in_both_modes`
+in the roster module now pins it. M8 makes the proposal the default, so its
+green default suite shows that the proposal does not disturb existing vectors.
+M20 changes the base `RegistryAuthority`, so it reaches the default path too.
+The default suite stays green under it because no existing vector pins the
+retirement of a deprecated key; the new removal vector now does.
 
 | ID | Mutation | Red roster vectors |
 | --- | --- | --- |
-| M1 | Declaration signer need not be the owner (`owner == registry.owner == signer` → `owner == registry.owner`) | `test_only_the_owner_signs_a_declaration` (4 subtests) |
+| M1 | Declaration signer need not be the owner (`owner == registry.owner == signer` → `owner == registry.owner`) | `test_only_the_owner_signs_a_declaration` (4 subtests) and `test_a_registered_genesis_not_signed_by_the_owner_is_refused_in_both_modes` (2 subtests, the default mode included) |
 | M2 | `accept_declaration` skips the single-next-Mother-frame check | `test_a_declaration_is_the_single_next_mother_frame` |
 | M3 | Declaration time may equal the head (`>` → `>=`) | `test_declaration_time_is_envelope_time_and_strictly_after_the_head`, `test_identical_redeclaration_is_not_a_successor_in_either_mode` |
 | M4 | No roster check at the acceptance position | 13 vectors (15 failures counting subtests): 10 proposal vectors and 3 replayed authenticated vectors (foreign Hive or world, sealed-room plaintext, unauthorized producer/viewer/area) |
@@ -819,7 +863,7 @@ deprecated key; the new removal vector now does.
 | M14 | Proposal-mode walk drops the payload shape check | `test_unvalidated_payload_shape_cannot_enter_ancestry` |
 | M15 | Roster revocations classified as ordinary invalid candidates | 9 vectors (6 fail, 3 error) |
 | M16 | Settled history is re-authorized against the roster in effect | `test_remove_member_quarantines_unsettled_frames_and_keeps_history`, `test_demotion_to_viewer_revokes_future_mutation_only`, `test_revoked_ancestry_cannot_block_or_latch_fork_evidence` |
-| M17 | `restore()` replays every Mother frame as a convergence | 5 vectors error (7 errors counting subtests): restore, reconciliation at a declaration head, the cached retired-channel receipt, and both registry vectors |
+| M17 | `restore()` replays every Mother frame as a convergence | 7 vectors (1 failure and 8 errors counting subtests): restore, reconciliation at a declaration head, the cached retired-channel receipt, and all four registry vectors |
 | M18 | No manifest while the Mother head is a declaration | 3 vectors error (channel switch, restore, the cached retired-channel receipt) |
 | M19 | `accept_projection` drops the acceptance-time channel check, so a walk cached under an earlier roster decides | `test_a_retired_channel_is_never_current_even_after_a_cached_walk` |
 | M20 | The base `RegistryAuthority` keeps a deprecated `spki` entry active (default path too) | `test_removal_keeps_the_removed_members_registry_key` |
@@ -908,11 +952,11 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
 10. **Q10, SDK exposure.** Should `rapp-work-sdk/1` expose roster declarations
     through its operations? This is out of scope here, and the SDK is
     unchanged.
-11. **Q11, registry keys of declared members.** The draft does not require a
-    declared member to hold an active registry key when the declaration is
-    accepted, because that would make a declaration's verdict depend on the
-    verifier's registry. Keep it operational guidance (§3 item 13), or make it
-    a checked rule for newly admitted identities?
+11. **Q11, registry keys of declared members.** The draft makes registry
+    first an owner duty (**MUST**, §3 item 13 and §4.1) but does not check it
+    when a declaration is accepted, because that would make a declaration's
+    verdict depend on the verifier's registry. Keep it an owner duty, or make
+    it a checked rule for newly admitted identities?
 
 ## 12. Owner actions needed
 
@@ -934,7 +978,7 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
    `29ead23` (`88184a7e…`). This branch changes that file, so refresh that pin
    when the reference ships; on activation the kit's `rapp-hive/1` SPEC pin
    moves too. This workstream does not edit the kit.
-7. The lead relays the G1 status change to the organism: `open` → `proposed`.
+7. The lead relays G1's new status word, `proposed`, to the organism.
 
 **Ready-to-file pull request text** (for the owner; this workstream opens no
 PR):
@@ -946,7 +990,7 @@ PR):
 > mode, `HiveAcceptance(..., roster_declarations=True)`. The default gate still
 > refuses every later declaration. There is no SPEC, schema or registry change;
 > activation needs the owner to accept the text and re-sign the registry. The
-> new check H21 has 93 vectors: default refusal, proposal positives and
+> new check H21 has 96 vectors: default refusal, proposal positives and
 > refusals, the registry side of roster changes, and a replay of all 56
 > authenticated vectors in proposal mode. 20 controlled mutations each turn
 > critical vectors red. The vendored `rapp-private-hive` copy moves to skill
@@ -1044,3 +1088,20 @@ If G1 is merged first, the same points apply in reverse: G6's merge replaces
   3, 4, 5, 6, 7, 8, 10 and 18
 - `SPEC.md` (`rapp-work/1`) §§6 and 11, `CONTRIBUTING.md`, `docs/RELEASE.md`
 - Organism gap G1 (source of the gap), and gaps G6 and G8
+
+## 16. Revision history
+
+- **Round 1** (`60cca1d`): the first draft and opt-in reference.
+- **Round 2** (`d577819`): answered the round-1 independent review (the
+  roster-in-effect channel check for receipts, demotion and key release, the
+  registry side of roster changes, skill version 3.2.1, the key-release model
+  wording, related proposals, and the estate-kit pin).
+- **Round 3** (this revision): answered the round-2 review. Admission is
+  registry-first as a **MUST**, and a convergence must never record a
+  quarantine caused only by a missing registry key or stream genesis, because
+  a later registry that registers them makes `restore()` fail closed and latch
+  (new vectors `test_registry_first_admission` and
+  `test_a_recorded_registry_quarantine_makes_a_later_refresh_fail_closed`;
+  the same hazard exists on `main`). A default-mode vector now pins the
+  declaration owner check on the registered genesis (mutation M1), and the
+  status relay names only the new status word.

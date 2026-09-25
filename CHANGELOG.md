@@ -10,7 +10,8 @@
   roles and room membership, add rooms, and switch channels. Roster authority
   is judged at the acceptance position. Accepted history is never re-evaluated.
   A declaration changes the roster, never the RAPP/1 registry; the proposal
-  gives the registry order for admissions and removals.
+  requires the registry first for an admission and keeps a removed member's
+  key registered.
 - The reference `HiveAcceptance` gains an explicit, keyword-only
   `roster_declarations=False` opt-in, `accept_declaration(frame_hash)`, and a
   read-only `declaration` property. With the opt-in, a projection receipt's
@@ -18,7 +19,7 @@
   The default gate still refuses every later declaration. Its behavior is
   unchanged, and the 56 existing authenticated vectors are unchanged.
 - Added `protocols/rapp-hive/1/reference/roster_declaration_conformance.py`
-  (93 vectors, run as Hive check H21). It covers default refusal, positive
+  (96 vectors, run as Hive check H21). It covers default refusal, positive
   and refusal vectors with real Ed25519 signatures, the registry side of
   roster changes, and a replay of every authenticated vector in proposal mode.
   Mirrored the reference into the vendored `rapp-private-hive` copy, moved
