@@ -46,6 +46,7 @@ payloads. New product behavior belongs in `src/rapp_work`.
 | `rapp_work.rapp1` | Exact pinned canonical Frame/canonicalization wrapper |
 | `rapp_work.profiles` | Canonical SDK parent descriptors plus distinct historical source-estate verification |
 | `rapp_work.workspace` | Workspace and pointer-only Organization models/templates |
+| `rapp_work.instructions` | Closed instruction-file set, bounded no-follow instruction scan, and instruction inventory |
 | `rapp_work.plans` | `FileAction`, `ReleasePlan`, and `SignedRelease` |
 | `rapp_work.hive` | Complete-lineage Hive vectors and high-water verification |
 | `rapp_work.release` | Bounded immutable release observations |
@@ -98,6 +99,19 @@ Effectful paths use descriptor-relative `openat`-style operations with
 `O_NOFOLLOW`. Authority files must be regular, single-link files. Private state
 uses mode 0700 directories and mode 0600 files on POSIX. Unsupported hosts
 refuse rather than silently falling back to a race-prone path API.
+
+## Instruction inventory
+
+AI instruction files (`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`,
+`.github/copilot-instructions.md`, skill and rule files, and the rest of the
+closed `rapp-work-instruction-set/1`) steer every AI that opens a workspace.
+The SDK-owned `.rapp-work/instructions.json`
+(`rapp-work-instruction-inventory/1`) records each one's path, byte length,
+and SHA-256. Verification rescans the tree with bounded, descriptor-relative,
+no-follow directory walks and refuses an edited, missing, unlisted, linked, or
+non-regular instruction file. The only acceptance path is a reviewed `update`
+plan applied with its exact SHA-256; the SDK never rewrites an owner's
+instruction file.
 
 ## Transport model
 

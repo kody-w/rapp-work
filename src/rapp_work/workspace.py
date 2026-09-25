@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import stat
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -27,12 +28,25 @@ from ._paths import (
     write_new,
 )
 from .constants import SDK_VERSION
-from .errors import require
+from .errors import Refusal, require
+from .instructions import (
+    INSTRUCTION_INVENTORY_PATH,
+    INSTRUCTION_SET_ID,
+    Entries,
+    inventory_record,
+    is_instruction_path,
+    observed_entries,
+    parse_inventory,
+    require_no_drift,
+    review,
+    scan_instruction_files,
+)
 from .plans import FileAction, ReleasePlan
 from .rapp1 import mint_rappid, rappid_parts, rappid_valid
 
 LABEL = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 WORKSPACE_KINDS = {"workspace", "organization"}
+SDK_SKILL_PATH = ".github/skills/rapp-work-sdk/SKILL.md"
 
 
 def _label(value: str, where: str, maximum: int = 64) -> str:
@@ -102,11 +116,19 @@ def _managed_record(files: dict[str, bytes]) -> dict[str, Any]:
     }
 
 
-def _integration_files(identity: dict[str, Any]) -> dict[str, bytes]:
+def _integration_files(
+    identity: dict[str, Any],
+    instructions: Mapping[str, bytes],
+) -> dict[str, bytes]:
     files = {
-        ".github/skills/rapp-work-sdk/SKILL.md": _integration_skill(),
+        SDK_SKILL_PATH: _integration_skill(),
         ".rapp-work/sdk.json": _json_file(_sdk_record(identity)),
     }
+    # The inventory describes the post-apply tree: SDK-owned instruction files
+    # with the bytes the SDK writes, every other instruction file as observed.
+    reviewed = {path: content for path, content in instructions.items() if path not in files}
+    reviewed.update({path: content for path, content in files.items() if is_instruction_path(path)})
+    files[INSTRUCTION_INVENTORY_PATH] = _json_file(inventory_record(reviewed))
     files[".rapp-work/managed.json"] = _json_file(_managed_record(files))
     return files
 
@@ -129,7 +151,12 @@ def _workspace_files(identity: dict[str, Any]) -> dict[str, bytes]:
         "SPEC.md": _workspace_spec(identity["kind"]),
         "rappid.json": _json_file(identity),
     }
-    files.update(_integration_files(identity))
+    files.update(
+        _integration_files(
+            identity,
+            {path: content for path, content in files.items() if is_instruction_path(path)},
+        )
+    )
     return files
 
 
@@ -412,7 +439,14 @@ def _read_managed(root: Path) -> tuple[dict[str, bytes], str | None]:
             "REFUSE_MANAGED_INVENTORY",
             "invalid managed file entry",
         )
-        content = read_regular(root / path_value)
+        destination = root / path_value
+        require(
+            destination.exists() or destination.is_symlink(),
+            "REFUSE_MANAGED_DRIFT",
+            "SDK-owned file is missing; automatic repair is refused",
+            path=path_value,
+        )
+        content = read_regular(destination)
         require(
             len(content) == entry["bytes"]
             and hashlib.sha256(content).hexdigest() == entry["sha256"],
@@ -430,7 +464,36 @@ def _read_managed(root: Path) -> tuple[dict[str, bytes], str | None]:
     return files, file_sha256(path)
 
 
-def plan_update(root: Path) -> ReleasePlan:
+def _prior_instructions(prior: Mapping[str, bytes]) -> Entries | None:
+    raw = prior.get(INSTRUCTION_INVENTORY_PATH)
+    return None if raw is None else parse_inventory(raw)
+
+
+def _verify_instructions(root: Path, prior: Mapping[str, bytes]) -> dict[str, Any]:
+    raw = prior.get(INSTRUCTION_INVENTORY_PATH)
+    require(
+        raw is not None,
+        "REFUSE_INSTRUCTION_INVENTORY_ABSENT",
+        "no SDK-owned instruction inventory; plan an update to review and record "
+        "the instruction files",
+        inventory=INSTRUCTION_INVENTORY_PATH,
+    )
+    assert raw is not None
+    recorded = parse_inventory(raw)
+    require_no_drift(
+        recorded,
+        observed_entries(scan_instruction_files(root)),
+        code="REFUSE_INSTRUCTION_DRIFT",
+        message="instruction files differ from the reviewed instruction inventory",
+    )
+    return {
+        "instruction_files": len(recorded),
+        "instruction_inventory_sha256": hashlib.sha256(raw).hexdigest(),
+        "instruction_set": INSTRUCTION_SET_ID,
+    }
+
+
+def plan_update_with_review(root: Path) -> tuple[ReleasePlan, dict[str, Any]]:
     root = assert_no_symlinks(absolute_path(root))
     identity = load_identity(root)
     require(
@@ -439,7 +502,8 @@ def plan_update(root: Path) -> ReleasePlan:
         "only workspaces and pointer-only organizations can adopt the SDK profile",
     )
     prior, managed_hash = _read_managed(root)
-    desired = _integration_files(identity)
+    prior_instructions = _prior_instructions(prior)
+    desired = _integration_files(identity, scan_instruction_files(root))
     actions: list[FileAction] = []
     for path, content in sorted(desired.items()):
         destination = root / path
@@ -508,13 +572,18 @@ def plan_update(root: Path) -> ReleasePlan:
             "root_identity": path_identity(root),
         },
     )
-    return ReleasePlan(
+    plan = ReleasePlan(
         operation="update",
         target=str(root),
         subject=subject,
         actions=tuple(actions),
         preconditions=preconditions,
     )
+    return plan, review(prior_instructions, parse_inventory(desired[INSTRUCTION_INVENTORY_PATH]))
+
+
+def plan_update(root: Path) -> ReleasePlan:
+    return plan_update_with_review(root)[0]
 
 
 def _unlink_regular(path: Path) -> None:
@@ -527,6 +596,51 @@ def _unlink_regular(path: Path) -> None:
         )
         os.unlink(path.name, dir_fd=parent)
         os.fsync(parent)
+
+
+def _require_reviewed_instructions(
+    plan: ReleasePlan,
+    root: Path,
+    desired: Mapping[str, bytes],
+) -> None:
+    current = parse_inventory(desired[INSTRUCTION_INVENTORY_PATH])
+    planned_actions = [action for action in plan.actions if action.path == INSTRUCTION_INVENTORY_PATH]
+    if planned_actions:
+        try:
+            reviewed = parse_inventory(planned_actions[0].content)
+        except Refusal as error:
+            raise Refusal(
+                "REFUSE_PLAN",
+                "update plan carries an unqualified instruction inventory",
+                {"cause": error.code},
+            ) from error
+        require_no_drift(
+            reviewed,
+            current,
+            code="REFUSE_PRECONDITION",
+            message="instruction files changed after the update plan was built",
+        )
+        return
+    recorded = root / INSTRUCTION_INVENTORY_PATH
+    require(
+        recorded.exists() or recorded.is_symlink(),
+        "REFUSE_PRECONDITION",
+        "instruction inventory disappeared after the update plan was built",
+        path=INSTRUCTION_INVENTORY_PATH,
+    )
+    raw = read_regular(recorded)
+    require_no_drift(
+        parse_inventory(raw),
+        current,
+        code="REFUSE_PRECONDITION",
+        message="instruction files changed after the update plan was built",
+    )
+    require(
+        raw == desired[INSTRUCTION_INVENTORY_PATH],
+        "REFUSE_PRECONDITION",
+        "instruction inventory changed after the update plan was built",
+        path=INSTRUCTION_INVENTORY_PATH,
+    )
 
 
 def _validate_update_plan(plan: ReleasePlan, root: Path) -> dict[str, Any]:
@@ -594,7 +708,8 @@ def _validate_update_plan(plan: ReleasePlan, root: Path) -> dict[str, Any]:
         "REFUSE_PRECONDITION",
         "update identity or filesystem binding changed",
     )
-    desired = _integration_files(identity)
+    desired = _integration_files(identity, scan_instruction_files(root))
+    _require_reviewed_instructions(plan, root, desired)
     current_managed = root / ".rapp-work/managed.json"
     if current_managed.exists() or current_managed.is_symlink():
         current_managed_sha = file_sha256(current_managed)
@@ -791,6 +906,7 @@ class Workspace:
             "REFUSE_SDK_PROFILE",
             "workspace SDK integration record differs from the qualified profile",
         )
+        instructions = _verify_instructions(self.root, prior)
         return {
             "kind": "workspace",
             "managed_files": len(prior),
@@ -799,6 +915,7 @@ class Workspace:
             "root": str(self.root),
             "status": "verified",
             "world_id": identity.get("world_id"),
+            **instructions,
         }
 
 
@@ -999,6 +1116,7 @@ class Organization:
             "organization descriptor differs from the pointer-only template",
         )
         pointers = self.pointers()
+        instructions = _verify_instructions(self.root, managed)
         return {
             "kind": "organization",
             "managed_files": len(managed),
@@ -1007,6 +1125,7 @@ class Organization:
             "root": str(self.root),
             "status": "verified",
             "world_id": identity["world_id"],
+            **instructions,
         }
 
 

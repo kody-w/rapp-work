@@ -152,6 +152,11 @@ See [the exact API surface](docs/API.md).
 - Filesystem effects use descriptor-relative no-follow operations and refuse
   symlinks, hardlinked authority files, unsafe types, stale preconditions, and
   unmanaged collisions.
+- Verification inventories AI instruction files (`AGENTS.md`, `CLAUDE.md`,
+  `GEMINI.md`, `.github/copilot-instructions.md`, skills, rules, and the rest
+  of `rapp-work-instruction-set/1`) and refuses an edited, missing, new,
+  linked, or non-regular one. A change is accepted only through a reviewed
+  `update` plan applied with its exact SHA-256.
 - Ambient Git, shell, cloud, SSH-agent, and provider credentials are not
   inherited.
 - DOGG remains PII-free. GODD remains private. Transport is evidence, never

@@ -106,6 +106,71 @@ def assert_no_symlinks(path: Path, *, allow_missing_leaf: bool = False) -> Path:
     return path
 
 
+def read_regular_at(
+    parent: int,
+    name: str,
+    *,
+    display: str,
+    limit: int = MAX_FILE_BYTES,
+    require_private: bool = False,
+) -> bytes:
+    """Read one regular, single-link file relative to an open directory, never following links."""
+    descriptor = os.open(
+        name,
+        _nofollow_flags(nonblock=True),
+        dir_fd=parent,
+    )
+    try:
+        info = os.fstat(descriptor)
+        require(
+            stat.S_ISREG(info.st_mode) and info.st_nlink == 1,
+            "REFUSE_PATH_TYPE",
+            "regular, non-hardlinked file required",
+            path=display,
+        )
+        if require_private and os.name != "nt":
+            require(
+                info.st_uid == os.geteuid() and stat.S_IMODE(info.st_mode) == 0o600,
+                "REFUSE_PERMISSIONS",
+                "private file must be owner-only mode 0600",
+                path=display,
+            )
+        require(
+            0 <= info.st_size <= limit,
+            "REFUSE_FILE_LIMIT",
+            "file exceeds the allowed byte limit",
+            path=display,
+            limit=limit,
+        )
+        chunks: list[bytes] = []
+        remaining = limit + 1
+        while remaining:
+            chunk = os.read(descriptor, min(remaining, 1024 * 1024))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        require(
+            len(data) <= limit,
+            "REFUSE_FILE_LIMIT",
+            "file exceeds the allowed byte limit",
+            path=display,
+            limit=limit,
+        )
+        after = os.fstat(descriptor)
+        require(
+            (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
+            == (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns),
+            "REFUSE_FILE_RACE",
+            "file changed while it was being read",
+            path=display,
+        )
+        return data
+    finally:
+        os.close(descriptor)
+
+
 def read_regular(
     path: Path,
     *,
@@ -115,60 +180,13 @@ def read_regular(
     path = absolute_path(path)
     try:
         with directory_fd(path.parent) as parent:
-            descriptor = os.open(
+            return read_regular_at(
+                parent,
                 path.name,
-                _nofollow_flags(nonblock=True),
-                dir_fd=parent,
+                display=str(path),
+                limit=limit,
+                require_private=require_private,
             )
-            try:
-                info = os.fstat(descriptor)
-                require(
-                    stat.S_ISREG(info.st_mode) and info.st_nlink == 1,
-                    "REFUSE_PATH_TYPE",
-                    "regular, non-hardlinked file required",
-                    path=str(path),
-                )
-                if require_private and os.name != "nt":
-                    require(
-                        info.st_uid == os.geteuid() and stat.S_IMODE(info.st_mode) == 0o600,
-                        "REFUSE_PERMISSIONS",
-                        "private file must be owner-only mode 0600",
-                        path=str(path),
-                    )
-                require(
-                    0 <= info.st_size <= limit,
-                    "REFUSE_FILE_LIMIT",
-                    "file exceeds the allowed byte limit",
-                    path=str(path),
-                    limit=limit,
-                )
-                chunks: list[bytes] = []
-                remaining = limit + 1
-                while remaining:
-                    chunk = os.read(descriptor, min(remaining, 1024 * 1024))
-                    if not chunk:
-                        break
-                    chunks.append(chunk)
-                    remaining -= len(chunk)
-                data = b"".join(chunks)
-                require(
-                    len(data) <= limit,
-                    "REFUSE_FILE_LIMIT",
-                    "file exceeds the allowed byte limit",
-                    path=str(path),
-                    limit=limit,
-                )
-                after = os.fstat(descriptor)
-                require(
-                    (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-                    == (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns),
-                    "REFUSE_FILE_RACE",
-                    "file changed while it was being read",
-                    path=str(path),
-                )
-                return data
-            finally:
-                os.close(descriptor)
     except Refusal:
         raise
     except OSError as error:

@@ -26,7 +26,7 @@ from .workspace import (
     apply_update,
     load_identity,
     plan_scaffold,
-    plan_update,
+    plan_update_with_review,
 )
 
 Operation = Callable[[dict[str, Any]], dict[str, Any]]
@@ -132,6 +132,7 @@ def _verify(inputs: dict[str, Any]) -> dict[str, Any]:
             assert legacy is not None
             subject = {
                 **legacy,
+                "instruction_inventory": "absent",
                 "status": "verified-legacy-identity-only",
             }
             return {
@@ -260,9 +261,10 @@ def _update(inputs: dict[str, Any]) -> dict[str, Any]:
     apply, plan_value, plan_sha256 = _apply_fields(item, operation="update")
     root = _root_input(item["root"])
     if not apply:
-        plan = plan_update(root)
+        plan, instruction_review = plan_update_with_review(root)
         return {
             "effects": False,
+            "instruction_review": instruction_review,
             "plan": plan.to_dict(),
             "plan_sha256": plan.sha256,
             "status": "planned",

@@ -40,6 +40,23 @@ migrate(inputs)
 For effectful operations, omitting `apply` returns a plan. `apply: true`
 requires both the complete plan object and its exact canonical SHA-256.
 
+### Instruction files
+
+`verify` on a Workspace or Organization also checks the SDK-owned instruction
+inventory (`rapp-work-sdk/1` §7). A verified subject adds
+`instruction_files`, `instruction_set`, and `instruction_inventory_sha256`.
+Refusals are `REFUSE_INSTRUCTION_INVENTORY_ABSENT`,
+`REFUSE_INSTRUCTION_INVENTORY`, `REFUSE_INSTRUCTION_DRIFT` (with `findings`
+of `path` and `reason`: `changed`, `missing`, or `unlisted`),
+`REFUSE_INSTRUCTION_PATH`, and `REFUSE_INSTRUCTION_SCAN_LIMIT`; none echoes
+file content.
+
+A planned `update` result adds `instruction_review`
+(`rapp-work-instruction-review/1`), listing each instruction path as `added`,
+`changed`, `removed`, or `unchanged` with prior and new byte lengths and
+SHA-256 values. It is derived from the plan for review; only the plan and its
+SHA-256 authorize an apply.
+
 ## Typed models
 
 ```python

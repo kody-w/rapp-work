@@ -23,7 +23,9 @@ The `MigrationPlan` binds:
 - `network: false`.
 
 Workspace content is not copied into the routing successor or printed into the
-plan. The successor carries an inert source pointer with the source binding.
+plan. The successor carries an inert source pointer with the source binding and
+an instruction inventory (`rapp-work-sdk/1` §7) of the instruction files it
+creates.
 
 ## Apply
 
@@ -72,3 +74,22 @@ legacy = private_hive_prepare()
 
 That compatibility surface preserves its existing profile and fixtures. New
 SDK migration does not duplicate or silently invoke it.
+
+## Adopting the instruction inventory in place
+
+A Workspace or Organization integrated before the instruction inventory
+existed keeps its files; `verify` refuses it with
+`REFUSE_INSTRUCTION_INVENTORY_ABSENT` until one reviewed update adds the
+inventory:
+
+```bash
+rapp-work update --root /absolute/path/workspace > update-plan.json
+# review result.instruction_review: every instruction path and its SHA-256
+rapp-work update --root /absolute/path/workspace \
+  --apply --plan update-plan.json --plan-sha256 '<exact result.plan_sha256>'
+```
+
+The plan creates `.rapp-work/instructions.json` and replaces the SDK-owned
+`.rapp-work/managed.json`; it never rewrites an instruction file. The same
+reviewed update is the only way to accept a later edit, addition, or removal of
+an instruction file.
