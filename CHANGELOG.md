@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased (proposal, not accepted)
+
+- Proposal 0011 (gap G11), documentation only: name the SDK's pointer-only
+  Organization the "workspace index", with the new record tokens
+  `rapp-work-workspace-index/1` and `rapp-work-workspace-index-pointers/1`,
+  while every `rapp-work-organization/1` and
+  `rapp-work-organization-pointers/1` record keeps verifying. See
+  `docs/proposals/0011-workspace-index-name.md`. No code, token, profile
+  text, pin or behavior changes. Intended releases if accepted: 1.1.0 (read
+  both forms) and 1.2.0 (write the new form, convert through migration).
+
 ## 1.0.0 — 2026-09-18
 
 - Replaced the standards-only front door with the installable, typed
