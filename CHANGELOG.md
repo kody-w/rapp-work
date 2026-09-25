@@ -25,6 +25,14 @@
   refuses reports `updated-unverified` with the refusal instead of hiding its
   effects. A tree without the record that cannot be inventoried is updated as
   SDK 1.0.0 would, and the review says why.
+- A recovery marker is never treated as evidence of review: a pending update
+  resumes only with the owner's saved plan and hash, a refused apply of
+  another plan shows the pending plan's `pending_instruction_review`, and every
+  apply refuses a plan that would unlist an SDK-owned inventory or misstates
+  the managed inventory it names.
+- One refusal changes code for every SDK tree: a missing SDK-owned file is
+  refused as `REFUSE_MANAGED_DRIFT` (SDK 1.0.0 refused it as
+  `REFUSE_PATH_UNSAFE` when reading it failed).
 - Scaffold and migration plans gain the inventory, so their canonical hashes
   differ for new plans.
 - Intended release 1.1.0. Not accepted; the owner decides. `SDK_VERSION` is

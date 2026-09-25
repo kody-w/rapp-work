@@ -155,14 +155,18 @@ instruction path when at least one of these holds:
    | `.cursor/rules` | ends with `.mdc` |
    | `.cursor/agents`, `.cursor/commands` | ends with `.md` |
    | `.codex/agents` | ends with `.md` or `.toml` |
+   | `.gemini/agents` | ends with `.md` |
    | `.gemini/commands` | ends with `.toml` |
 
 The rules apply at every depth of the scanned tree. These are not instruction
 paths in this set: files reached only by reference (imports, links written in
 instruction text, skill resources and scripts, and files that a configuration
-file names), environment files, and configuration that only runs commands or
-connects tools (hook files and MCP server lists). The meaning of
-`rapp-work-instruction-set/1` never changes; a wider set is a new token.
+file names), environment files, configuration that only runs commands or
+connects tools (hook files and MCP server lists), and memory that a tool
+writes for itself, such as Claude Code's `.claude/agent-memory/` and
+`.claude/agent-memory-local/` folders, which it loads only for a subagent whose
+definition asks for memory. The meaning of `rapp-work-instruction-set/1` never
+changes; a wider set is a new token.
 
 ### 7.2 Instruction scan
 
@@ -322,12 +326,21 @@ Apply requires the explicit request, the complete plan, and its exact SHA-256
 with `REFUSE_PRECONDITION`, naming each path, if the instruction files differ
 from the inventory that the plan leaves SDK-owned. An apply that resumes an
 interrupted apply of the same plan (its `rapp-work-update-recovery/1` marker
-exists) completes the reviewed writes without that rescan: it records nothing
-that was not reviewed, and the verification that closes it reports an
-instruction change made during the interruption. While a marker exists, a
-refused apply of another plan (`REFUSE_RECOVERY_BINDING`) names the marker and
-the pending plan's SHA-256 (`pending_plan_sha256`), and `REFUSE_MANAGED_DRIFT`
-and `REFUSE_MANAGED_COLLISION` name the marker as `recovery_pending`.
+exists) completes the reviewed writes without that rescan, and the
+verification that closes it reports an instruction change made during the
+interruption. A marker is not evidence of review: anyone who can write the
+tree can write one, so only the owner's own saved plan and SHA-256 resume it,
+and an implementation never advises applying the plan a marker holds. Every
+apply, resumed or not, refuses with `REFUSE_PLAN` a plan that would leave an
+SDK-owned instruction inventory unlisted, and with `REFUSE_PRECONDITION` a plan
+whose `managed_files` precondition differs from the entries of the managed
+inventory it names. While a marker exists, a refused apply of another plan
+(`REFUSE_RECOVERY_BINDING`) names the marker, the pending plan's SHA-256
+(`pending_plan_sha256`), and, as `pending_instruction_review`, the review
+object above computed for the pending plan (or `null` when the marker's plan
+cannot be read), so the owner can see what it would record; and
+`REFUSE_MANAGED_DRIFT` and `REFUSE_MANAGED_COLLISION` name the marker as
+`recovery_pending`.
 
 Every apply with effects ends with verification. When that verification
 refuses, for example because an instruction file changed after the pre-write

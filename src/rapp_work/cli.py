@@ -67,12 +67,6 @@ def _plan(path: Path | None) -> dict[str, Any] | None:
         result = value.get("result")
         if isinstance(result, dict) and isinstance(result.get("plan"), dict):
             return cast(dict[str, Any], result["plan"])
-    if (
-        isinstance(value, dict)
-        and value.get("schema") == "rapp-work-update-recovery/1"
-        and isinstance(value.get("plan"), dict)
-    ):
-        return cast(dict[str, Any], value["plan"])
     if isinstance(value, dict):
         return cast(dict[str, Any], value)
     raise Refusal("REFUSE_PLAN", "plan file must contain a plan object or plan result envelope")

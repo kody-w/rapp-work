@@ -109,16 +109,38 @@ removed and a new plan is reviewed.
 An interrupted update apply leaves `.rapp-work/update-recovery.json`, which
 holds the plan being applied and its SHA-256. While it exists, a refused apply
 of another plan names it (`REFUSE_RECOVERY_BINDING` with
-`pending_plan_sha256`), and managed-file refusals name it as
-`recovery_pending`. Resume by applying the same plan again; the CLI accepts the
-marker itself as the plan file:
+`pending_plan_sha256`, and `pending_instruction_review` showing what that plan
+would record), and managed-file refusals name it as `recovery_pending`.
+
+Resume by applying again the plan you reviewed and saved when you planned the
+update, with its SHA-256:
 
 ```bash
 rapp-work update --root /absolute/path/workspace \
-  --apply --plan /absolute/path/workspace/.rapp-work/update-recovery.json \
-  --plan-sha256 '<plan_sha256 from the marker>'
+  --apply --plan /absolute/path/reviewed-update-plan.json \
+  --plan-sha256 '<plan_sha256 you reviewed>'
 ```
+
+Never take the plan or its hash from the marker: anyone who can write the
+workspace can write a marker, and the CLI does not read one as a plan. If
+`pending_plan_sha256` is not a plan you created, inspect
+`.rapp-work/update-recovery.json` and its `pending_instruction_review`, remove
+the marker by hand, and plan again. Every apply also refuses a plan that
+would leave an SDK-owned instruction inventory unlisted.
 
 The resumed apply completes only the reviewed writes. If an instruction file
 changed during the interruption, the result is `updated-unverified` with the
 drift in `verification_refusal`; plan and review a new update to accept it.
+
+## Re-upgrading after an older SDK updated the workspace
+
+An update applied by an SDK without the instruction inventory rewrites
+`.rapp-work/managed.json` without it, so `.rapp-work/instructions.json` is
+left behind as an unowned file and verification reports
+`verified-without-instruction-inventory`. If no instruction file changed since
+then, the next update plan adopts the file unchanged. If one changed, the
+plan is refused with `REFUSE_MANAGED_COLLISION` for
+`.rapp-work/instructions.json`, because the SDK never replaces a file it does
+not own. Check that file (it records only paths, sizes, and hashes), remove it
+by hand, and plan again; the new plan records the current instruction files
+for your review.

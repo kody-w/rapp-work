@@ -14,8 +14,8 @@
 - **Intended release:** `rapp-work` 1.1.0, or 2.0.0 if the owner wants strict
   verification by default (Open question 1). The package version and
   `SDK_VERSION` are unchanged on this branch.
-- **Revision:** round 2. It answers the round-1 independent review; the
-  disposition of every finding is in §15.
+- **Revision:** round 3. It answers the round-1 and round-2 independent
+  reviews; the disposition of every finding is in §15.
 
 ## 1. Context: what is true today
 
@@ -110,8 +110,8 @@ because per-user and administrator files are outside the workspace.
 | AGENTS.md open standard | `AGENTS.md` at the root and in any subdirectory; the nearest one wins | rule 1 |
 | OpenAI Codex (AGENTS.md guide, skills, configuration, subagents) | `AGENTS.override.md`, then `AGENTS.md`, then configured fallback names, in each directory from the project root to the working directory; skills in `.agents/skills` from the working directory up to the repository root; project configuration `.codex/config.toml` (for example `model_instructions_file`, which names an instructions file); project custom agents `.codex/agents/*.toml` with `developer_instructions` | rules 1, 2 (`.codex/config.toml`), 3 (`.agents/skills`, `.codex/agents`) |
 | GitHub Copilot and VS Code (custom instructions support, customization cheat sheet, agent skills, VS Code agent customization) | `.github/copilot-instructions.md`; `.github/instructions/**/*.instructions.md`; `AGENTS.md` (nested with a setting), `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md`, `GEMINI.md`; `.claude/rules/*.md`; prompt files `.github/prompts/*.prompt.md`; custom agents `.github/agents/*.md` and `.claude/agents/*.md` (legacy `.github/chatmodes/*.chatmode.md`); skills in `.github/skills`, `.claude/skills`, `.agents/skills`; `.vscode/settings.json`, whose code-review, commit-message, and pull-request instruction settings take inline `text` or a `file`, and whose deprecated `chat.*Locations` settings add instruction, prompt, agent, and skill folders | rules 1, 2 (`.github/copilot-instructions.md`, `.vscode/settings.json`), 3 |
-| Claude Code (memory, skills, subagents, output styles, settings) | `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md` in the working directory and every ancestor at launch and in subdirectories on demand; `AGENTS.md` and `.claude/AGENTS.md`; `.claude/rules/**/*.md`, also nested; skills `.claude/skills/**/SKILL.md`, also nested; commands `.claude/commands/**/*.md`; subagents `.claude/agents/**/*.md`; output styles `.claude/output-styles/*.md`, which modify the system prompt; `.claude/settings.json` and `.claude/settings.local.json` (hooks whose output enters context, `autoMemoryDirectory`, `claudeMdExcludes`, `outputStyle`, plugins) | rules 1, 2 (`.claude/settings*.json`), 3 |
-| Gemini CLI (GEMINI.md, custom commands, skills, settings, system prompt) | `GEMINI.md` in the workspace directories, their parents, and any directory a tool touches; names configured by `context.fileName` in `.gemini/settings.json`, which overrides user settings; commands `.gemini/commands/**/*.toml`; skills `.gemini/skills/` or `.agents/skills/`; a full system-prompt override `.gemini/system.md` when `GEMINI_SYSTEM_MD` is set (which `.gemini/.env` can do) | rules 1, 2 (`.gemini/settings.json`, `.gemini/system.md`), 3 |
+| Claude Code (memory, skills, subagents, output styles, settings) | `CLAUDE.md`, `.claude/CLAUDE.md`, `CLAUDE.local.md` in the working directory and every ancestor at launch and in subdirectories on demand; `AGENTS.md` and `.claude/AGENTS.md`; `.claude/rules/**/*.md`, also nested; skills `.claude/skills/**/SKILL.md`, also nested; commands `.claude/commands/**/*.md`; subagents `.claude/agents/**/*.md` (a subagent that asks for `memory` also loads `.claude/agent-memory/<agent>/MEMORY.md` or `.claude/agent-memory-local/<agent>/MEMORY.md`, which it writes itself; excluded, see §7.1); output styles `.claude/output-styles/*.md`, which modify the system prompt; `.claude/settings.json` and `.claude/settings.local.json` (hooks whose output enters context, `autoMemoryDirectory`, `claudeMdExcludes`, `outputStyle`, plugins) | rules 1, 2 (`.claude/settings*.json`), 3 |
+| Gemini CLI (GEMINI.md, custom commands, skills, subagents, settings, system prompt) | `GEMINI.md` in the workspace directories, their parents, and any directory a tool touches; names configured by `context.fileName` in `.gemini/settings.json`, which overrides user settings; commands `.gemini/commands/**/*.toml`; skills `.gemini/skills/` or `.agents/skills/`; project subagents `.gemini/agents/*.md`, whose body becomes the subagent's system prompt (enabled by default); a full system-prompt override `.gemini/system.md` when `GEMINI_SYSTEM_MD` is set (which `.gemini/.env` can do) | rules 1, 2 (`.gemini/settings.json`, `.gemini/system.md`), 3 |
 | Cursor (rules, rules help, skills, skills help, subagents, 1.6 changelog, Bugbot) | `.cursor/rules/**/*.mdc` (a `.md` there is ignored), also nested; legacy `.cursorrules`; `AGENTS.md`, also nested; `CLAUDE.md`; skills in `.agents/skills`, `.cursor/skills` (recursive, also in nested project directories), and, for compatibility, `.claude/skills` and `.codex/skills`; subagents in `.cursor/agents`, `.claude/agents`, `.codex/agents`; commands `.cursor/commands/*.md`; Bugbot review rules `.cursor/BUGBOT.md`, at the root and nested | rules 1, 2 (`.cursor/BUGBOT.md`), 3 |
 | Agent Skills open standard | a skill is a folder whose `SKILL.md` holds its instructions; locations are chosen by each client | rule 3 |
 
@@ -294,9 +294,33 @@ Apply requires the explicit request, the whole plan, and its exact SHA-256.
   a tree with a pending marker and an edit stuck: the old plan was refused and
   every new plan was refused by the marker binding or by the half-written
   records. While a marker exists, a refused apply of another plan names the
-  pending plan's SHA-256, managed-file refusals name the marker, and the CLI
-  accepts the marker itself as `--plan`. `docs/MIGRATION.md` documents the
-  recovery.
+  pending plan's SHA-256 and shows, as `pending_instruction_review`, what that
+  plan would record, and managed-file refusals name the marker.
+  `docs/MIGRATION.md` documents the recovery.
+- **The marker is untrusted (round-2 finding 2).** Anyone who can write the
+  tree can write a marker for a plan of their own, so a marker is never
+  evidence of review. Round 2 advised "apply the pending plan stored in the
+  marker" and let the CLI take the plan from the marker; the round-2 review
+  showed that this let a planted marker record an unreviewed `AGENTS.md`, or
+  unlist the inventory with an SDK 1.0.0 plan. Round 3 removes both: the
+  refusal says to resume only with the plan the owner reviewed and saved, and
+  to remove a marker the owner did not create; the CLI no longer reads a
+  marker as a plan. Two structural checks now run on every apply, resumed or
+  not: a plan that would leave an SDK-owned inventory unlisted is refused
+  (`REFUSE_PLAN`), and so is a plan whose `managed_files` precondition does
+  not match the entries of the managed inventory it names
+  (`REFUSE_PRECONDITION`). A planted plan that keeps and changes the
+  inventory can still be applied by an owner who approves it, but only after
+  seeing its review; that is the same trust decision as approving any plan.
+- **Re-upgrading after a rollback (round-2 finding 3).** An update applied by
+  an SDK without this section rewrites `.rapp-work/managed.json` without the
+  inventory, which is then an unowned file. If no instruction file changed
+  meanwhile, the next plan adopts it unchanged. If one changed, the planned
+  record differs and §4's create-only rule refuses the unowned file as an
+  unmanaged collision; the refusal now says to check the stranded record,
+  remove it by hand, and plan again, and `docs/MIGRATION.md` documents it.
+  Letting a reviewed plan replace a stranded record would relax §4 for one
+  SDK-named path (open question 11).
 
 An edit to an SDK-owned instruction file stays SDK-owned drift and has no
 acceptance path. `update` never writes an owner's instruction file.
@@ -390,14 +414,18 @@ instruction path when at least one of these holds:
    | `.cursor/rules` | ends with `.mdc` |
    | `.cursor/agents`, `.cursor/commands` | ends with `.md` |
    | `.codex/agents` | ends with `.md` or `.toml` |
+   | `.gemini/agents` | ends with `.md` |
    | `.gemini/commands` | ends with `.toml` |
 
 The rules apply at every depth of the scanned tree. These are not instruction
 paths in this set: files reached only by reference (imports, links written in
 instruction text, skill resources and scripts, and files that a configuration
-file names), environment files, and configuration that only runs commands or
-connects tools (hook files and MCP server lists). The meaning of
-`rapp-work-instruction-set/1` never changes; a wider set is a new token.
+file names), environment files, configuration that only runs commands or
+connects tools (hook files and MCP server lists), and memory that a tool
+writes for itself, such as Claude Code's `.claude/agent-memory/` and
+`.claude/agent-memory-local/` folders, which it loads only for a subagent whose
+definition asks for memory. The meaning of `rapp-work-instruction-set/1` never
+changes; a wider set is a new token.
 
 ### 7.2 Instruction scan
 
@@ -557,12 +585,21 @@ Apply requires the explicit request, the complete plan, and its exact SHA-256
 with `REFUSE_PRECONDITION`, naming each path, if the instruction files differ
 from the inventory that the plan leaves SDK-owned. An apply that resumes an
 interrupted apply of the same plan (its `rapp-work-update-recovery/1` marker
-exists) completes the reviewed writes without that rescan: it records nothing
-that was not reviewed, and the verification that closes it reports an
-instruction change made during the interruption. While a marker exists, a
-refused apply of another plan (`REFUSE_RECOVERY_BINDING`) names the marker and
-the pending plan's SHA-256 (`pending_plan_sha256`), and `REFUSE_MANAGED_DRIFT`
-and `REFUSE_MANAGED_COLLISION` name the marker as `recovery_pending`.
+exists) completes the reviewed writes without that rescan, and the
+verification that closes it reports an instruction change made during the
+interruption. A marker is not evidence of review: anyone who can write the
+tree can write one, so only the owner's own saved plan and SHA-256 resume it,
+and an implementation never advises applying the plan a marker holds. Every
+apply, resumed or not, refuses with `REFUSE_PLAN` a plan that would leave an
+SDK-owned instruction inventory unlisted, and with `REFUSE_PRECONDITION` a plan
+whose `managed_files` precondition differs from the entries of the managed
+inventory it names. While a marker exists, a refused apply of another plan
+(`REFUSE_RECOVERY_BINDING`) names the marker, the pending plan's SHA-256
+(`pending_plan_sha256`), and, as `pending_instruction_review`, the review
+object above computed for the pending plan (or `null` when the marker's plan
+cannot be read), so the owner can see what it would record; and
+`REFUSE_MANAGED_DRIFT` and `REFUSE_MANAGED_COLLISION` name the marker as
+`recovery_pending`.
 
 Every apply with effects ends with verification. When that verification
 refuses, for example because an instruction file changed after the pre-write
@@ -606,10 +643,10 @@ instruction inventory is SDK-owned are explicit refusals (§7.4).
 | `rapp-work-instruction-review/1` | **New** derived output object in a planned `update` result (SPEC §7.5); not authority. |
 | `rapp-work-managed-files/1` | Unchanged key set, grammar, and meaning. New workspaces list one more SDK-owned file. |
 | `rapp-work-release-plan/1` | Unchanged shape. Scaffold, update, and migration plans may contain one more `FileAction`; the update precondition record keeps exactly `identity_sha256`, `managed_files`, `managed_sha256`, `root_identity`. |
-| `rapp-work-update-recovery/1`, migration tokens | Unchanged shapes. The CLI additionally accepts a recovery marker as the `--plan` file. |
+| `rapp-work-update-recovery/1`, migration tokens | Unchanged shapes. |
 | `rapp-work-sdk/1` record (`sdk.json`) and `schema.json` | Unchanged; `schema.json` and its pin are untouched. |
 | `verify` input | One more optional member, `require_instruction_inventory` (Boolean). The six operations, the other inputs, and their closedness are unchanged; SDK 1.0.0 refuses the member (`REFUSE_INPUT_KEYS`). `src/rapp_work/data/api.json` lists it, so the metadata that `status` returns lists it too. |
-| `rapp-work-result/1` envelope | Unchanged seven keys. The `verify` subject adds `instruction_inventory` always and, when verified, `instruction_files`, `instruction_set`, and `instruction_inventory_sha256`; a tree without an inventory gets the new subject status `verified-without-instruction-inventory`; a planned `update` result adds `instruction_review`; an applied update may have the new status `updated-unverified` with `verification_refusal`; three existing refusals gain detail members (`recovery_pending`; `marker` and `pending_plan_sha256`). Operation results are not closed by the envelope token. |
+| `rapp-work-result/1` envelope | Unchanged seven keys. The `verify` subject adds `instruction_inventory` always and, when verified, `instruction_files`, `instruction_set`, and `instruction_inventory_sha256`; a tree without an inventory gets the new subject status `verified-without-instruction-inventory`; a planned `update` result adds `instruction_review`; an applied update may have the new status `updated-unverified` with `verification_refusal`; three existing refusals gain detail members (`recovery_pending`; `marker`, `pending_plan_sha256`, and `pending_instruction_review`), and one refusal changes code: a missing SDK-owned file, which SDK 1.0.0 refuses as `REFUSE_PATH_UNSAFE` when reading it fails, is `REFUSE_MANAGED_DRIFT`. Operation results are not closed by the envelope token. |
 | Public operations and top-level API | Unchanged: the six operations and `__all__`. `Workspace.verify()` and `Organization.verify()` gain a keyword-only `require_instruction_inventory=False`. CLI `verify` gains `--require-instruction-inventory`. |
 | RAPP/1 (Art. 18) | No change to canonicalization, hashes, RAPPIDs, the eleven-key Frame, wire forms, or Eggs. The record is canonical JSON from the pinned canonicalizer (Art. 10). |
 
@@ -624,7 +661,10 @@ Hive and Federation profiles, and the legacy skill fixtures are untouched.
 **Default behavior for accepted artifacts.** For a tree without the new record,
 `verify` differs from SDK 1.0.0 only in the subject: `verified` becomes
 `verified-without-instruction-inventory` and `instruction_inventory: "absent"`
-is added; the envelope and every refusal are unchanged. Its next `update` plan
+is added; the envelope is unchanged, and so is every refusal except one: a
+missing SDK-owned file, which SDK 1.0.0 refuses as `REFUSE_PATH_UNSAFE` when
+reading it fails, is refused as `REFUSE_MANAGED_DRIFT`, the precise code that
+§3.3 relies on (still a refusal, before any effect). Its next `update` plan
 also adopts the record (reviewed like any integration change), unless the tree
 cannot be inventoried, when the plan is exactly SDK 1.0.0's. Scaffold and
 migration plans for new trees include the record, so their canonical hashes
@@ -720,8 +760,12 @@ plan in both. A completed 1.0.0 migration target is brought forward with
 - **Residual: what `/1` does not cover.** Configuration that only runs
   commands or connects tools (hook files, MCP server lists), environment
   files, files reached by reference (imports, skill resources, files named by
-  a reviewed setting), per-user and administrator files, and tools outside
-  §3.1. An attacker who can add a hook file can run commands without touching
+  a reviewed setting), memory that a tool writes for itself (Claude Code's
+  subagent memory under `.claude/agent-memory/` and
+  `.claude/agent-memory-local/`: inventorying it would report every session
+  as drift, and it is loaded only for a subagent whose definition, itself an
+  instruction file, asks for memory), per-user and administrator files, and
+  tools outside §3.1. An attacker who can add a hook file can run commands without touching
   an instruction file; that is a separate integrity class (Open question 3).
 - **Time of check and time of use.** A fresh apply rescans before the first
   write and refuses on any difference; a change after that rescan makes the
@@ -771,17 +815,22 @@ Revert the branch (or do not release it). Trees keep verifying under SDK
 1.0.0, which checks `.rapp-work/instructions.json` only as another SDK-owned
 file; an SDK 1.0.0 `update` offers one reviewed plan that drops the record from
 the owned set. No instruction file is ever modified in either direction.
-Re-upgrading adopts the untouched record in one reviewed plan (§5).
+Re-upgrading adopts the untouched record in one reviewed plan (§5) when no
+instruction file changed in between. When one did, the stranded record is an
+unmanaged collision: the owner checks it, removes it by hand, and plans again
+(§3.5, `docs/MIGRATION.md`, test
+`test_an_inventory_stranded_by_an_older_sdk_names_its_recovery`).
 
 ## 9. Conformance and test vectors
 
-`tests/test_instruction_inventory.py`: 58 test functions, 207 cases with
+`tests/test_instruction_inventory.py`: 62 test functions, 217 cases with
 parameters, using the `sandbox` fixture.
 
 - Positive: scaffold then verify, with exact record bytes and the managed
-  listing; 70 positive and 40 negative path vectors covering every §7.1 rule,
+  listing; 72 positive and 43 negative path vectors covering every §7.1 rule
+  (Gemini CLI subagents and Claude Code's excluded subagent memory included),
   case, width, Unicode case-fold, and default-ignorable variants, and names
-  with colon, backslash, and tab; nested and pattern files within bounds (35
+  with colon, backslash, and tab; nested and pattern files within bounds (36
   paths, including every new set member and depth exactly 32); in-tree links at
   instruction paths (`CLAUDE.md -> AGENTS.md`) and at container positions
   (`.claude/skills -> ../skills`, `.cursor/skills`, `.vscode`); in-tree links
@@ -807,7 +856,11 @@ parameters, using the `sandbox` fixture.
 - Effects and recovery: a change after the pre-write rescan
   (`updated-unverified`); an interrupted protected update resumed after an
   edit; an interrupted 1.0.0 adoption resumed after an edit; a foreign plan
-  naming the pending one; the CLI resuming from the marker file.
+  naming the pending one and showing its review; the CLI resuming with the
+  owner's saved plan and refusing the marker as a plan; a planted marker shown
+  for review and never advised; a plan that would unlist an owned inventory,
+  applied fresh and planted in a marker; a resumed plan that misstates the
+  managed inventory; an inventory stranded by an older SDK and its recovery.
 - Compatibility: four layouts that cannot be inventoried (a directory link that
   leaves the tree, Claude Code's shared-rules link, an unreadable directory, a
   scan bound) keep SDK 1.0.0 verification and update behavior, including after
@@ -830,17 +883,17 @@ byte-for-byte (the harness verifies restoration by SHA-256):
 | M6 entry bound removed | red: 3 failed | `test_directory_listing_stops_at_the_entry_bound`, `test_scan_entry_bound_is_refused`, and 1 more |
 | M7 listing materialized before the entry bound | red: 1 failed | `test_directory_listing_stops_at_the_entry_bound` |
 | M8 per-file byte bound removed (generic read limit remains) | red: 1 failed | `test_instruction_file_byte_bound_is_refused` |
-| M9 case/Unicode folding removed | red: 84 failed | `test_change_after_the_prewrite_rescan_is_reported_with_the_effects`, `test_cli_resumes_from_the_recovery_marker`, and 37 more |
+| M9 case/Unicode folding removed | red: 86 failed | `test_a_planted_marker_is_shown_for_review_and_never_advised`, `test_an_inventory_stranded_by_an_older_sdk_names_its_recovery`, and 39 more |
 | M10 folding reduced to str.lower | red: 12 failed | `test_default_ignorable_code_points_are_removed_before_matching`, `test_instruction_set_positive_vectors`, and 1 more |
 | M11 default-ignorable code points kept | red: 10 failed | `test_default_ignorable_code_points_are_removed_before_matching`, `test_instruction_set_positive_vectors`, and 1 more |
 | M12 inventory may list non-instruction paths | red: 1 failed | `test_malformed_inventory_is_refused` |
 | M13 non-canonical inventory accepted | red: 1 failed | `test_malformed_inventory_is_refused` |
 | M14 verify trusts the inventory without scanning | red: 50 failed | `test_change_after_the_prewrite_rescan_is_reported_with_the_effects`, `test_consistent_rewrite_that_drops_an_entry_is_still_refused`, and 29 more |
 | M15 strict opt-in ignored | red: 5 failed | `test_cli_verify_accepts_the_strict_flag`, `test_sdk_1_0_0_and_bare_organizations_verify_weakly_and_adopt`, and 3 more |
-| M16 tree without inventory reported as plainly verified | red: 11 failed | `test_cli_verify_accepts_the_strict_flag`, `test_forged_plan_that_drops_the_inventory_is_refused`, and 6 more |
+| M16 tree without inventory reported as plainly verified | red: 12 failed | `test_an_inventory_stranded_by_an_older_sdk_names_its_recovery`, `test_cli_verify_accepts_the_strict_flag`, and 7 more |
 | M17 apply-time instruction replay removed | red: 4 failed | `test_forged_update_plan_inventory_is_refused`, `test_instruction_change_between_plan_and_apply_is_refused_before_writes` |
 | M18 update apply hash gate removed | red: 1 failed | `test_update_reinventories_exact_bytes_and_requires_the_exact_plan_hash` |
-| M19 scaffold omits instruction files from the inventory | red: 24 failed | `test_deleted_inventoried_instruction_file_is_refused_as_missing`, `test_drift_report_is_bounded_and_counts_every_finding`, and 22 more |
+| M19 scaffold omits instruction files from the inventory | red: 26 failed | `test_a_plan_that_unlists_an_owned_inventory_is_refused`, `test_deleted_inventoried_instruction_file_is_refused_as_missing`, and 23 more |
 | M20 missing SDK-owned file reported imprecisely | red: 1 failed | `test_deleted_inventory_is_refused_without_automatic_repair` |
 | M21 directory links leaving the tree accepted | red: 12 failed | `test_links_that_expose_unscanned_content_are_refused`, `test_trees_that_cannot_be_inventoried_keep_sdk_1_0_0_behaviour` |
 | M22 container links not traversed | red: 4 failed | `test_container_link_loops_are_refused`, `test_in_tree_container_links_are_traversed_at_their_link_paths` |
@@ -849,13 +902,19 @@ byte-for-byte (the harness verifies restoration by SHA-256):
 | M25 link targets through .git accepted | red: 1 failed | `test_links_that_expose_unscanned_content_are_refused` |
 | M26 protected tree tolerates an incomplete scan when planning | red: 22 failed | `test_hardlinked_instruction_files_are_refused`, `test_links_that_expose_unscanned_content_are_refused`, and 3 more |
 | M27 post-write verification refusal hides the effects | red: 4 failed | `test_change_after_the_prewrite_rescan_is_reported_with_the_effects`, `test_interrupted_adoption_of_a_1_0_0_workspace_resumes_after_an_edit`, and 2 more |
-| M28 resumed apply re-refuses instruction edits | red: 3 failed | `test_interrupted_adoption_of_a_1_0_0_workspace_resumes_after_an_edit`, `test_resume_is_the_documented_way_out_and_a_foreign_plan_names_the_pending_one`, and 1 more |
-| M29 foreign-plan refusal hides the pending plan | red: 1 failed | `test_resume_is_the_documented_way_out_and_a_foreign_plan_names_the_pending_one` |
+| M28 resumed apply re-refuses instruction edits | red: 3 failed | `test_interrupted_adoption_of_a_1_0_0_workspace_resumes_after_an_edit`, `test_resume_uses_the_owners_saved_plan_and_a_foreign_plan_shows_the_pending_one`, and 1 more |
+| M29 foreign-plan refusal hides the pending plan | red: 2 failed | `test_a_planted_marker_is_shown_for_review_and_never_advised`, `test_resume_uses_the_owners_saved_plan_and_a_foreign_plan_shows_the_pending_one` |
 | M30 directory-link identity check removed | red: 1 failed | `test_container_link_resolving_elsewhere_than_its_text_is_refused` |
 | M31 recovery hint removed | red: 2 failed | `test_interrupted_adoption_of_a_1_0_0_workspace_resumes_after_an_edit`, `test_resumed_update_completes_the_reviewed_writes_and_reports_later_edits` |
 | M32 absent-inventory planning tolerance removed | red: 4 failed | `test_trees_that_cannot_be_inventoried_keep_sdk_1_0_0_behaviour` |
+| M33 Gemini project subagents left out of the set | red: 3 failed | `test_instruction_set_positive_vectors`, `test_nested_and_pattern_files_within_bounds_are_inventoried` |
+| M34 a plan that unlists an owned inventory is accepted | red: 2 failed | `test_a_plan_that_unlists_an_owned_inventory_is_refused` |
+| M35 managed-files precondition not checked against the inventory | red: 1 failed | `test_a_resumed_plan_that_misstates_the_managed_inventory_is_refused` |
+| M36 foreign-plan refusal hides what the pending plan records | red: 2 failed | `test_a_planted_marker_is_shown_for_review_and_never_advised`, `test_resume_uses_the_owners_saved_plan_and_a_foreign_plan_shows_the_pending_one` |
+| M37 the CLI takes a plan from a recovery marker again | red: 1 failed | `test_cli_resumes_with_the_saved_plan_and_never_takes_one_from_the_marker` |
+| M38 a stranded inventory's collision names no recovery | red: 1 failed | `test_an_inventory_stranded_by_an_older_sdk_names_its_recovery` |
 
-All 32 mutations turned the suite red; the harness restored and re-hashed the sources afterwards.
+All 38 mutations turned the suite red (round 3 reran M1 to M32 on the final code and added M33 to M38); the harness restored and re-hashed the sources afterwards.
 
 ## 10. Reference implementation and gating
 
@@ -925,6 +984,12 @@ local mirror of its job passed on Python 3.13 and 3.10 (§12).
    nested RAPP roots and record them as reviewed boundaries?
 10. **JSON Schema.** Publish a schema for `rapp-work-instruction-inventory/1`
     next to `protocols/rapp-work-sdk/1/schema.json`?
+11. **Stranded record.** After an SDK without this section stops listing the
+    inventory and an instruction file then changes, re-upgrading needs the
+    owner to remove the stranded `.rapp-work/instructions.json` by hand (§3.5).
+    Should a reviewed plan instead replace a stranded record that parses as
+    `rapp-work-instruction-inventory/1`, relaxing §4's create-only rule for
+    that one SDK-named path?
 
 ## 12. Evidence
 
@@ -935,10 +1000,11 @@ All commands ran in this branch's own clone or its scratch directory.
 - Local mirror of the `kody-w/rapp-work` workflow job (`tools/check.py`,
   `pytest`, `ruff`, `mypy`, `tools/release_inventory.py --check`,
   `python -m build`, `tools/verify_package.py`) on Python 3.13 and 3.10:
-  `ALL RAPP-WORK CI STEPS PASS: 3.13 3.10`; pytest `376 passed, 69 subtests
+  `ALL RAPP-WORK CI STEPS PASS: 3.13 3.10`; pytest `386 passed, 69 subtests
   passed` on each (baseline `origin/main`: `169 passed, 69 subtests passed`).
-- Compatibility table (§5): SDK 1.0.0 and this branch, 50 scenarios.
-- Mutation table (§9): 32 of 32 red.
+- Compatibility table (§5): SDK 1.0.0 and this branch, 50 scenarios, rerun in
+  round 3 with identical results.
+- Mutation table (§9): 38 of 38 red.
 - Privacy scan of the branch diff against `origin/main`: `0 finding(s)`.
 
 ## 13. Owner actions needed
@@ -1005,7 +1071,9 @@ Recommended merge order: G6, G3, **G7**, G2, G4, G17 (G11 whenever it is
 accepted). G7 before G2 lets the move protection import the instruction
 classifier; G4 and G17 then consume the inventory and the new verify fields.
 
-## 15. Disposition of the round-1 review
+## 15. Disposition of the independent reviews
+
+Round 1 (answered in round 2, `48f4741`):
 
 1. Cursor skill folders: fixed; every vendor row re-checked, and the set gained
    `.cursor/skills`, `.codex/skills`, `.gemini/skills`, `.cursor/commands`,
@@ -1024,12 +1092,39 @@ classifier; G4 and G17 then consume the inventory and the new verify fields.
    recordable name are accepted, 1.0.0 verification and update are unaffected,
    and the remaining refusals are listed in §6 and Open questions 5 and 6.
 7. Refusal after writes: fixed; `updated-unverified` (§3.5).
-8. Stuck recovery: fixed; resumable after an edit, recovery hints, CLI marker
-   input, and documentation (§3.5).
+8. Stuck recovery: fixed; resumable after an edit, recovery hints, and
+   documentation (§3.5). Round 2 also let the CLI read the marker as a plan;
+   round 3 withdraws that (round-2 finding 2).
 9. Ignorable code points: fixed; pinned Unicode 16.0.0 list (§3.1).
 10. Unbounded directory read: fixed; counted while listing.
 11. `REFUSE_INSTRUCTION_SCAN`: specified in SPEC §7.2, documented in
     `docs/API.md`, and tested.
+
+Round 2 (answered in round 3, this revision):
+
+1. (high) Gemini CLI project subagents: fixed; `.gemini/agents` with files
+   ending in `.md` is a rule-3 container (SPEC §7.1, `CONTAINERS`, §3.1), with
+   vectors. Every tool's agent and subagent folders were re-audited against
+   the vendor documentation: `.github/agents`, `.claude/agents`,
+   `.cursor/agents`, `.codex/agents`, and `.gemini/agents` are now all
+   covered; Copilot's `~/.copilot/agents` and each tool's other agent folders
+   are per-user.
+2. (medium) Untrusted marker: fixed (§3.5). The refusal no longer advises
+   applying the marker's plan and shows `pending_instruction_review`; the CLI
+   no longer reads a marker as a plan; every apply refuses a plan that would
+   unlist an SDK-owned inventory (`REFUSE_PLAN`) or whose `managed_files`
+   precondition misstates the managed inventory (`REFUSE_PRECONDITION`);
+   `docs/MIGRATION.md` says to resume only with the saved plan and to remove a
+   marker you did not create. Tests cover the planted marker, the unlisting
+   plan (fresh and planted), and the misstated precondition.
+3. (medium) Rollback and re-upgrade: fixed by text and a named recovery
+   (§3.5, §8, `docs/MIGRATION.md`): the collision now says how to recover, a
+   test walks through it, and open question 11 asks whether a reviewed plan
+   should replace a stranded record instead.
+4. (low) Refusal code for a missing SDK-owned file: disclosed in §5 and the
+   CHANGELOG.
+5. (low) Claude Code subagent memory: named as an exclusion in SPEC §7.1 and
+   §6.
 
 ## 16. References
 

@@ -81,6 +81,7 @@ CONTAINERS: tuple[tuple[str, str, str, str], ...] = (
     (".cursor", "commands", "suffix", ".md"),
     (".cursor", "rules", "suffix", ".mdc"),
     (".cursor", "skills", "name", "skill.md"),
+    (".gemini", "agents", "suffix", ".md"),
     (".gemini", "commands", "suffix", ".toml"),
     (".gemini", "skills", "name", "skill.md"),
     (".github", "agents", "suffix", ".md"),

@@ -18,6 +18,7 @@ import rapp_work.instructions as instructions_module
 import rapp_work.workspace as workspace_module
 from rapp_work import Organization, ReleasePlan, Workspace, migrate, scaffold, update, verify
 from rapp_work._json import canonical_bytes, canonical_text, strict_json_loads
+from rapp_work.constants import SDK_VERSION
 from rapp_work.errors import Refusal
 from rapp_work.instructions import (
     INSTRUCTION_INVENTORY_PATH,
@@ -29,6 +30,7 @@ from rapp_work.instructions import (
     is_instruction_path,
     scan_instruction_files,
 )
+from rapp_work.plans import FileAction
 from rapp_work.rapp1 import mint_rappid
 from rapp_work.workspace import SDK_SKILL_PATH, _managed_record
 
@@ -606,6 +608,8 @@ def test_git_directory_is_not_scanned(sandbox: Path) -> None:
         ".cursor/BUGBOT.md",
         "backend/.cursor/BUGBOT.md",
         ".gemini/commands/git/commit.toml",
+        ".gemini/agents/security-auditor.md",
+        "services/api/.gemini/agents/helper.md",
         ".gemini/settings.json",
         ".gemini/system.md",
         ".vscode/settings.json",
@@ -662,7 +666,10 @@ def test_instruction_set_positive_vectors(path: str) -> None:
         ".codex/hooks.json",
         ".codex/agents/notes.txt",
         ".gemini/commands/git/commit.md",
+        ".gemini/agents/helper.toml",
         ".gemini/.env",
+        ".claude/agent-memory/reviewer/MEMORY.md",
+        ".claude/agent-memory-local/reviewer/MEMORY.md",
         ".gemini/policies/default.toml",
         ".vscode/launch.json",
         ".vscode/mcp.json",
@@ -750,6 +757,7 @@ def test_nested_and_pattern_files_within_bounds_are_inventoried(sandbox: Path) -
         ".cursorrules",
         ".cursor/rules/frontend/components.mdc",
         ".gemini/commands/git/commit.toml",
+        ".gemini/agents/security-auditor.md",
         ".gemini/skills/deploy/SKILL.md",
         ".gemini/settings.json",
         ".gemini/system.md",
@@ -1041,7 +1049,7 @@ def test_resumed_update_completes_the_reviewed_writes_and_reports_later_edits(
     assert verified(root)["instruction_files"] == 2
 
 
-def test_resume_is_the_documented_way_out_and_a_foreign_plan_names_the_pending_one(
+def test_resume_uses_the_owners_saved_plan_and_a_foreign_plan_shows_the_pending_one(
     sandbox: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1055,9 +1063,12 @@ def test_resume_is_the_documented_way_out_and_a_foreign_plan_names_the_pending_o
     other = planned_update(root)
     refusal = refusal_of(apply_update(root, other))
     assert refusal["code"] == "REFUSE_RECOVERY_BINDING"
-    assert refusal["details"] == {"marker": MARKER, "pending_plan_sha256": planned["plan_sha256"]}
-    marker = strict_json_loads((root / MARKER).read_bytes())
-    resumed = apply_update(root, {"plan": marker["plan"], "plan_sha256": marker["plan_sha256"]})
+    assert "only with that plan as you reviewed and saved it" in refusal["message"]
+    assert "stored in the marker" not in refusal["message"]
+    details = refusal["details"]
+    assert (details["marker"], details["pending_plan_sha256"]) == (MARKER, planned["plan_sha256"])
+    assert details["pending_instruction_review"] == planned["instruction_review"]
+    resumed = apply_update(root, planned)
     assert resumed["result"]["status"] == "updated-unverified"
     adopt(root)
     assert verified(root)["instruction_files"] == 3
@@ -1087,41 +1098,149 @@ def test_interrupted_adoption_of_a_1_0_0_workspace_resumes_after_an_edit(
     assert verified(root, require_instruction_inventory=True)["instruction_files"] == 2
 
 
-def test_cli_resumes_from_the_recovery_marker(
+def test_cli_resumes_with_the_saved_plan_and_never_takes_one_from_the_marker(
     sandbox: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = scaffolded(sandbox / "workspace")
     write(root, "CLAUDE.md", "reviewed edit\n")
     planned = planned_update(root)
+    saved = sandbox / "reviewed-plan.json"
+    saved.write_bytes(canonical_bytes(update({"root": str(root)})))
     restore = interrupt_at(monkeypatch, MANAGED)
     assert refusal_of(apply_update(root, planned))["code"] == "REFUSE_RUNTIME"
     restore()
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "rapp_work",
-            "update",
-            "--root",
-            str(root),
-            "--apply",
-            "--plan",
-            str(root / MARKER),
-            "--plan-sha256",
-            planned["plan_sha256"],
-        ],
-        cwd=ROOT,
-        env={"LC_ALL": "C", "PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src")},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert completed.returncode == 0, completed.stdout
-    envelope = json.loads(completed.stdout)
+
+    def cli_apply(plan_file: Path) -> dict[str, Any]:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "rapp_work",
+                "update",
+                "--root",
+                str(root),
+                "--apply",
+                "--plan",
+                str(plan_file),
+                "--plan-sha256",
+                planned["plan_sha256"],
+            ],
+            cwd=ROOT,
+            env={"LC_ALL": "C", "PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT / "src")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return dict(json.loads(completed.stdout))
+
+    from_marker = cli_apply(root / MARKER)
+    assert from_marker["status"] == "refused"
+    assert from_marker["refusal"]["code"] == "REFUSE_INPUT_KEYS"
+    assert (root / MARKER).is_file()
+    envelope = cli_apply(saved)
     assert envelope["status"] == "applied"
     assert envelope["result"]["status"] == "updated"
     assert verified(root)["instruction_files"] == 2
+
+
+def planted_marker(root: Path, plan: dict[str, Any]) -> str:
+    """What anyone who can write the tree can do: leave a recovery marker for a plan of theirs."""
+    plan_sha256 = hashlib.sha256(canonical_bytes(plan)).hexdigest()
+    (root / MARKER).write_bytes(
+        canonical_bytes({"plan": plan, "plan_sha256": plan_sha256, "schema": "rapp-work-update-recovery/1"})
+    )
+    return plan_sha256
+
+
+def test_a_planted_marker_is_shown_for_review_and_never_advised(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    write(root, "CLAUDE.md", "the owner's reviewed edit\n")
+    reviewed = planned_update(root)
+    write(root, "AGENTS.md", "planted instructions\n")
+    planted = planted_marker(root, planned_update(root)["plan"])
+    refusal = refusal_of(apply_update(root, reviewed))
+    assert refusal["code"] == "REFUSE_RECOVERY_BINDING"
+    assert refusal["details"]["pending_plan_sha256"] == planted
+    pending = {entry["path"]: entry["change"] for entry in refusal["details"]["pending_instruction_review"]["files"]}
+    assert pending["AGENTS.md"] == "added"
+    assert "remove the marker if you did not create it" in refusal["message"]
+    (root / MARKER).unlink()
+    assert refusal_of(apply_update(root, reviewed))["code"] == "REFUSE_PRECONDITION"
+    assert changes(planned_update(root))["AGENTS.md"] == "added"
+
+
+def unlisting_plan(root: Path, *, misstate_precondition: bool = False) -> dict[str, Any]:
+    """An update plan, as SDK 1.0.0 would build it, that stops listing the instruction inventory."""
+    identity = workspace_module.load_identity(root)
+    prior, managed_hash = workspace_module._read_managed(root)
+    successor = workspace_module._integration_files(identity, None)[MANAGED]
+    listed = {path: content for path, content in prior.items() if not (misstate_precondition and path == INVENTORY)}
+    plan = ReleasePlan(
+        operation="update",
+        target=str(root),
+        subject={
+            "kind": identity["kind"],
+            "rappid": identity["rappid"],
+            "sdk_version": SDK_VERSION,
+            "world_id": identity["world_id"],
+        },
+        actions=(FileAction("replace", MANAGED, successor, 0o600, managed_hash),),
+        preconditions=(
+            {
+                "identity_sha256": hashlib.sha256((root / "rappid.json").read_bytes()).hexdigest(),
+                "managed_files": [
+                    {"path": path, "sha256": hashlib.sha256(content).hexdigest()}
+                    for path, content in sorted(listed.items())
+                ],
+                "managed_sha256": managed_hash,
+                "root_identity": workspace_module.path_identity(root),
+            },
+        ),
+    )
+    return dict(plan.to_dict())
+
+
+@pytest.mark.parametrize("planted", [False, True])
+def test_a_plan_that_unlists_an_owned_inventory_is_refused(sandbox: Path, planted: bool) -> None:
+    root = scaffolded(sandbox / "workspace")
+    plan = unlisting_plan(root)
+    plan_sha256 = planted_marker(root, plan) if planted else hashlib.sha256(canonical_bytes(plan)).hexdigest()
+    before = (root / MANAGED).read_bytes()
+    refusal = refusal_of(apply_update(root, {"plan": plan, "plan_sha256": plan_sha256}))
+    assert refusal["code"] == "REFUSE_PLAN"
+    assert refusal["details"] == {"path": INVENTORY}
+    assert (root / MANAGED).read_bytes() == before
+    assert verified(root)["instruction_inventory"] == "verified"
+
+
+def test_a_resumed_plan_that_misstates_the_managed_inventory_is_refused(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    plan = unlisting_plan(root, misstate_precondition=True)
+    plan_sha256 = planted_marker(root, plan)
+    before = (root / MANAGED).read_bytes()
+    refusal = refusal_of(apply_update(root, {"plan": plan, "plan_sha256": plan_sha256}))
+    assert refusal["code"] == "REFUSE_PRECONDITION"
+    assert refusal["message"] == "update managed-file precondition differs from the SDK-owned inventory"
+    assert (root / MANAGED).read_bytes() == before
+
+
+def test_an_inventory_stranded_by_an_older_sdk_names_its_recovery(sandbox: Path) -> None:
+    root = scaffolded(sandbox / "workspace")
+    # An SDK without this section applies its update: it stops listing the inventory.
+    owned = {path: (root / path).read_bytes() for path in (SDK_SKILL_PATH, SDK_JSON)}
+    (root / MANAGED).write_bytes(canonical_bytes(_managed_record(owned)))
+    assert verified(root)["status"] == WEAK
+    write(root, "CLAUDE.md", "edited while the inventory was unlisted\n")
+    collision = refusal_of(update({"root": str(root)}))
+    assert collision["code"] == "REFUSE_MANAGED_COLLISION"
+    assert collision["details"] == {"path": INVENTORY}
+    assert "remove it by hand, and plan again" in collision["message"]
+    (root / INVENTORY).unlink()
+    planned = planned_update(root)
+    assert changes(planned)["CLAUDE.md"] == "added"
+    assert apply_update(root, planned)["result"]["status"] == "updated"
+    assert verified(root, require_instruction_inventory=True)["instruction_files"] == 2
 
 
 def test_forged_update_plan_inventory_is_refused(sandbox: Path) -> None:

@@ -29,7 +29,7 @@ from ._paths import (
     write_new,
 )
 from .constants import SDK_VERSION
-from .errors import Refusal, require
+from .errors import Refusal, refuse, require
 from .instructions import (
     HEX64,
     INSTRUCTION_INVENTORY_PATH,
@@ -476,6 +476,38 @@ def _read_managed(root: Path) -> tuple[dict[str, bytes], str | None]:
     return files, file_sha256(path)
 
 
+def _managed_listing(root: Path) -> dict[str, str] | None:
+    """Path to SHA-256 of each entry the SDK-owned inventory lists, without reading the files."""
+    path = root / ".rapp-work/managed.json"
+    if not path.exists() and not path.is_symlink():
+        return None
+    value = strict_json_loads(read_regular(path), where="managed file inventory")
+    item = closed_object(
+        value,
+        required={"files", "profile", "schema", "sdk_version"},
+        where="managed file inventory",
+    )
+    require(
+        isinstance(item["files"], list),
+        "REFUSE_MANAGED_INVENTORY",
+        "managed file inventory contract mismatch",
+    )
+    listing: dict[str, str] = {}
+    for raw in item["files"]:
+        entry = closed_object(
+            raw,
+            required={"bytes", "path", "sha256"},
+            where="managed file entry",
+        )
+        require(
+            isinstance(entry["path"], str) and isinstance(entry["sha256"], str),
+            "REFUSE_MANAGED_INVENTORY",
+            "invalid managed file entry",
+        )
+        listing[entry["path"]] = entry["sha256"]
+    return listing
+
+
 @contextmanager
 def _recovery_hint(root: Path) -> Iterator[None]:
     """Name a pending interrupted update, the usual cause of these refusals, without changing them."""
@@ -581,7 +613,13 @@ def _plan_update(root: Path, identity: dict[str, Any]) -> tuple[ReleasePlan, dic
             require(
                 path in prior,
                 "REFUSE_MANAGED_COLLISION",
-                "SDK integration path exists but is not owned by the prior inventory",
+                "SDK integration path exists but is not owned by the prior inventory"
+                + (
+                    "; an SDK without the instruction inventory stopped listing it: "
+                    "check it, remove it by hand, and plan again"
+                    if path == INSTRUCTION_INVENTORY_PATH
+                    else ""
+                ),
                 path=path,
             )
             actions.append(
@@ -788,6 +826,12 @@ def _validate_update_plan(
         "update identity or filesystem binding changed",
     )
     inventory = _plan_inventory(plan, root, managed_files)
+    require(
+        inventory is not None or INSTRUCTION_INVENTORY_PATH not in managed_files,
+        "REFUSE_PLAN",
+        "update plan would leave the SDK-owned instruction inventory unlisted",
+        path=INSTRUCTION_INVENTORY_PATH,
+    )
     desired = _integration_files(identity, inventory)
     if not resuming:
         # A resumed apply completes the reviewed writes; the verification that closes it
@@ -803,6 +847,12 @@ def _validate_update_plan(
             "REFUSE_PRECONDITION",
             "managed inventory is neither the planned predecessor nor successor",
         )
+        if current_managed_sha == precondition["managed_sha256"]:
+            require(
+                _managed_listing(root) == managed_files,
+                "REFUSE_PRECONDITION",
+                "update managed-file precondition differs from the SDK-owned inventory",
+            )
     else:
         require(
             precondition["managed_sha256"] is None,
@@ -838,6 +888,24 @@ def _validate_update_plan(
     return identity
 
 
+def _pending_review(root: Path, pending: Any) -> dict[str, Any] | None:
+    """What the plan in a recovery marker would record, for the owner; the marker is untrusted."""
+    try:
+        plan = ReleasePlan.from_dict(pending["plan"])
+        precondition = plan.preconditions[0]
+        managed_files = {item["path"]: item["sha256"] for item in precondition["managed_files"]}
+        planned = _plan_inventory(plan, root, managed_files)
+        listing = _managed_listing(root) or {}
+        prior = (
+            parse_inventory(read_regular(root / INSTRUCTION_INVENTORY_PATH))
+            if INSTRUCTION_INVENTORY_PATH in listing
+            else None
+        )
+        return review(prior, None if planned is None else parse_inventory(planned))
+    except (Refusal, KeyError, TypeError, IndexError, ValueError, AttributeError):
+        return None
+
+
 def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str, Any]:
     require(
         plan.sha256 == plan_sha256,
@@ -857,18 +925,19 @@ def apply_update(plan: ReleasePlan, *, root: Path, plan_sha256: str) -> dict[str
     if recovering:
         pending = strict_json_loads(read_regular(marker), where="update recovery marker")
         pending_sha256 = pending.get("plan_sha256") if isinstance(pending, dict) else None
-        require(
-            pending == marker_value,
-            "REFUSE_RECOVERY_BINDING",
-            "update recovery belongs to another plan; apply the pending plan stored in the "
-            "marker to resume it",
-            marker=UPDATE_RECOVERY_PATH,
-            pending_plan_sha256=(
-                pending_sha256
-                if isinstance(pending_sha256, str) and HEX64.fullmatch(pending_sha256)
-                else None
-            ),
-        )
+        if pending != marker_value:
+            refuse(
+                "REFUSE_RECOVERY_BINDING",
+                "update recovery belongs to another plan; resume it only with that plan as "
+                "you reviewed and saved it, and remove the marker if you did not create it",
+                marker=UPDATE_RECOVERY_PATH,
+                pending_instruction_review=_pending_review(root, pending),
+                pending_plan_sha256=(
+                    pending_sha256
+                    if isinstance(pending_sha256, str) and HEX64.fullmatch(pending_sha256)
+                    else None
+                ),
+            )
     _validate_update_plan(plan, root, resuming=recovering)
     if not recovering:
         current = plan_update(root)
