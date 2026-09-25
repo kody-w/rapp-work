@@ -18,8 +18,9 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
           justify-items: end; font-size: 7pt; white-space: nowrap; }
 .chip { display: inline-block; border: 1px solid; border-radius: 9px; padding: 0 6px; font-size: 6.4pt; line-height: 1.45;
         white-space: nowrap; font-weight: 600; }
-.dash { display: inline-block; width: 18px; border-top: 2px dashed #868e96; vertical-align: middle; margin: 0 2px 0 4px; }
-.dash.red { border-top-color: #c92a2a; }
+.lm { display: inline-block; margin: 0 2px 0 5px; font-weight: 700; font-size: 8.6pt; line-height: 1; color: #868e96;
+      vertical-align: -1pt; } .lm.red { color: #c92a2a; }
+.lm .mk { display: inline-block; height: 6.2pt; border-left: 1.4px dotted; margin: 0 3px 0 1px; vertical-align: -0.6pt; }
 .org { display: grid; grid-template-columns: 1.9in 1fr 2.3in; column-gap: 0.13in; }
 .org > .layer, .org > .device, .org > .conn { grid-column: 2; }
 .sides { display: flex; flex-direction: column; justify-content: center; gap: 3px; }
@@ -37,7 +38,8 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .cell { background: var(--f); border: 1.4px solid var(--s); border-radius: 6px; padding: 2px 6px 3px 6px; }
 .conn { font-size: 6.9pt; color: #222; min-height: 0.15in; display: flex; align-items: center; justify-content: center;
         gap: 0.4in; }
-.conn > span { position: relative; top: -1.2pt; }  /* centers the words' ink, not their line box, between frames */
+.conn > span { position: relative; top: -0.5pt; }  /* centers the arrows and words between the frames */
+.conn.at { display: grid; gap: 0; } .conn.at > span { justify-self: start; padding-left: 5px; white-space: nowrap; }
 .conn b { font-size: 8.6pt; line-height: 1; color: #343a40; margin-right: 3px; }
 .conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; } .conn .dim b { color: #868e96; }
 .conn .mk { display: inline-block; height: 6.2pt; border-left: 1.4px dotted; margin: 0 3px 0 1px; vertical-align: -0.6pt; }
@@ -45,9 +47,9 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .side[data-a]::after { content: attr(data-a); position: absolute; top: 34%; font-size: 12pt; color: #343a40; font-weight: 700; }
 .side.in[data-a]::after { right: -0.145in; } .side.out[data-a]::after { left: -0.155in; }
 .side.dim[data-a]::after { color: #868e96; } .side.red[data-a]::after { color: #c92a2a; }
-.side .h .xl { flex: 1; font-size: 6.4pt; color: #495057; white-space: nowrap; margin-top: 1.6px; }
+.side .h .xl { flex: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; margin-top: 1.6px; }
 .side.in .h .xl { text-align: right; }
-.xa { position: relative; z-index: 1; font-size: 6.4pt; color: #495057; white-space: nowrap; align-self: center; }
+.xa { position: relative; z-index: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; align-self: center; }
 .xa.first { align-self: end; margin-bottom: 3px; }
 .xa b { font-size: 12pt; font-weight: 700; color: #343a40; margin: 0 1px; vertical-align: -1.5pt; }
 .xa.in { justify-self: end; margin-right: -0.145in; } .xa.out { justify-self: start; margin-left: -0.155in; }
@@ -60,11 +62,11 @@ pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt;
 .loop { display: flex; align-items: stretch; gap: 2px; margin: 3px 0; }
 .step { flex: 1; border: 1.3px solid #2f9e44; background: #ebfbee; border-radius: 6px; padding: 2px 3px; font-size: 6.4pt; }
 .step b { display: block; font-size: 7pt; }
-.loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; }
+.loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; } .loopa:last-child { font-size: 10pt; }
 code { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 94%; }
 ul.inv { margin: 0; padding-left: 12px; font-size: 7.1pt; } ul.inv li { margin: 0 0 2px 0; }
 footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-between; gap: 0.3in; }
-.chip.lock { background: #fff; border-color: #495057; border-radius: 2px; }
+.chip.lock { background: #fff; border-color: #495057; border-radius: 2px; } .chip.ref { background: #fff; border-color: #adb5bd; }
 .chip.lock.done { border-color: #2f9e44; } .chip.lock.none { border-color: #868e96; border-style: dashed; font-weight: 500; }
 .newest { background-image: repeating-linear-gradient(135deg, var(--h) 0 1.6px, transparent 1.6px 6px); }
 .side.newest { --h: #adb5bd; }
@@ -76,7 +78,7 @@ footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-be
 .legend .chip.lock { margin-right: 3px; } .legend.only { grid-template-columns: auto; }
 .h .chips { display: flex; gap: 3px; flex: none; }
 .plan .ph { padding: 2px 4px 1px 4px; border-bottom: 1px solid #edf0f2; } .plan .ph.you { background: #fff4e6; }
-.plan .who { color: #495057; } .plan .gs { display: inline-block; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
+.plan .who { color: #495057; } .plan .gs { display: inline-block; } .plan .gs .g { margin-top: 1px; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
 .note.lead { margin: 0 0 3px 0; }
 .g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
      font-weight: 700; margin: 0 1px 1px 0; }
@@ -88,7 +90,7 @@ footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-be
 .two { display: grid; grid-template-columns: 1.25fr 1fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
 .pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #862e9c; background: #f8f0fc;
-        border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.3; }
+        border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.42; }
 .cite { margin-top: 1px; font-size: 7pt; color: #495057; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
 table.status td { padding: 0 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
@@ -97,8 +99,8 @@ table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status 
 .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.08in; }
 .phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 7.3pt; }
 .phase h3 { font-size: 9.6pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
-.phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; }
-li .g { margin: 0; padding: 0 3px; line-height: 1.12; vertical-align: 0.4px; }  /* a gap chip inside a step keeps its line */
+.phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; } .phase code { white-space: nowrap; }
+li .g { margin: 0 1px; padding: 0 3px; line-height: 1.12; vertical-align: 0.4px; }  /* a gap chip inside a step keeps its line */
 .nw { white-space: nowrap; }
 .strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.4pt; }
 .strip .door { margin-top: 1px; } .strip .chip { font-size: 6.2pt; line-height: 1.25; }
@@ -137,26 +139,26 @@ table.reg .chip { font-size: 6.1pt; line-height: 1.12; }
 </head>
 <body>
 <div class="page">
-<header><div><h1>The RAPP/1 organism, on one page</h1><div class="sub">Read it top (6) to bottom (0). Left: what comes in. Right: what goes out or across.</div></div><div class="legend"><span class="lane"><span class="sw"></span>RAPP/1 (LTS): in force<span class="sw newest"></span>newest<span class="sw neither"></span>in neither</span><div><span class="chip s-in-force">in force</span> <span class="chip s-specified">specified</span> <span class="chip s-experimental">experimental</span> <span class="dash"></span><span class="chip s-candidate">candidate</span> <span class="chip s-planned">planned</span></div><span class="lane"><span class="chip lock">N to graduate</span>what a layer still needs</span><div><span class="dash red"></span><span class="chip s-gap">gap</span> <span class="chip s-idea">idea</span> <span class="chip s-open">open</span> <span class="chip s-proposed">proposed</span> <span class="chip s-own-shape">own shape</span></div></div></header>
+<header><div><h1>The RAPP/1 organism, on one page</h1><div class="sub">Read it top (6) to bottom (0). Left: what comes in. Right: what goes out or across.</div></div><div class="legend"><span class="lane"><span class="sw"></span>RAPP/1 (LTS): in force<span class="sw newest"></span>newest<span class="sw neither"></span>in neither</span><div><span class="chip s-in-force">in force</span> <span class="chip s-specified">specified</span> <span class="chip s-experimental">experimental</span> <span class="lm">→</span><span class="chip s-candidate">candidate</span> <span class="chip s-planned">planned</span></div><span class="lane"><span class="chip lock">N to graduate</span>what a layer still needs</span><div><span class="lm red"><i class="mk"></i>▼</span><span class="chip s-gap">gap</span> <span class="chip s-idea">idea</span> <span class="chip s-open">open</span> <span class="chip s-proposed">proposed</span> <span class="chip s-own-shape">own shape</span></div></div></header>
 <section class="org">
-<div class="sides" style="grid-row: 3 / 4; grid-column: 1"><div class="side in newest" data-a="→"><div class="h"><span class="t">RAR</span><span class="xl">copy in</span><span class="chip s-specified">specified</span></div><div>one-file agents<br>you add one to agents/</div></div></div>
-<div class="sides" style="grid-row: 5 / 8; grid-column: 1"><div class="side in neither"><div class="h"><span class="t">Outside knowledge</span><span class="chip s-own-shape">own shape</span></div><div>old Hives · second brains · wikis<br>vaults · docs · other AI tools</div></div></div>
-<div class="xa in first" style="grid-row: 5; grid-column: 1">pinned <b>→</b></div>
-<div class="xa in" style="grid-row: 7; grid-column: 1">carried signed requests <b>→</b></div>
-<div class="sides" style="grid-row: 6 / 9; grid-column: 3"><div class="side out newest" data-a="→"><div class="h"><span class="t">Public copy</span><span class="xl">approved files</span><span class="chip s-experimental">experimental</span></div><div>exactly the approved files<br>PUBLISHED.md · check-public</div></div><div class="side out newest dim" data-a="↔"><div class="h"><span class="t">Hive Mind</span><span class="xl">agreements</span><span class="chip s-candidate">candidate</span></div><div>other organizations’ Hives, by agreement only<br>rapp-federation/1 · Hive Hub cards</div></div></div>
-<div class="sides" style="grid-row: 9 / 10; grid-column: 3"><div class="side out newest" data-a="←"><div class="h"><span class="t">Release rings</span><span class="xl">release evidence</span><span class="chip s-specified">specified</span></div><div>canary → nightly → alpha → beta<br>→ preprod → grail · rapp-cicd/1 · rapp-deploy/1</div></div></div>
-<div class="sides" style="grid-row: 11 / 12; grid-column: 3"><div class="side out newest dim" data-a="→"><div class="h"><span class="t">Distributed Hive</span><span class="xl">pins its root</span><span class="chip s-experimental">experimental</span></div><div>the RAPP/1 network as one Hive<br>each repo’s .rapp/ · found from RAPP’s seed</div></div></div>
 <div class="layer f-gray neither"><div class="h"><span class="t"><span class="n">6</span>You</span><span class="chips"><span class="chip lock none">nothing to graduate</span></span></div><div>Talk to your Brainstem. A Hive change is shown to you in plain words first. Nothing in a Hive applies until you confirm the exact plan in a later turn. “Give me my Brainstem.”</div></div>
 <div class="conn"><span class=""><b>▲▼</b>ask · answer · confirm Hive plans</span></div>
 <div class="device f-orange"><div class="h"><span class="t"><span class="n">5</span>Brainstem — the one surface you talk to</span><span class="chip lock">6 to graduate</span></div><div class="cells" style="grid-template-columns: 2fr 1fr"><div class="cell"><div class="h"><span class="t">Brainstem</span><span class="chip s-in-force">in force</span></div><div>Your own AI: frozen Grail kernel · hot-loaded agents · soul · memory · kernel: LTS brainstem-v0.6.9 (RAPP’s pin) · newest release brainstem-v0.6.16 · Its Hive agent proposes; you decide. A Hive is never its agents folder or soul.</div></div><div class="cell newest"><div class="h"><span class="t">Brainstem app</span><span class="chip s-experimental">experimental</span></div><div>drag agents in and out of the top of agents/ · agent and memory cards · your Brainstem’s chat</div></div></div></div>
-<div class="conn"><span class=""><b>▲▼</b>SDK operations (not wired to the Brainstem yet, G17)</span><span class=""><b>▼</b>operates your Hive copies and references</span></div>
+<div class="sides" style="grid-row: 3 / 4; grid-column: 1"><div class="side in newest" data-a="→"><div class="h"><span class="t">RAR</span><span class="xl">copy in</span><span class="chip s-specified">specified</span></div><div>one-file agents<br>you add one to agents/</div></div></div>
+<div class="conn at" style="grid-template-columns: 1fr 1fr 1fr"><span class="" style="grid-column: 1 / 3"><b>▲▼</b>SDK operations (not wired to the Brainstem yet, G17)</span><span class="" style="grid-column: 3 / 4"><b>▼</b>operates your Hive copies and references</span></div>
 <div class="device f-orange"><div class="h"><span class="t"><span class="n">4</span>Your device</span><span class="chip lock">8 to graduate</span></div><div class="cells" style="grid-template-columns: 1fr 1fr 1fr"><div class="cell newest"><div class="h"><span class="t">Workspaces</span><span class="chip s-specified">specified</span></div><div>private GODD · local-first · SDK plans</div></div><div class="cell newest"><div class="h"><span class="t">References</span><span class="chip s-experimental">experimental</span></div><div>read-only pointers · never run · read as data</div></div><div class="cell newest"><div class="h"><span class="t">Hive copy</span><span class="chip s-experimental">experimental</span></div><div>your copy of each Hive · your space is shared · one key per device</div></div></div></div>
-<div class="conn"><span class=""><b>▼</b>bring: one signed copy + provenance</span><span class=""><b>▲▼</b>signed commits, verified before checkout</span></div>
+<div class="sides" style="grid-row: 5 / 8; grid-column: 1"><div class="side in neither"><div class="h"><span class="t">Outside knowledge</span><span class="chip s-own-shape">own shape</span></div><div>old Hives · second brains · wikis<br>vaults · docs · other AI tools</div></div></div>
+<div class="xa in first" style="grid-row: 5; grid-column: 1">pinned <b>→</b></div>
+<div class="xa in" style="grid-row: 7; grid-column: 1">carried signed requests <b>→</b></div>
+<div class="conn at" style="grid-template-columns: 1fr 1fr 1fr"><span class="" style="grid-column: 2 / 3"><b>▼</b>bring: one signed copy + provenance</span><span class="" style="grid-column: 3 / 4"><b>▲▼</b>signed commits, verified before checkout</span></div>
 <div class="device f-green"><div class="h"><span class="t"><span class="n">3</span>Hive — where the members share work</span><span class="chip lock">6 to graduate</span></div><div class="cells" style="grid-template-columns: 1fr 2fr"><div class="cell"><div class="h"><span class="t">Private Hive</span><span class="chip s-in-force">in force</span></div><div>rapp-hive/1 · one owner · bound by hive_rappid</div></div><div class="cell newest"><div class="h"><span class="t">Folder Hive</span><span class="chip s-experimental">experimental</span></div><div>HIVE.md · members/ · requests/ · shared/ · former/ · no owner inside · new Hives start at 2 approvals · not bindable yet (G10)</div></div></div></div>
-<div class="conn"><span class=""><b>▼</b>work.vector: the accepted Hive checkpoint</span><span class="red"><b><i class="mk"></i>▼</b>proposed (G5, G10)</span></div>
+<div class="sides" style="grid-row: 6 / 9; grid-column: 3"><div class="side out newest" data-a="→"><div class="h"><span class="t">Public copy</span><span class="xl">approved files</span><span class="chip s-experimental">experimental</span></div><div>exactly the approved files<br>PUBLISHED.md · check-public</div></div><div class="side out newest dim" data-a="↔"><div class="h"><span class="t">Hive Mind</span><span class="xl">agreements</span><span class="chip s-candidate">candidate</span></div><div>other organizations’ Hives, by agreement only<br>rapp-federation/1 · Hive Hub cards</div></div></div>
+<div class="conn at" style="grid-template-columns: 1fr 2fr"><span class="" style="grid-column: 1 / 2"><b>▼</b>work.vector: the accepted Hive checkpoint</span><span class="red" style="grid-column: 2 / 3"><b><i class="mk"></i>▼</b>proposed (G5, G10)</span></div>
 <div class="layer f-blue newest"><div class="h"><span class="t"><span class="n">2</span>Organization — the accountable body</span><span class="chips"><span class="chip s-specified">specified</span><span class="chip lock">4 to graduate</span></span></div><div>One owner · one world · one policy · one release scope · exactly one Hive · Body stream: catalog · vector · migration · receipt · observation · rollback</div></div>
+<div class="sides" style="grid-row: 9 / 10; grid-column: 3"><div class="side out newest" data-a="←"><div class="h"><span class="t">Release rings</span><span class="xl">release evidence</span><span class="chip s-specified">specified</span></div><div>canary → nightly → alpha → beta<br>→ preprod → grail · rapp-cicd/1 · rapp-deploy/1</div></div></div>
 <div class="conn"><span class=""><b>▲</b>authorizes the owner (estate registry)</span></div>
 <div class="layer f-purple"><div class="h"><span class="t"><span class="n">1</span>Estate — an owner’s signed registry</span><span class="chips"><span class="chip s-in-force">in force</span><span class="chip lock">2 to graduate</span></span></div><div>Who may sign as whom · which protocols are pinned · which Grail kernel each release scope pins · Append-only · rappid.json · registry.json · owner-anchor.json</div></div>
+<div class="sides" style="grid-row: 11 / 12; grid-column: 3"><div class="side out newest dim" data-a="→"><div class="h"><span class="t">Distributed Hive</span><span class="xl">pins its root</span><span class="chip s-experimental">experimental</span></div><div>the RAPP/1 network as one Hive<br>each repo’s .rapp/ · found from RAPP’s seed</div></div></div>
 <div class="conn"><span class=""><b>▲</b>RAPP/1 frames · RAPPIDs · registry entries</span></div>
 <div class="layer f-purple"><div class="h"><span class="t"><span class="n">0</span>RAPP/1 — bytes and identity</span><span class="chips"><span class="chip s-in-force">in force</span><span class="chip lock done">in RAPP/1</span></span></div><div>RAPPIDs · the eleven-key frame · hashes · Ed25519 (or ES256) signatures · eggs · registries · Frozen forms</div></div>
 </section>
@@ -170,7 +172,7 @@ shared/organism/gaps/   one file per gap
 (your device)           references: every estate repo, read-only</pre>
 <div class="loop"><div class="step"><b>1 Canon</b>one fact, from its repo</div><span class="loopa">→</span><div class="step"><b>2 Sweep</b>rapp-1’s own check</div><span class="loopa">→</span><div class="step"><b>3 Record</b>one signed verdict</div><span class="loopa">→</span><div class="step"><b>4 Fix upstream</b>the next sweep flips it</div><span class="loopa">↻</span></div>
 <div><b>Built locally; public copy: <code>kody-w/rapp-hive-public</code></b> (an earlier map, with G1–G17). Its first sweep ran rapp-1’s own <code>rapp_check.py</code> over 10 public estate repos: 7 were compliant or clean, and 3 drifted (non-conformant eggs in RAPP and RAR; in rapp-model-hive, frames with no trusted anchor (G8) and four duplicate positions). Each verdict is one file in a signed commit. <b>How it scales:</b> one agent and the same rules run the 6-person Contoso model and a 317-repo sweep.</div></div>
-<div class="panel"><h2>RAPP/1 LTS <span class="chip lock">page 2: the lock-in</span></h2>
+<div class="panel"><h2>RAPP/1 LTS <span class="chip ref">page 2: the lock-in</span></h2>
 <div class="note lead">One estate-signed <code>release_scope</code> that pins every component; its Grail pin never moves. Everything in it is in force; nothing in it is experimental. The newest channel holds the experiments until they graduate, in one successor scope per newer kernel.</div>
 <div class="plan"><div class="ph you"><b>1 Decide</b> <span class="who">· you</span> <span class="gs"><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G8</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G9</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G18</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G19</span></span></div><div class="ph"><b>2 Zero drift, clean pull</b> <span class="who">· engineering</span> <span class="gs"><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G23</span></span></div><div class="ph"><b>3 Close the specification gaps</b> <span class="who">· spec owner</span> <span class="gs"><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G1</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G2</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G3</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G4</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G5</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G6</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G7</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G10</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G11</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G22</span><span class="g" style="background:#ffdeeb;border-color:#a61e4d">G24</span></span></div><div class="ph"><b>4 Switch it on</b> <span class="who">· estate owner</span> <span class="gs"><span class="g" style="background:#e9ecef;border-color:#868e96">G15</span><span class="g" style="background:#e9ecef;border-color:#868e96">G16</span></span></div><div class="ph"><b>5 Graduate into RAPP/1</b> <span class="who">· engineering</span> <span class="gs"><span class="g" style="background:#ffe8cc;border-color:#e67700">G12</span><span class="g" style="background:#ffe8cc;border-color:#e67700">G13</span><span class="g" style="background:#e9ecef;border-color:#868e96">G14</span><span class="g" style="background:#dbe4ff;border-color:#3b5bdb">G17</span><span class="g" style="background:#e9ecef;border-color:#868e96">G20</span></span></div></div><div class="ph end1"><b>↳ It ends as the Distributed Hive</b> <span class="gs"><span class="chip s-experimental">experimental</span></span></div></div>
 <div class="panel"><h2>What holds everywhere</h2>

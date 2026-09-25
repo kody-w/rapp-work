@@ -864,8 +864,9 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
           justify-items: end; font-size: 7pt; white-space: nowrap; }
 .chip { display: inline-block; border: 1px solid; border-radius: 9px; padding: 0 6px; font-size: 6.4pt; line-height: 1.45;
         white-space: nowrap; font-weight: 600; }
-.dash { display: inline-block; width: 18px; border-top: 2px dashed #868e96; vertical-align: middle; margin: 0 2px 0 4px; }
-.dash.red { border-top-color: #c92a2a; }
+.lm { display: inline-block; margin: 0 2px 0 5px; font-weight: 700; font-size: 8.6pt; line-height: 1; color: #868e96;
+      vertical-align: -1pt; } .lm.red { color: #c92a2a; }
+.lm .mk { display: inline-block; height: 6.2pt; border-left: 1.4px dotted; margin: 0 3px 0 1px; vertical-align: -0.6pt; }
 .org { display: grid; grid-template-columns: 1.9in 1fr 2.3in; column-gap: 0.13in; }
 .org > .layer, .org > .device, .org > .conn { grid-column: 2; }
 .sides { display: flex; flex-direction: column; justify-content: center; gap: 3px; }
@@ -883,7 +884,8 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .cell { background: var(--f); border: 1.4px solid var(--s); border-radius: 6px; padding: 2px 6px 3px 6px; }
 .conn { font-size: 6.9pt; color: #222; min-height: 0.15in; display: flex; align-items: center; justify-content: center;
         gap: 0.4in; }
-.conn > span { position: relative; top: -1.2pt; }  /* centers the words' ink, not their line box, between frames */
+.conn > span { position: relative; top: -0.5pt; }  /* centers the arrows and words between the frames */
+.conn.at { display: grid; gap: 0; } .conn.at > span { justify-self: start; padding-left: 5px; white-space: nowrap; }
 .conn b { font-size: 8.6pt; line-height: 1; color: #343a40; margin-right: 3px; }
 .conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; } .conn .dim b { color: #868e96; }
 .conn .mk { display: inline-block; height: 6.2pt; border-left: 1.4px dotted; margin: 0 3px 0 1px; vertical-align: -0.6pt; }
@@ -891,9 +893,9 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .side[data-a]::after { content: attr(data-a); position: absolute; top: 34%; font-size: 12pt; color: #343a40; font-weight: 700; }
 .side.in[data-a]::after { right: -0.145in; } .side.out[data-a]::after { left: -0.155in; }
 .side.dim[data-a]::after { color: #868e96; } .side.red[data-a]::after { color: #c92a2a; }
-.side .h .xl { flex: 1; font-size: 6.4pt; color: #495057; white-space: nowrap; margin-top: 1.6px; }
+.side .h .xl { flex: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; margin-top: 1.6px; }
 .side.in .h .xl { text-align: right; }
-.xa { position: relative; z-index: 1; font-size: 6.4pt; color: #495057; white-space: nowrap; align-self: center; }
+.xa { position: relative; z-index: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; align-self: center; }
 .xa.first { align-self: end; margin-bottom: 3px; }
 .xa b { font-size: 12pt; font-weight: 700; color: #343a40; margin: 0 1px; vertical-align: -1.5pt; }
 .xa.in { justify-self: end; margin-right: -0.145in; } .xa.out { justify-self: start; margin-left: -0.155in; }
@@ -906,14 +908,14 @@ pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt;
 .loop { display: flex; align-items: stretch; gap: 2px; margin: 3px 0; }
 .step { flex: 1; border: 1.3px solid #2f9e44; background: #ebfbee; border-radius: 6px; padding: 2px 3px; font-size: 6.4pt; }
 .step b { display: block; font-size: 7pt; }
-.loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; }
+.loopa { align-self: center; font-weight: 700; color: #343a40; font-size: 7pt; } .loopa:last-child { font-size: 10pt; }
 code { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 94%; }
 ul.inv { margin: 0; padding-left: 12px; font-size: 7.1pt; } ul.inv li { margin: 0 0 2px 0; }
 footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-between; gap: 0.3in; }
 """
 
 
-LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radius: 2px; }
+LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radius: 2px; } .chip.ref { background: #fff; border-color: #adb5bd; }
 .chip.lock.done { border-color: #2f9e44; } .chip.lock.none { border-color: #868e96; border-style: dashed; font-weight: 500; }
 .newest { background-image: repeating-linear-gradient(135deg, var(--h) 0 1.6px, transparent 1.6px 6px); }
 .side.newest { --h: #adb5bd; }
@@ -925,7 +927,7 @@ LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radiu
 .legend .chip.lock { margin-right: 3px; } .legend.only { grid-template-columns: auto; }
 .h .chips { display: flex; gap: 3px; flex: none; }
 .plan .ph { padding: 2px 4px 1px 4px; border-bottom: 1px solid #edf0f2; } .plan .ph.you { background: #fff4e6; }
-.plan .who { color: #495057; } .plan .gs { display: inline-block; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
+.plan .who { color: #495057; } .plan .gs { display: inline-block; } .plan .gs .g { margin-top: 1px; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
 .note.lead { margin: 0 0 3px 0; }
 .g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
      font-weight: 700; margin: 0 1px 1px 0; }
@@ -937,7 +939,7 @@ LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radiu
 .two { display: grid; grid-template-columns: 1.25fr 1fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
 .pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #862e9c; background: #f8f0fc;
-        border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.3; }
+        border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.42; }
 .cite { margin-top: 1px; font-size: 7pt; color: #495057; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
 table.status td { padding: 0 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
@@ -946,8 +948,8 @@ table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status 
 .phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.08in; }
 .phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 7.3pt; }
 .phase h3 { font-size: 9.6pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
-.phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; }
-li .g { margin: 0; padding: 0 3px; line-height: 1.12; vertical-align: 0.4px; }  /* a gap chip inside a step keeps its line */
+.phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; } .phase code { white-space: nowrap; }
+li .g { margin: 0 1px; padding: 0 3px; line-height: 1.12; vertical-align: 0.4px; }  /* a gap chip inside a step keeps its line */
 .nw { white-space: nowrap; }
 .strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.4pt; }
 .strip .door { margin-top: 1px; } .strip .chip { font-size: 6.2pt; line-height: 1.25; }
@@ -1039,12 +1041,35 @@ def pages(t):
         def order(c):  # a label sits over the cell it reaches below, else by the cell it leaves above
             low, up = at(c["lower"], t["row"][n - 1]), at(c["upper"], t["row"][n])
             return (low if low is not None else up if up is not None else 0.5, up if up is not None else 0.5)
+        def lanes(gap):  # each crossing's own column, in the row above or below: its end's cell, or a free one
+            for row in (t["row"][n], t["row"][n - 1]):
+                own = {c["stem"]: row.index(end) for c in gap for end in (c["upper"], c["lower"]) if end in row}
+                if len(row) < len(gap) or len(set(own.values())) != len(own):
+                    continue
+                for k, c in enumerate(gap):
+                    free = [col for col in range(len(row)) if col not in own.values()]
+                    if c["stem"] not in own and free:
+                        before = [own[x["stem"]] for x in gap[:k] if x["stem"] in own]
+                        after = [col for col in free if not before or col > max(before)]
+                        own[c["stem"]] = after[-1] if after else free[0]
+                if len(own) == len(gap):
+                    return row, own
+            return None
+        gap = sorted((c for c in t["crossing"] if c.get("upper") and c["top"] == n), key=order)
         spans = []
-        for c in sorted((c for c in t["crossing"] if c.get("upper") and c["top"] == n), key=order):
+        for c in gap:
             arrow, label = {"down": "\u25bc", "up": "\u25b2", "both": "\u25b2\u25bc"}[c["arrow"]], e(smart(plain(c["label"])))
-            mark = '<i class="mk"></i>' if kind(c) else ""  # a dotted line, like the legend's dashes
-            spans.append(f'<span class="{kind(c).strip()}"><b>{mark}{arrow}</b>{label}</span>')
-        return f'<div class="conn">{"".join(spans)}</div>'
+            mark = '<i class="mk"></i>' if kind(c) else ""  # a dotted line, like the legend's mark
+            spans.append((c, f'<b>{mark}{arrow}</b>{label}'))
+        placed = lanes(gap) if len(gap) > 1 else None
+        if not placed:  # one crossing, or no cell for each: the words sit in the middle
+            return '<div class="conn">' + "".join(f'<span class="{kind(c).strip()}">{w}</span>' for c, w in spans) + "</div>"
+        row, own = placed  # several: each starts at its own cell and ends where the next one starts
+        used = sorted(own.values())
+        cells = "".join(f'<span class="{kind(c).strip()}" style="grid-column: {own[c["stem"]] + 1} / '
+                        f'{next((u for u in used if u > own[c["stem"]]), len(row)) + 1}">{w}</span>' for c, w in spans)
+        return (f'<div class="conn at" style="grid-template-columns: {" ".join(str(p["span"]) + "fr" for p in row)}">'
+                f'{cells}</div>')
 
     def steps(ph):  # each gap a step names is drawn as its chip, in the colors of its status, glued to its marks
         def chipped(m):
@@ -1058,7 +1083,7 @@ def pages(t):
     def grid_row(n):  # the stack's grid rows: layer 6, its crossings, layer 5, ... layer 0
         return 2 * (6 - n) + 1
 
-    beside, org, taken = {}, [], set()  # the parts beside each layer sit on its own row; a pair also takes the
+    beside, org, taken, near = {}, [], set(), {}  # the parts beside each layer sit on its own row; a pair also takes the
     for p in t["sides"]:  # crossing rows above and below it, so each arrow still points at its own layer
         beside.setdefault((p["col"], p["level"]), []).append(p)
     for (col, n), group in sorted(beside.items(), key=lambda kv: (kv[0][0], -kv[0][1])):
@@ -1071,15 +1096,17 @@ def pages(t):
             refuse(group[-1]["where"], "leaves no room beside the stack on the one-pager; change `beside`")
         taken |= {(col, k) for k in rows}
         place = f'grid-column: {1 if col == "in" else 3}'
-        org.append(f'<div class="sides" style="grid-row: {rows[0]} / {rows[-1] + 1}; {place}">'
-                   + "".join(side(p) for p in group) + "</div>")
+        here = near.setdefault(n, [])  # read after its own layer: the grid places it, the page order follows it
+        here.append(f'<div class="sides" style="grid-row: {rows[0]} / {rows[-1] + 1}; {place}">'
+                    + "".join(side(p) for p in group) + "</div>")
         for c in apart:  # an arrow of its own, on the row of the layer it meets, with its words beside it
             words, a = e(smart(plain(c["label"]))), f'<b>{glyph(c, col)}</b>'
             first = " first" if grid_row(c["center"]["level"]) == rows[0] else ""
-            org.append(f'<div class="xa {col}{kind(c)}{first}" style="grid-row: {grid_row(c["center"]["level"])}; '
-                       f'{place}">' + (f"{words} {a}" if col == "in" else f"{a} {words}") + "</div>")
+            here.append(f'<div class="xa {col}{kind(c)}{first}" style="grid-row: {grid_row(c["center"]["level"])}; '
+                        f'{place}">' + (f"{words} {a}" if col == "in" else f"{a} {words}") + "</div>")
     for x in reversed(t["layer"]):
         org.append(box(x))
+        org.extend(near.get(x["n"], []))
         if x["n"]:
             org.append(conn(x["n"]))
     d, plan, pull = t["dogfood"], lock["plan"], t["pull"]
@@ -1089,7 +1116,8 @@ def pages(t):
         f'<div class="step"><b>{k} {inline(step.split(": ", 1)[0])}</b>{inline(step.split(": ", 1)[1])}</div>'
         for k, step in enumerate(d["loop"], 1))
     rules = "".join(f"<li><b>{inline(lead)}</b></li>" for lead, _ in t["invariants"]["rules"])  # one line each
-    dashed = {"gap": '<span class="dash red"></span>', "candidate": '<span class="dash"></span>'}
+    dashed = {"gap": '<span class="lm red"><i class="mk"></i>\u25bc</span>',  # the marks the page draws
+              "candidate": '<span class="lm">\u2192</span>'}
     words = [" ".join(dashed.get(k, "") + chip(k) for k in list(STATUS)[i:i + 5]) for i in (0, 5)]
     lanes = ['<span class="sw"></span>RAPP/1 (LTS): in force<span class="sw newest"></span>newest'
              '<span class="sw neither"></span>in neither',
@@ -1131,7 +1159,7 @@ def pages(t):
 <pre class="tree">{e(chr(10).join(smart(a).ljust(pad) + smart(b) for a, b in tree))}</pre>
 <div class="loop">{loop}<span class="loopa">\u21bb</span></div>
 <div>{inline(d["body"])}</div></div>
-<div class="panel"><h2>{e(short)} <span class="chip lock">page 2: the lock-in</span></h2>
+<div class="panel"><h2>{e(short)} <span class="chip ref">page 2: the lock-in</span></h2>
 <div class="note lead">{inline(". ".join(lock["definition"]) + ".")}</div>
 <div class="plan">{summary}</div>{end_line}</div>
 <div class="panel"><h2>What holds everywhere</h2>
