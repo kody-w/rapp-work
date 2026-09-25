@@ -32,6 +32,7 @@ from .plans import FileAction, ReleasePlan
 from .rapp1 import mint_rappid, rappid_parts, rappid_valid
 
 LABEL = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+WORLD_ID_MAX = 64
 WORKSPACE_KINDS = {"workspace", "organization"}
 
 
@@ -177,7 +178,7 @@ def _identity(
 ) -> dict[str, Any]:
     _label(owner_label, "owner label", 39)
     _label(slug, f"{kind} slug", 100)
-    _label(world_id, "world_id")
+    _label(world_id, "world_id", WORLD_ID_MAX)
     require(mode in {"solo", "hive"}, "REFUSE_MODE", "mode must be solo or hive")
     identity = rappid or mint_rappid(owner_label, slug)
     require(rappid_valid(identity), "REFUSE_IDENTITY", "invalid RAPPID")
@@ -366,6 +367,7 @@ def load_identity(root: Path) -> dict[str, Any]:
             and isinstance(value.get("name"), str)
             and bool(value["name"])
             and isinstance(value.get("world_id"), str)
+            and len(value["world_id"]) <= WORLD_ID_MAX
             and bool(LABEL.fullmatch(value["world_id"]))
             and isinstance(value.get("workspace_spec"), str)
             and bool(value["workspace_spec"]),
@@ -874,6 +876,7 @@ class Organization:
                 and isinstance(entry["name"], str)
                 and bool(entry["name"])
                 and isinstance(entry["world_id"], str)
+                and len(entry["world_id"]) <= WORLD_ID_MAX
                 and bool(LABEL.fullmatch(entry["world_id"])),
                 "REFUSE_ORGANIZATION",
                 "invalid organization workspace pointer",

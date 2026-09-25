@@ -72,3 +72,87 @@ legacy = private_hive_prepare()
 
 That compatibility surface preserves its existing profile and fixtures. New
 SDK migration does not duplicate or silently invoke it.
+
+## Pointer-only successors (proposal 0004, not accepted)
+
+[Proposal 0004](proposals/0004-sdk-migration-successors.md) adds an explicit,
+opt-in successor form for sources that the workspace successor cannot
+represent: a Hive seeded from a repository (no `rappid.json`), or a source
+whose world id is longer than the 64 characters that `rapp-work-sdk/1`
+records allow. Without `successor`, `migrate` is unchanged.
+
+A source with its own `rappid.json` is described by that identity:
+
+```bash
+rapp-work migrate \
+  --source /absolute/path/legacy \
+  --target /absolute/path/successor \
+  --successor pointer-only \
+  > pointer-plan.json
+```
+
+A source without `rappid.json` needs a closed, reviewed description:
+
+```json
+{
+  "authority_channel": {
+    "id": "origin",
+    "kind": "github",
+    "locator": "https://github.com/example-owner/example-hive"
+  },
+  "authority_paths": ["POLICY.md", "requests/example-member.json"],
+  "hive_rappid": "rappid:@example-owner/example-hive:<64 lowercase hex>",
+  "world_id": "example-world"
+}
+```
+
+```bash
+rapp-work migrate \
+  --source /absolute/path/seeded-hive \
+  --target /absolute/path/successor \
+  --successor pointer-only \
+  --hive hive-description.json \
+  > pointer-plan.json
+
+rapp-work migrate \
+  --source /absolute/path/seeded-hive \
+  --target /absolute/path/successor \
+  --successor pointer-only \
+  --apply \
+  --plan pointer-plan.json \
+  --plan-sha256 '<exact result.plan_sha256>'
+```
+
+Apply uses the reviewed plan, so `--hive` is refused with `--apply`.
+
+The plan (`rapp-work-pointer-successor-plan/1`) binds the source path and
+filesystem identity, the described or identity-file RAPPID and world, the
+credential-free authority channel, and the exact SHA-256 and byte length of
+every bound authority file: the recognized control files that are present plus
+every path the description names. Git internals are never read. The successor
+contains exactly:
+
+```text
+.rapp-work/pointer-successor.json   # rapp-work-pointer-successor/1
+.rapp-work/migration-receipt.json   # rapp-work-migration-receipt/1
+.rapp-work/migration-recovery.json  # rapp-work-migration-recovery/1
+```
+
+No Hive state, key, history, frame, GODD, credential, prompt, or instruction
+file is copied, no identity is minted or derived, and the source is never
+written. The pointer records `execution: "never"`, `content_copied: false`,
+and `grants_authority: false`. A described identity is corroborated against a
+bound `rapp-hive/1` declaration or Private Hive owner anchor when one exists,
+but it is never authenticated Hive authority.
+
+The pointer's `source_world_id` accepts 1 to 128 NFC characters without
+control characters, the RAPP Workspace/1 world length. That wider grammar
+exists only inside `rapp-work-pointer-successor/1`. The workspace successor,
+`scaffold`, `update`, Organization pointers, `rapp-work-sdk/1` records,
+`rapp-hive/1` payloads, and canonical `rapp-work/1` payloads keep their
+64-character labels, and a pointer-only successor has no identity that could
+be registered in an Organization.
+
+Plan-hash apply, the source-binding recheck before the first write and during
+staging, recovery from an exact plan-bound marker, and the read-only completed
+replay are the same as for the workspace successor.

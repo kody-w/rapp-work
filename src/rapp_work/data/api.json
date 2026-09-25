@@ -78,8 +78,10 @@
       ],
       "optional_inputs": [
         "apply",
+        "hive",
         "plan",
-        "plan_sha256"
+        "plan_sha256",
+        "successor"
       ]
     }
   ],

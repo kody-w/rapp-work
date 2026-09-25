@@ -35,10 +35,16 @@ migrate(inputs)
 | `discover` | `roots` | `max_entries` |
 | `scaffold` | `root`, `kind`, `owner_label`, `slug`, `world_id`, `mode` | `apply`, `plan`, `plan_sha256` |
 | `update` | `root` | `apply`, `plan`, `plan_sha256` |
-| `migrate` | `source`, `target` | `apply`, `plan`, `plan_sha256` |
+| `migrate` | `source`, `target` | `apply`, `plan`, `plan_sha256`, `successor`, `hive` |
 
 For effectful operations, omitting `apply` returns a plan. `apply: true`
 requires both the complete plan object and its exact canonical SHA-256.
+
+`migrate` accepts `successor: "pointer-only"` as an explicit opt-in for a
+pointer-only successor ([proposal 0004](proposals/0004-sdk-migration-successors.md),
+not accepted). `hive` is the closed description of a source without
+`rappid.json` and is accepted only while planning. Without `successor`,
+`migrate` behaves exactly as before and refuses `hive`.
 
 ## Typed models
 

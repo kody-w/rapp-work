@@ -15,7 +15,15 @@ from .constants import (
 )
 from .discovery import api_metadata, discover_roots
 from .errors import Refusal, require
-from .migration import MigrationPlan, apply_migration, plan_migration
+from .migration import (
+    POINTER_SUCCESSOR,
+    MigrationPlan,
+    PointerSuccessorPlan,
+    apply_migration,
+    apply_pointer_successor,
+    plan_migration,
+    plan_pointer_successor,
+)
 from .plans import ReleasePlan
 from .profiles import ProfileRegistry, verify_source_estate
 from .rapp1 import rappid_valid
@@ -276,11 +284,18 @@ def _migrate(inputs: dict[str, Any]) -> dict[str, Any]:
     item = closed_object(
         inputs,
         required={"source", "target"},
-        optional={"apply", "plan", "plan_sha256"},
+        optional={"apply", "hive", "plan", "plan_sha256", "successor"},
         where="migrate input",
     )
     apply, plan_value, plan_sha256 = _apply_fields(item, operation="migrate")
     source, target = _root_input(item["source"]), _root_input(item["target"])
+    if "successor" in item:
+        return _migrate_pointer_only(item, apply, plan_value, plan_sha256, source, target)
+    require(
+        "hive" not in item,
+        "REFUSE_INPUT_SHAPE",
+        "a migrate Hive description is accepted only with successor pointer-only",
+    )
     if not apply:
         plan = plan_migration(source, target)
         return {
@@ -292,6 +307,42 @@ def _migrate(inputs: dict[str, Any]) -> dict[str, Any]:
     plan = MigrationPlan.from_dict(plan_value)
     return apply_migration(
         plan,
+        source=source,
+        target=target,
+        plan_sha256=plan_sha256,
+    )
+
+
+def _migrate_pointer_only(
+    item: dict[str, Any],
+    apply: bool,
+    plan_value: Any,
+    plan_sha256: Any,
+    source: Path,
+    target: Path,
+) -> dict[str, Any]:
+    require(
+        item["successor"] == POINTER_SUCCESSOR,
+        "REFUSE_INPUT_SHAPE",
+        "migrate successor must be pointer-only",
+        allowed=[POINTER_SUCCESSOR],
+    )
+    if not apply:
+        plan = plan_pointer_successor(source, target, hive=item.get("hive"))
+        return {
+            "effects": False,
+            "plan": plan.to_dict(),
+            "plan_sha256": plan.sha256,
+            "status": "planned",
+        }
+    require(
+        "hive" not in item,
+        "REFUSE_APPLY_REQUIRED",
+        "the Hive description is accepted only while planning; apply uses the reviewed plan",
+    )
+    pointer_plan = PointerSuccessorPlan.from_dict(plan_value)
+    return apply_pointer_successor(
+        pointer_plan,
         source=source,
         target=target,
         plan_sha256=plan_sha256,

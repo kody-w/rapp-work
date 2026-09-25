@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased (proposal, not accepted)
+
+- Proposal 0004 (gap G4): explicit, opt-in pointer-only migration successors
+  (`migrate` input `successor: "pointer-only"` and planning-only `hive`
+  description; CLI `--successor pointer-only --hive <file>`). They bind a
+  repository-seeded Hive, or a source with a world id longer than 64
+  characters, by exact authority-byte commitments, and write only
+  `rapp-work-pointer-successor/1` plus the existing receipt and recovery
+  marker. New tokens: `rapp-work-pointer-successor/1`,
+  `rapp-work-pointer-successor-plan/1`, and
+  `rapp-work-pointer-successor-source/1`. World ids of up to 128 characters
+  are accepted only inside the pointer token. Without `successor`, migration
+  is unchanged.
+- Conformance fix: SDK workspace identities and Organization pointer entries
+  now refuse world ids longer than 64 characters, so `update` can no longer
+  write a `rapp-work-sdk/1` record that its own schema forbids.
+- Intended release: 1.1.0, after owner acceptance. The package version is
+  unchanged.
+
 ## 1.0.0 — 2026-09-18
 
 - Replaced the standards-only front door with the installable, typed

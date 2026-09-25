@@ -47,6 +47,8 @@ def parser() -> JSONArgumentParser:
     migrate = commands.add_parser("migrate")
     migrate.add_argument("--source", required=True)
     migrate.add_argument("--target", required=True)
+    migrate.add_argument("--successor", choices=("pointer-only",))
+    migrate.add_argument("--hive", type=Path)
     _apply_arguments(migrate)
     return root
 
@@ -70,6 +72,13 @@ def _plan(path: Path | None) -> dict[str, Any] | None:
     raise Refusal("REFUSE_PLAN", "plan file must contain a plan object or plan result envelope")
 
 
+def _object(path: Path, *, where: str) -> dict[str, Any]:
+    value = strict_json_loads(read_regular(path), where=where)
+    if not isinstance(value, dict):
+        raise Refusal("REFUSE_INPUT_SHAPE", f"{where} must contain one JSON object")
+    return cast(dict[str, Any], value)
+
+
 def _inputs(args: argparse.Namespace) -> dict[str, Any]:
     operation = args.operation
     if operation in {"status", "verify"}:
@@ -89,6 +98,10 @@ def _inputs(args: argparse.Namespace) -> dict[str, Any]:
         value = {"root": args.root}
     elif operation == "migrate":
         value = {"source": args.source, "target": args.target}
+        if args.successor is not None:
+            value["successor"] = args.successor
+        if args.hive is not None:
+            value["hive"] = _object(args.hive, where="Hive description file")
     else:
         raise Refusal(
             "REFUSE_OPERATION",
