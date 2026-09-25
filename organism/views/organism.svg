@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="1468" viewBox="0 0 1840 1468" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="1840" height="1488" viewBox="0 0 1840 1488" font-family="Helvetica, Arial, sans-serif">
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#343a40"/></marker>
 <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c92a2a"/></marker>
@@ -8,7 +8,7 @@
 <pattern id="he9ecefadb5bd" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#e9ecef"/><rect width="2.5" height="9" fill="#adb5bd"/></pattern>
 <pattern id="hfff3bffcc419" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="9" height="9" fill="#fff3bf"/><rect width="2.5" height="9" fill="#fcc419"/></pattern>
 </defs>
-<rect x="0" y="0" width="1840" height="1468" fill="#ffffff"/>
+<rect x="0" y="0" width="1840" height="1488" fill="#ffffff"/>
 <text x="30" y="52" font-size="30" font-weight="700">The RAPP/1 organism, top to bottom</text>
 <text x="30" y="84" font-size="15">Center: the layers, from you (6, top) down to bytes (0, bottom). Left: what comes in. Right: what goes out or across.</text>
 <rect x="1190" y="18" width="90" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
@@ -117,28 +117,29 @@
 <text x="484" y="1014" font-size="13.5">Home: Canonical rapp-work/1 §§1–9 (pinned by RAPP_WORK_PIN.json)</text>
 <rect x="1137" y="930" width="83" height="22" rx="11" fill="#c5f6fa" stroke="#0c8599" stroke-width="1"/>
 <text x="1178" y="945" font-size="12" text-anchor="middle">specified</text>
-<rect x="470" y="1100" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
+<rect x="470" y="1100" width="760" height="138" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
 <circle cx="447" cy="1130" r="12" fill="#ffffff" stroke="#862e9c" stroke-width="2.5"/>
 <text x="447" y="1135" font-size="14" font-weight="700" text-anchor="middle">1</text>
 <text x="484" y="1128" font-size="17" font-weight="700">Estate — an owner’s signed registry</text>
 <text x="484" y="1154" font-size="13.5">Who may sign as whom · which protocols are pinned · which Grail kernel each release scope pins</text>
 <text x="484" y="1174" font-size="13.5">Append-only · rappid.json · registry.json · owner-anchor.json</text>
-<text x="484" y="1194" font-size="13.5">Home: Each owner’s repository (rappid.json, registry.json)</text>
+<text x="484" y="1194" font-size="13.5">Home: Each owner’s repository (rappid.json, registry.json); the kody-w estate’s signed registry is ecosystem-spec.json in</text>
+<text x="484" y="1214" font-size="13.5">kody-w/rapp-map, anchored by the owner rappid in kody-w/rapp-1’s README</text>
 <rect x="1145" y="1110" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
 <text x="1182" y="1125" font-size="12" text-anchor="middle">in force</text>
-<rect x="470" y="1280" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
-<circle cx="447" cy="1310" r="12" fill="#ffffff" stroke="#862e9c" stroke-width="2.5"/>
-<text x="447" y="1315" font-size="14" font-weight="700" text-anchor="middle">0</text>
-<text x="484" y="1308" font-size="17" font-weight="700">RAPP/1 — bytes and identity</text>
-<text x="484" y="1334" font-size="13.5">RAPPIDs · the eleven-key frame · hashes · Ed25519 (or ES256) signatures · eggs · registries</text>
-<text x="484" y="1354" font-size="13.5">Frozen forms</text>
-<text x="484" y="1374" font-size="13.5">Home: kody-w/rapp-1 SPEC.md</text>
-<rect x="1145" y="1290" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
-<text x="1182" y="1305" font-size="12" text-anchor="middle">in force</text>
-<rect x="1692" y="1327" width="128" height="24" rx="4" fill="#ffffff" stroke="#2f9e44" stroke-width="1.5"/>
-<text x="1756" y="1343" font-size="12.5" text-anchor="middle">in RAPP/1</text>
-<rect x="1692" y="1147" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
-<text x="1756" y="1163" font-size="12.5" font-weight="700" text-anchor="middle">2 to graduate</text>
+<rect x="470" y="1300" width="760" height="118" rx="10" fill="#f3d9fa" stroke="#862e9c" stroke-width="2"/>
+<circle cx="447" cy="1330" r="12" fill="#ffffff" stroke="#862e9c" stroke-width="2.5"/>
+<text x="447" y="1335" font-size="14" font-weight="700" text-anchor="middle">0</text>
+<text x="484" y="1328" font-size="17" font-weight="700">RAPP/1 — bytes and identity</text>
+<text x="484" y="1354" font-size="13.5">RAPPIDs · the eleven-key frame · hashes · Ed25519 (or ES256) signatures · eggs · registries</text>
+<text x="484" y="1374" font-size="13.5">Frozen forms</text>
+<text x="484" y="1394" font-size="13.5">Home: kody-w/rapp-1 SPEC.md</text>
+<rect x="1145" y="1310" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>
+<text x="1182" y="1325" font-size="12" text-anchor="middle">in force</text>
+<rect x="1692" y="1347" width="128" height="24" rx="4" fill="#ffffff" stroke="#2f9e44" stroke-width="1.5"/>
+<text x="1756" y="1363" font-size="12.5" text-anchor="middle">in RAPP/1</text>
+<rect x="1692" y="1157" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
+<text x="1756" y="1173" font-size="12.5" font-weight="700" text-anchor="middle">2 to graduate</text>
 <rect x="1692" y="967" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
 <text x="1756" y="983" font-size="12.5" font-weight="700" text-anchor="middle">4 to graduate</text>
 <rect x="1692" y="787" width="128" height="24" rx="4" fill="#ffffff" stroke="#495057" stroke-width="1.5"/>
@@ -169,8 +170,8 @@
 <text x="792" y="893" font-size="12.5">proposed (G5, G10)</text>
 <line x1="850" y1="1100" x2="850" y2="1038" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="862" y="1073" font-size="12.5">authorizes the owner (estate registry)</text>
-<line x1="850" y1="1280" x2="850" y2="1218" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="862" y="1253" font-size="12.5">RAPP/1 frames · RAPPIDs · registry entries</text>
+<line x1="850" y1="1300" x2="850" y2="1238" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="862" y="1273" font-size="12.5">RAPP/1 frames · RAPPIDs · registry entries</text>
 <rect x="30" y="340" width="300" height="98" rx="10" fill="url(#he9ecefadb5bd)" stroke="#495057" stroke-width="2"/>
 <text x="44" y="368" font-size="17" font-weight="700">RAR</text>
 <text x="44" y="394" font-size="13.5">one-file agents</text>
@@ -223,5 +224,5 @@
 <text x="1300" y="975" font-size="11" text-anchor="middle" fill="#495057">release evidence</text>
 <line x1="1230" y1="1149" x2="1370" y2="1149" stroke="#868e96" stroke-width="2.5" stroke-dasharray="5 5" marker-end="url(#ahg)"/>
 <text x="1300" y="1142" font-size="11" text-anchor="middle" fill="#495057">pins its root</text>
-<text x="30" y="1438" font-size="12.5" fill="#495057">Drawn from the organism/ tree by tools/build.py · the tree is the source; this picture is a view · health words: health.md · experimental</text>
+<text x="30" y="1458" font-size="12.5" fill="#495057">Drawn from the organism/ tree by tools/build.py · the tree is the source; this picture is a view · health words: health.md · experimental</text>
 </svg>

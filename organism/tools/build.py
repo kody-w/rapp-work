@@ -898,7 +898,7 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .xa b { font-size: 12pt; font-weight: 700; color: #343a40; margin: 0 1px; vertical-align: -1.5pt; }
 .xa.in { justify-self: end; margin-right: -0.145in; } .xa.out { justify-self: start; margin-left: -0.155in; }
 .xa.dim b { color: #868e96; } .xa.red b { color: #c92a2a; }
-.bottom { display: grid; grid-template-columns: 1.52fr 1.1fr 0.9fr; gap: 0.1in; flex: 1; }
+.bottom { display: grid; grid-template-columns: 1.6fr 1.05fr 0.87fr; gap: 0.1in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
 .panel h2 { font-size: 9pt; margin: 0 0 3px 0; display: flex; align-items: center; justify-content: space-between; }
 pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt; line-height: 1.25; margin: 2px 0 4px 0;
@@ -943,7 +943,7 @@ table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
 table.status td { padding: 0 3px; border-bottom: 1px solid #edf0f2; vertical-align: middle; }
 table.status .chip { line-height: 1.3; } table.status .g { line-height: 1.25; }
 table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status td:nth-child(2) { width: 1.05in; }
-.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.1in; }
+.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.08in; }
 .phase { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 3px 7px 4px 7px; background: #fcfcfd; font-size: 7.3pt; }
 .phase h3 { font-size: 9.6pt; margin: 0; } .phase .who { color: #495057; margin-bottom: 2px; }
 .phase ul { margin: 0 0 2px 0; padding-left: 12px; } .phase li { margin: 0 0 1px 0; }
@@ -1144,15 +1144,18 @@ def pages(t):
         f'<tr><td><b>{x["n"]} {e(smart(x["name"]))}</b></td><td>{lockchip(x["n"])}</td>'
         f'<td>{"".join(itemchip(item) for item in lk[x["n"]][1])}</td></tr>'
         for x in reversed(t["layer"]))
-    counts = "".join(f'<span class="m">{e(repo)} <b>{k}</b></span>' for repo, k in pull["counts"])
+    none = [repo for repo, k in pull["counts"] if not k]  # the repositories with no mention share one chip
+    counts = "".join(f'<span class="m">{e(repo)} <b>{k}</b></span>' for repo, k in pull["counts"] if k) + (
+        f'<span class="m">{e(" · ".join(none))} <b>0</b></span>' if none else "")
     doors = " \u00b7 ".join(f"{chip(word)} {inline(text)}" for word, text in pull["doors"])
-    mentions = (f'<section class="strip"><b>{pull["phase"]} \u00b7 {e(smart(pull["name"]))}:</b> files on each default '
-                f'branch that mention \u201cexperimental\u201d ({inline(pull["command"])}), {e(pull["measured"])}: {counts} '
+    mentions = (f'<section class="strip"><b>{pull["phase"]} \u00b7 {e(smart(pull["name"]))}:</b> files that mention '
+                f'\u201cexperimental\u201d ({inline(pull["command"])}, {e(pull["measured"])}): {counts} '
                 f'{inline(pull["body"])}' + (f'<div class="door"><b>One front door:</b> {doors}</div>' if doors else "")
                 + "</section>")
     cards = "".join(f'<div class="phase"><h3>{ph["n"]} \u00b7 {e(ph["title"])}</h3><div class="who">{who(ph)}</div>'
                     f'<ul>{steps(ph)}</ul></div>' for ph in plan[1:])
-    words_in = [sum(len(plain(step)) + 24 for step in ph["steps"]) + 60 for ph in plan[1:]]
+    words_in = [sum(len(plain(step)) + 24 + 5 * len(re.findall(r"\bG[0-9]+\b", step)) for step in ph["steps"]) + 60
+                for ph in plan[1:]]  # a gap chip is wider than its id
     widths = " ".join(f"{k / min(words_in):.2f}fr" for k in words_in)  # wider cards for longer phases: even heights
     rows = [f'<tr><td>{e(g["id"])}</td><td>{inline(g["gap"])}</td><td>{chip(g["status"])}</td>'
             f'<td>{g["phase"]} \u00b7 {e(g["who"])}</td></tr>' for g in t["gap"]]

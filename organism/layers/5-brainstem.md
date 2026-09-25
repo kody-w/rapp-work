@@ -5,7 +5,7 @@ role: "The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded
 decides: You, in conversation
 signed_with: "Nothing by itself: its Hive agent proposes, you confirm"
 home: "[`kody-w/RAPP`](https://github.com/kody-w/RAPP), with the LTS kernel pinned to `kody-w/rapp-installer@brainstem-v0.6.9`"
-health: in force (the LTS kernel); the default install still gives the newest kernel
+health: in force (the LTS kernel, pinned by RAPP's unsigned `KERNEL_PIN.json` until an estate declares it, G15); the default install still gives the newest kernel
 color: orange
 span: 2
 check: Each repository's own test suite and runner

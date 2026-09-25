@@ -4,7 +4,7 @@ column: out
 beside: 2
 role: "Estate-named stages over `rapp-cicd/1` §3: here canary, nightly, alpha, beta, the Preprod gate, then the production ring (the grail)"
 home: "`rapp-cicd/1` §3 and `rapp-deploy/1` in `kody-w/rapp-1`"
-health: specified (G16)
+health: specified; the kody-w estate pins `rapp-cicd/1` and `rapp-deploy/1`, but no estate names these rings or has run a release through them (G16)
 lines:
   - canary → nightly → alpha → beta
   - → preprod → grail · rapp-cicd/1 · rapp-deploy/1

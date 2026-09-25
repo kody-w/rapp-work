@@ -131,7 +131,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 | # | Layer | What it is | Health | Into RAPP/1 |
 |---|---|---|---|---|
 | 6 | [You](layers/6-you.md) | “Give me my Brainstem.” You talk; a Hive change is shown in plain words first, and you confirm it | — | nothing to graduate |
-| 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force | 6 to graduate (G17, G18, G19, G20, G23, RAR) |
+| 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force (G15) | 6 to graduate (G17, G18, G19, G20, G23, RAR) |
 | 4 | [Your device](layers/4-your-device.md) | Your copy of each Hive, your read-only references and your private workspaces, with one key per device per Hive | experimental | 8 to graduate (G2, G3, G4, G7, G13, G14, G22, G24) |
 | 3 | [Hive](layers/3-hive.md) | Where the members share work: a `rapp-hive/1` Private Hive (in force, and the only kind of Hive an organization can bind), a folder Hive (experimental), or a distributed Hive of many repositories (experimental) | in force | 6 to graduate (G1, G6, G8, G9, G12, Public copy) |
 | 2 | [Organization](layers/2-organization.md) | The accountable body: one owner, one world, one policy, one release scope, and exactly one Hive. Its body stream holds its declaration, then catalogs, Hive vectors, migrations, receipts, observations and rollbacks | specified (G10, G16) | 4 to graduate (G5, G10, G11, G16) |
@@ -206,7 +206,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 
 ## RAPP/1 LTS: what it takes to lock the whole thing
 
-- One LTS release of the whole stack: one estate-signed `release_scope` that pins every component, with a Grail pin that never moves.
+- One estate-signed `release_scope` that pins every component; its Grail pin never moves.
 - Everything in it is in force; nothing in it is experimental.
 - The newest channel holds the experiments until they graduate, in one successor scope per newer kernel.
 
@@ -217,10 +217,10 @@ It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Wo
 | 1. Decide | you, about an hour | G8, G9, G18, G19 |
 | 2. Zero drift, clean pull | engineering | G23 |
 | 3. Close the specification gaps | spec owner | G1, G2, G3, G4, G5, G6, G7, G10, G11, G22, G24 |
-| 4. Switch it on | estate owner | G15, G16, G17 |
-| 5. Graduate into RAPP/1 | engineering, through the rings | G12, G13, G14, G20 |
+| 4. Switch it on | estate owner | G15, G16 |
+| 5. Graduate into RAPP/1 | engineering, through the rings | G12, G13, G14, G17, G20 |
 
-**Keep the default pull clean** ([clean-pull.md](clean-pull.md)): on 2026-09-25, 8 of 10 default branches mentioned “experimental” (most: RAR, 50 files): mentions, not problems. The file also lists the front door, where people find RAPP/1.
+**Keep the default pull clean** ([clean-pull.md](clean-pull.md)): on 2026-09-25, 9 of 15 default branches mentioned “experimental” (most: rapp-hive-public, 338 files): mentions, not problems. The file also lists the front door, where people find RAPP/1.
 
 **Where it ends: the [Distributed Hive](parts/distributed-hive.md)** (experimental): RAPP/1 LTS resolves as a distributed Hive, so a person pulls full RAPP/1 from static data. The RAPP/1 network as one Hive, found by raw URL: RAPP's seed → beacon → `estate.json` → Hive root → a pointer per repository → its `.rapp/member.md`, at its LTS commit.
 
@@ -245,7 +245,7 @@ It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Wo
 - **Propose, confirm, apply.** Every change to a Hive or a workspace is proposed, confirmed in a later turn, and applied as one exact step (a signed commit, inside a Hive).
 - **Accepted history is never rewritten.** Old records are carried byte for byte.
 - **The Brainstem is the one surface you talk to.** Every other layer is plumbing.
-- **Front doors stay editable.** Frozen identities never pin human-facing docs: READMEs, badges and “Start here” links. They pin only normative bytes: specifications, schemas, reference code, tests and AI instruction files such as `SKILL.md`. RAPP Workspace/1 still pins its READMEs (G24).
+- **Front doors stay editable.** Frozen identities never pin human-facing docs: READMEs, badges and “Start here” links. They pin only normative bytes: specifications, schemas, reference code, tests and AI instruction files such as `SKILL.md`. RAPP Workspace/1 still pins its READMEs, and so does `kody-w/rapp-workspace`'s copy of `rapp-work-sdk/1` (G24).
 - **Only top-level `agents/*_agent.py` files are live.** That is the Grail kernel's rule; RAPP's Constitution and its cloud Brainstem still differ (G18, G19). Every folder is organization: loading or unloading an agent is a file move, a drag and drop. The Grail kernel's `load_agents()` is a flat glob (`kody-w/rapp-installer` `rapp_brainstem/brainstem.py`, lines 1202–1205 at `brainstem-v0.6.9`).
 
 [Dogfood: the RAPP Hive, our public example](dogfood.md) (experimental): where the organism is tried for real. Other words: [glossary.md](glossary.md).

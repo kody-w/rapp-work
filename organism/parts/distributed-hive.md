@@ -3,7 +3,7 @@ name: Distributed Hive
 column: across
 beside: 1
 role: "The RAPP/1 network as one Hive, found by raw URL: RAPP's seed → beacon → `estate.json` → Hive root → a pointer per repository → its `.rapp/member.md`, at its LTS commit"
-home: "HIVE-MD “Remote member spaces” and the Hive agent's `resolve`, in [`kody-w/rapp-model-hive`](https://github.com/kody-w/rapp-model-hive/tree/experimental/hive-md-distributed) (branch `experimental/hive-md-distributed`); RAPP proposal 0020, a draft on branch `experimental/proposal-0020-distributed-hive`"
+home: "`DISTRIBUTED-HIVE.md`, HIVE-MD “Remote member spaces” and the Hive agent's `resolve`, in [`kody-w/rapp-model-hive`](https://github.com/kody-w/rapp-model-hive/tree/experimental/hive-md-distributed) (branch `experimental/hive-md-distributed`); RAPP proposal 0020, a draft on branch `experimental/proposal-0020-distributed-hive`"
 health: experimental; the seed does not reach it yet
 lines:
   - the RAPP/1 network as one Hive
