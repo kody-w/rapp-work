@@ -36,6 +36,7 @@ steps:
   - "3: a gap that cannot close in time waits for a later RAPP, with the owner's sign-off"
   - "4: sign the RAPP/1 LTS release scope: its LTS `grail-kernel` entry, plus a successor scope for the newest kernel (G15)"
   - "4: sign the protocol pins"
+  - "4: authorize a signer for network pulses, so each version verifies against the estate; the pulses, one per crawl (planned), are how RAPP/1's health is tracked over time"
   - "4: activate `rapp-work/1` (G16): the Organization must be in force for RAPP/1 to be healthy throughout"
   - "4: give the Brainstem an SDK agent (G17)"
   - "5: graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20)"

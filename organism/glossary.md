@@ -12,6 +12,7 @@ name: Words this map uses
 - **dial record:** a Hive Hub record, named by its SHA-256 Dial Record ID, that tells a device how to reach a declared Hive. It grants no access.
 - **join card:** a content-addressed card, often shown as a QR code, that leads a device to a Hive's dial record.
 - **`work.vector`:** the signed `rapp-work/1` frame that records which authenticated `rapp-hive/1` checkpoint an organization accepted.
+- **network pulse (planned):** one RAPP/1 `body.pulse` frame per crawl of the network portfolio, on the network's body stream and chained by `prev`. Its `sig` is null until the estate authorizes a signer, whose key its registry then holds (RAPP/1 §§7.1–7.4, 10, 13.3). The portfolio's subway map keeps a version per pulse.
 - **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
 - **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
 - **LTS and newest kernels:** the Brainstem kernel has the same two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest release is tracked separately.
