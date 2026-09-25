@@ -65,7 +65,7 @@ pythonpath = ["src"]
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-include = ["src/**/*.py", "tests/**/*.py", "tools/*.py"]
+include = ["src/**/*.py", "tests/**/*.py", "tools/*.py", "integrations/**/*.py"]
 extend-exclude = [
   ".github/skills/rapp-private-hive/lib",
   ".github/skills/rapp-private-hive/scripts/prepare_workspace.py",
@@ -79,6 +79,10 @@ select = ["E4", "E7", "E9", "F", "I", "B", "UP", "RUF"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
-files = ["src/rapp_work"]
+files = ["src/rapp_work", "integrations/brainstem/agents/rapp_work_agent.py"]
 exclude = ["src/rapp_work/compat"]
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = ["agents.*", "basic_agent"]
+ignore_missing_imports = true

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased (proposal, not accepted)
+
+- Proposal 0017 (gap G17): added `integrations/brainstem/agents/rapp_work_agent.py`,
+  a single-file Brainstem agent for the newest Brainstem channel
+  (`brainstem-v0.6.16`) that calls only the six public SDK operations and applies
+  only a plan whose exact SHA-256 the person confirmed in a later turn. It is
+  source-distribution only: the `rapp_work` package, the wheel, the public API and
+  `SDK_VERSION` are unchanged.
+- Added hot-load, isolation and end-to-end tests
+  (`tests/test_brainstem_agent.py`, `tests/test_brainstem_agent_isolation.py`,
+  `tests/brainstem_harness.py`) and brought the agent under ruff and mypy.
+
 ## 1.0.0 — 2026-09-18
 
 - Replaced the standards-only front door with the installable, typed
