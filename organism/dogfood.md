@@ -14,4 +14,4 @@ loop:
   - "Record: one signed verdict"
   - "Fix upstream: the next sweep flips it"
 ---
-**Built locally; public copy: `kody-w/rapp-hive-public`** (an earlier map, with G1–G17). Its first sweep ran rapp-1's own `rapp_check.py` over 10 public estate repos: 7 were compliant or clean, and 3 drifted (non-conformant eggs in RAPP and RAR; in rapp-model-hive, frames with no trusted anchor (G8) and four duplicate positions). Each verdict is one file in a signed commit. **How it scales:** one agent and the same rules run the 6-person Contoso model and a 317-repo sweep.
+**Built locally; public copy: `kody-w/rapp-hive-public`** (an earlier map, G1–G17). Its first sweep ran rapp-1's own `rapp_check.py` over 10 public estate repos: 7 were compliant or clean, and 3 drifted (non-conformant eggs in RAPP and RAR; in rapp-model-hive, frames with no trusted anchor (G8) and four duplicate positions). Each verdict is one file in a signed commit. **How it scales:** one agent and the same rules run the 6-person Contoso model and a 317-repo sweep.

@@ -11,12 +11,12 @@ span: 2
 check: Each repository's own test suite and runner
 lines:
   - "Your own AI: frozen Grail kernel · hot-loaded agents · soul · memory"
-  - "kernel: LTS `brainstem-v0.6.9` (RAPP's pin) · newest release `brainstem-v0.6.16`"
+  - "kernel: LTS `brainstem-v0.6.9` (RAPP's pin) · newest tag `brainstem-v0.6.16`"
   - Its Hive agent proposes; you decide. A Hive is never its agents folder or soul.
 ---
 The Brainstem is your own AI, and the one surface you talk to. Every other layer is plumbing.
 
 - Its kernel, the Grail, is frozen. Agents are single files it loads while it runs; the Hive agent is one of them, and it never goes into the kernel.
-- The kernel has two channels, by design: LTS, which RAPP pins in `KERNEL_PIN.json` (`brainstem-v0.6.9` today), and the newest release (`brainstem-v0.6.16` today, the newest `brainstem-v*` release tag of `kody-w/rapp-installer`, which its `main` ships).
+- The kernel has two channels, by design: LTS, which RAPP pins in `KERNEL_PIN.json` (`brainstem-v0.6.9` today), and the newest (`brainstem-v0.6.16` today, the newest `brainstem-v*` tag of `kody-w/rapp-installer`, which its `main` ships).
 - It keeps a soul and a memory.
 - For a Hive change, its Hive agent proposes and you decide.

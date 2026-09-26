@@ -20,7 +20,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
 └─────────────────┘           │ agents · soul · memory      │ in and out   │
                               │ kernel: LTS                 │ of the top   │
                               │ brainstem-v0.6.9 (RAPP's    │ of agents/   │
-                              │ pin) · newest release       │ agent and    │
+                              │ pin) · newest tag           │ agent and    │
                               │ brainstem-v0.6.16           │ memory cards │
                               │ Its Hive agent proposes;    │ your         │
                               │ you decide. A Hive is never │ Brainstem's  │
@@ -83,8 +83,8 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                               │ Who may sign as whom · which protocols are │  │ [specified]       │
                               │ pinned · which Grail kernel each release   │  │ newest            │
                               │ scope pins                                 │  └───────────────────┘
-                              │ Append-only · rappid.json ·                │
-                              │ registry.json · owner-anchor.json          │  ┌───────────────────┐
+                              │ Append-only · rappid.json · a signed       │
+                              │ registry · an owner anchor out of band     │  ┌───────────────────┐
                               │ [in force]                                 │─►│ DISTRIBUTED HIVE  │
                               └────────────────────────────────────────────┘  │ ► pins its root   │
                                                      ▲ RAPP/1 frames ·        │ the RAPP/1        │

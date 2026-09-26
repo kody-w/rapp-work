@@ -14,4 +14,4 @@ RAR is the public registry of single-file agents.
 
 - Read an agent before you use it; nothing makes you.
 - You add it yourself: copy it into your Brainstem's `agents/` folder, or press Add in the LTS kernel's RAR browser, which loads it at once. The Brainstem then installs any missing Python package it imports.
-- Nothing pins it yet. No estate pins `rapp-registry/1.1`, and the LTS kernel reads RAR's moving `main`, which RAPP/1 treats as discovery, never authority (§11.2). The newest release pins RAR to a commit and asks before it installs.
+- Nothing pins it yet. No estate pins `rapp-registry/1.1`, and the LTS kernel reads RAR's moving `main`, which RAPP/1 treats as discovery, never authority (§11.2). The newest kernel, `brainstem-v0.6.16`, pins RAR to a commit and asks before it installs.

@@ -29,7 +29,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
 └─────────────────┘           │ agents · soul · memory      │ in and out   │
                               │ kernel: LTS                 │ of the top   │
                               │ brainstem-v0.6.9 (RAPP's    │ of agents/   │
-                              │ pin) · newest release       │ agent and    │
+                              │ pin) · newest tag           │ agent and    │
                               │ brainstem-v0.6.16           │ memory cards │
                               │ Its Hive agent proposes;    │ your         │
                               │ you decide. A Hive is never │ Brainstem's  │
@@ -92,8 +92,8 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                               │ Who may sign as whom · which protocols are │  │ [specified]       │
                               │ pinned · which Grail kernel each release   │  │ newest            │
                               │ scope pins                                 │  └───────────────────┘
-                              │ Append-only · rappid.json ·                │
-                              │ registry.json · owner-anchor.json          │  ┌───────────────────┐
+                              │ Append-only · rappid.json · a signed       │
+                              │ registry · an owner anchor out of band     │  ┌───────────────────┐
                               │ [in force]                                 │─►│ DISTRIBUTED HIVE  │
                               └────────────────────────────────────────────┘  │ ► pins its root   │
                                                      ▲ RAPP/1 frames ·        │ the RAPP/1        │
@@ -194,7 +194,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 | [G12](gaps/G12.md) | Hive Hub dial records did not describe folder Hives | experimental |
 | [G13](gaps/G13.md) | Outside knowledge had no way in | experimental |
 | [G14](gaps/G14.md) | The Hive agent's path to the production ring | open |
-| [G15](gaps/G15.md) | No estate declares the Brainstem's kernel | open |
+| [G15](gaps/G15.md) | No estate declares the Brainstem's kernel | proposed |
 | [G16](gaps/G16.md) | No estate has activated canonical `rapp-work/1` | open |
 | [G17](gaps/G17.md) | The Brainstem does not call the RAPP Work SDK | proposed |
 | [G18](gaps/G18.md) | RAPP's Constitution describes a ten-day experiment | proposed |
@@ -206,9 +206,9 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 
 ## RAPP/1 LTS: what it takes to lock the whole thing
 
-- One estate-signed `release_scope` that pins every component; its Grail pin never moves.
+- One estate-signed `release_scope` whose Grail pin never moves; each release in it pins every component.
 - Everything in it is in force; nothing in it is experimental.
-- The newest channel holds the experiments until they graduate, in one successor scope per newer kernel.
+- The newest channel holds experiments until they graduate: one successor scope per newer kernel.
 
 It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Workspace/1, `rapp-work-sdk/1`, `rapp-registry/1.1`, `rapp-cicd/1`, `rapp-deploy/1`, and the agents and apps that ship with it (RAPP/1 §§11.1, 13.3). Why, and every step: [lock.md](lock.md).
 

@@ -54,7 +54,7 @@
 <rect x="470" y="340" width="500" height="158" rx="10" fill="#fff3bf" stroke="#e67700" stroke-width="2"/>
 <text x="484" y="368" font-size="17" font-weight="700">Brainstem — the one surface you talk to</text>
 <text x="484" y="394" font-size="13.5">Your own AI: frozen Grail kernel · hot-loaded agents · soul · memory</text>
-<text x="484" y="414" font-size="13.5">kernel: LTS brainstem-v0.6.9 (RAPP’s pin) · newest release brainstem-v0.6.16</text>
+<text x="484" y="414" font-size="13.5">kernel: LTS brainstem-v0.6.9 (RAPP’s pin) · newest tag brainstem-v0.6.16</text>
 <text x="484" y="434" font-size="13.5">Its Hive agent proposes; you decide. A Hive is never its agents folder or soul.</text>
 <text x="484" y="454" font-size="13.5">Home: kody-w/RAPP, with the LTS kernel pinned to</text>
 <text x="484" y="474" font-size="13.5">kody-w/rapp-installer@brainstem-v0.6.9</text>
@@ -122,7 +122,7 @@
 <text x="447" y="1135" font-size="14" font-weight="700" text-anchor="middle">1</text>
 <text x="484" y="1128" font-size="17" font-weight="700">Estate — an owner’s signed registry</text>
 <text x="484" y="1154" font-size="13.5">Who may sign as whom · which protocols are pinned · which Grail kernel each release scope pins</text>
-<text x="484" y="1174" font-size="13.5">Append-only · rappid.json · registry.json · owner-anchor.json</text>
+<text x="484" y="1174" font-size="13.5">Append-only · rappid.json · a signed registry · an owner anchor out of band</text>
 <text x="484" y="1194" font-size="13.5">Home: Each owner’s repository (rappid.json, registry.json); the kody-w estate’s signed registry is ecosystem-spec.json in</text>
 <text x="484" y="1214" font-size="13.5">kody-w/rapp-map, anchored by the owner rappid in kody-w/rapp-1’s README</text>
 <rect x="1145" y="1110" width="75" height="22" rx="11" fill="#b2f2bb" stroke="#2f9e44" stroke-width="1"/>

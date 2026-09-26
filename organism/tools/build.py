@@ -900,7 +900,7 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .xa b { font-size: 12pt; font-weight: 700; color: #343a40; margin: 0 1px; vertical-align: -1.5pt; }
 .xa.in { justify-self: end; margin-right: -0.145in; } .xa.out { justify-self: start; margin-left: -0.155in; }
 .xa.dim b { color: #868e96; } .xa.red b { color: #c92a2a; }
-.bottom { display: grid; grid-template-columns: 1.6fr 1.05fr 0.87fr; gap: 0.1in; flex: 1; }
+.bottom { display: grid; grid-template-columns: 1.6fr 1.12fr 0.78fr; gap: 0.1in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
 .panel h2 { font-size: 9pt; margin: 0 0 3px 0; display: flex; align-items: center; justify-content: space-between; }
 pre.tree { font-family: Menlo, "SF Mono", Consolas, monospace; font-size: 6.5pt; line-height: 1.25; margin: 2px 0 4px 0;
@@ -926,8 +926,8 @@ LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radiu
 .sw.neither { background: #fff; border-style: dotted; }
 .legend .chip.lock { margin-right: 3px; } .legend.only { grid-template-columns: auto; }
 .h .chips { display: flex; gap: 3px; flex: none; }
-.plan .ph { padding: 2px 4px 1px 4px; border-bottom: 1px solid #edf0f2; } .plan .ph.you { background: #fff4e6; }
-.plan .who { color: #495057; } .plan .gs { display: inline-block; } .plan .gs .g { margin-top: 1px; } .note { margin-top: 4px; font-size: 7.1pt; color: #333; }
+.plan .ph { padding: 1.5px 4px 1px 4px; border-bottom: 1px solid #edf0f2; } .plan .ph.you { background: #fff4e6; }
+.plan .who { color: #495057; } .plan .gs { display: inline-block; } .plan .gs .g { margin-top: 1px; } .note { margin-top: 4px; font-size: 7pt; color: #333; }
 .note.lead { margin: 0 0 3px 0; }
 .g { display: inline-block; border: 1px solid; border-radius: 7px; padding: 0 4px; font-size: 6pt; line-height: 1.35;
      font-weight: 700; margin: 0 1px 1px 0; }

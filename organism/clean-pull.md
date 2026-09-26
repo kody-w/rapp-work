@@ -20,8 +20,8 @@ mentions:
   - "hive-hub-mcp: 0"
   - "rapp-hive-hub-join: 0"
 door:
-  - "proposed: the installer README's “Start here” leads with the RAPP/1 LTS install (`kody-w/rapp-installer#48`, open)"
-  - "proposed: every RAPP repo shows its earned RAPP/1 badge and a “Start here” link (PRs open in 13 of the stack's 15 repos; `rapp-workspace` waits on G24)"
-  - "experimental: the drift sweep sets each status, and `kody-w/rapp-hive-public` publishes the portfolio: the RAPP/1 stack is 12 of 15 certified"
+  - "proposed: the installer's “Start here” leads with the RAPP/1 LTS install (`kody-w/rapp-installer#48`, open)"
+  - "proposed: every RAPP repo shows its earned RAPP/1 badge and a “Start here” link (PRs open in 13 of the stack's 15; `rapp-hive-public` has it; `rapp-workspace` waits on G24)"
+  - "experimental: the drift sweep sets each status; the portfolio in `kody-w/rapp-hive-public` shows 12 of the stack's 15 certified"
 ---
 Mentions, not problems; some are legitimate. Recount at lock time.

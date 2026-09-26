@@ -8,4 +8,4 @@ health: specified (G16)
 arrow: in
 label: release evidence
 ---
-Evidence flows from the release rings into the organization. It records verified-release receipts and bounded observations, each bound to one exact release and deploy plan. A candidate cannot certify itself.
+Evidence flows from the release rings into the organization. It records verified-release receipts, each bound to one exact release, and bounded observations, each bound to one exact release and deploy plan. A candidate cannot certify itself.

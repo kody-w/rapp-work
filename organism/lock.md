@@ -1,9 +1,9 @@
 ---
 name: "RAPP/1 LTS: what it takes to lock the whole thing"
 definition:
-  - "One estate-signed `release_scope` that pins every component; its Grail pin never moves"
+  - "One estate-signed `release_scope` whose Grail pin never moves; each release in it pins every component"
   - Everything in it is in force; nothing in it is experimental
-  - The newest channel holds the experiments until they graduate, in one successor scope per newer kernel
+  - "The newest channel holds experiments until they graduate: one successor scope per newer kernel"
 pins:
   - "the LTS kernel `brainstem-v0.6.9`"
   - "`rapp-hive/1`"
@@ -33,14 +33,14 @@ steps:
   - "3: RAPP/1 core additions land before the estate signs: rev-17, a draft on `kody-w/rapp-1` `experimental/rapp1-core-*`, adds release pins, lifecycle notices and stream signers"
   - "3: rapp-hive/1 (G1, G6)"
   - "3: rapp-work-sdk/1 (G2, G3, G4, G7, G11)"
-  - "3: rapp-work/1 (G5, G10); RAPP's Constitution and RAPP Workspace/1 (G22, G24)"
+  - "3: rapp-work/1, by sibling profiles (G5, G10); RAPP's Constitution and RAPP Workspace/1 (G22, G24)"
   - "3: a gap that cannot close in time waits for a later RAPP, with the owner's sign-off"
   - "4: sign both kernel channels: a `grail-kernel` entry for the LTS scope, and one for a successor scope (G15)"
   - "4: sign the remaining protocol pins; that switches on the Workspaces and RAR"
   - "4: activate `rapp-work/1` (G16), so the Organization is in force"
   - "4: authorize the network pulse signer: pulses (experimental) version the map and the network's health"
-  - "4: switch on the Distributed Hive: beacon 1.1 and `estate.json`, pinned by commit and hash, and the operator accepted in RAPP's seed (RAPP proposal 0020, a draft)"
-  - "5: graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20) and its SDK agent (G17), the Distributed Hive"
+  - "4: switch on the Distributed Hive: accept RAPP proposal 0020, then merge beacon 1.1, `estate.json` and the operator's acceptance in RAPP's seed (drafts in `kody-w/rapp-estate`)"
+  - "5: graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20), the Brainstem's SDK agent (G17), the Distributed Hive"
   - "5: then Hive Mind, once an estate accepts `rapp-federation/1`, and the Release rings, once a graduation uses them"
   - "5: merge what graduated; the rest stays out of what people pull"
   - "5: tag the lock once the clean-pull check passes again; sweep for drift on a schedule"

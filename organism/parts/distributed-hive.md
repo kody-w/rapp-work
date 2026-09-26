@@ -16,4 +16,4 @@ The distributed Hive is the RAPP/1 network as one Hive of plain folders and file
 - It is all found by raw URL, with no server: RAPP's seed, then the operator's beacon, then `estate.json`, then the Hive root, then each station (RAPP Constitution Articles XLVI and XLVII, and proposal 0020).
 - LTS, the default, reads each station at its pinned commit and checks every hash. Newest reads each at `HEAD`. The Hive agent's `resolve` reads only the LTS way: each station at its pinned commit, every file checked, into a local copy.
 - Hashes prove integrity only. Authenticity needs one signature at the top: the estate owner's signed registry.
-- Today the seed's one operator is not accepted, and the beacon and `estate.json` are placeholder status documents, so a walk from the seed stops at the estate.
+- Today the seed's one operator is not accepted, and the beacon and `estate.json` are placeholder status documents, so a walk from the seed stops at the estate. The estate kit drafted a real beacon 1.1 and an `estate.json` that pins the Hive root, on `kody-w/rapp-estate` branch `experimental/rapp1-distributed-hive`; nothing there is signed.
