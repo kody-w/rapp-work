@@ -1,10 +1,10 @@
 For the owner
-- Decision: allow pointer-only migration successors for seeded Hives and long world IDs.
+- Decision: allow pointer-only successors, after G11 settles the name.
 - You approve: the design only; no migration behavior activates here.
-- After approval: the draft implementation can stay linked until G11 is accepted and pins compose.
-- If approved: repository-seeded Hives can join Workspace flows without copying Hive state.
+- Hold condition: do not accept G4 until G11 is accepted and this text uses its name.
+- If approved later: seeded Hives can be referenced without copying Hive state.
 - If held: seeded Hives remain outside the SDK migration path.
-- Risk: G4 should not activate before G11 settles the workspace-index name.
+- Risk: accepting before G11 may force a second pointer token.
 
 # 0004 — Pointer-only migration successors for repository-seeded Hives and long world ids
 
@@ -12,8 +12,9 @@ For the owner
 
 Merging this proposal accepts the design only. It does **not** activate code,
 change SPEC bytes, move pins, or release a new SDK. The reference
-implementation stays on its experimental branch until the owner accepts this
-proposal; its implementation pull request is then draft-only until reviewed.
+implementation stays on its experimental branch. Do not request acceptance of
+this proposal until G11 has been accepted and this text has been amended to use
+the settled name; its implementation pull request remains draft-only until then.
 
 
 | Field | Value |
@@ -1128,14 +1129,14 @@ branch.
 
 ## 12. Owner actions needed
 
-1. Accept or reject sections 4.2 and 4.3 and apply the text to
-   `protocols/rapp-work-sdk/1/SPEC.md`; add the schemas of section 4.4 as files
-   under `protocols/rapp-work-sdk/1/`.
-2. On acceptance, update the SDK specification pins in
-   `src/rapp_work/data/profiles.json` and `protocols/index.json` (these are
-   package pins, not signed-registry pins: no re-signature is needed), bump the
-   package and `SDK_VERSION` to 1.1.0 (with `tools/verify_package.py`'s version
-   check), and regenerate `RELEASE-INVENTORY.json`.
+1. Accept or reject sections 4.2 and 4.3 only after G11 is accepted and this
+   proposal has been amended to use the settled name.
+2. If accepted, review the draft implementation PR first. Only after it merges,
+   apply the text to `protocols/rapp-work-sdk/1/SPEC.md`, add the schemas of
+   section 4.4, update the SDK specification pins in
+   `src/rapp_work/data/profiles.json` and `protocols/index.json`, bump the
+   package and `SDK_VERSION` to 1.1.0, run `tools/verify_package.py`, and
+   regenerate `RELEASE-INVENTORY.json`.
 3. Decide open questions 1–10, including whether to act on section 13's D1.
 4. For the Hive owner: decide whether `rapp-hive/1` ever needs longer world ids
    in signed payloads (option B: new payload tokens and signed-registry kinds;
@@ -1189,6 +1190,11 @@ branch.
   same effect. The pointer-only path of this proposal refuses it by device and
   inode (section 3.5); the default path is left as on `main` and reported.
 
+
+## G1 authority-channel note
+
+G1 allows a later Hive declaration to move `authority_channel_id`. This proposal does not implement later-declaration replay. A pointer-only successor for a published Hive corroborates against the genesis declaration only, so a Hive whose authority channel moved under G1 is out of scope for this draft: the old channel may still plan and the current channel may refuse. Supporting moved-channel Hives needs a later G4 revision that replays the Mother chain to the declaration in effect at the accepted Mother head.
+
 ## 14. Related proposals and merge order
 
 Sibling drafts on `kody-w/rapp-work` touch some of the same files and
@@ -1200,6 +1206,7 @@ sections. This branch does not edit them.
 | 0003 (G3, `experimental/gap-g3-agent-discovery`) | SPEC §11 (and a new §11.1), `discovery.py`, `docs/API.md`, `CHANGELOG.md`, inventory | No semantic overlap. |
 | 0006 (G6, `experimental/gap-g6-owner-succession`) | Inserts SPEC §5.1 and a §12 paragraph; `docs/API.md`, `CHANGELOG.md`, inventory | Composes: section 4.3 inserts a sentence after the §12 paragraph, and 0006 inserts its own paragraph; neither replaces text. |
 | 0007 (G7, `experimental/gap-g7-instruction-inventory`) | Inserts SPEC §4 and §12 paragraphs and §7.1–§7.6; edits `workspace.py`, `api.py` (`_verify`, `_update`), `_paths.py`, `cli.py` (`_inputs`, next to this branch's `migrate` arguments), `data/api.json` (`verify` inputs), and `docs/API.md` (the operations table's `verify` row, and a `### Instruction files` section inserted after the same "For effectful operations" paragraph that this branch's migrate paragraph follows); appends to `docs/MIGRATION.md` after the same paragraph this branch appends after | Composes: every SPEC edit is an insertion; `workspace.py` and `_paths.py` are untouched here; different `api.py` functions and `cli.py` branches; in `docs/API.md` and `data/api.json` keep both rows and both inserted sections (this branch's paragraph, then 0007's section); keep both `docs/MIGRATION.md` sections. A pointer successor is not a Workspace, so 0007's instruction inventory never applies to it. |
+| 0001 (G1, `experimental/gap-g1-roster-declaration`) | Later declarations can move `authority_channel_id` | This G4 draft corroborates only the genesis declaration; moved-channel Hives are out of scope until a later revision replays the Mother chain to the effective declaration. |
 | 0011 (G11, `experimental/gap-g11-workspace-index`) | Proposes renaming the pointer-only Organization to "workspace index" (`kind: "workspace-index"`, new records) and replacing §7, the first §10 paragraph and §12 | This proposal's closed enums (`source_kind`, binding `kind`: `hive`, `organization`, `workspace`) and its accepted identity kinds would need `workspace-index`, and the bound allowlist `workspace-index.json`. Add them before either is accepted, while these tokens are drafts, so no token moves; if this proposal were accepted first, a workspace index source would need a new pointer token (Art. 2). Section 4.2 appends §10.1 and composes with 0011's §10 replacement. |
 | 0017 (G17, `experimental/gap-g17-brainstem-sdk-agent`) | Its Brainstem agent calls `migrate` with only `source` and `target` | No conflict; the agent never requests a pointer-only successor. Offering one would be a later change to that agent. |
 
@@ -1248,7 +1255,7 @@ Body: Adds an explicit `successor: "pointer-only"` form to `migrate` for
 repository-seeded Hives and sources with world ids longer than 64 characters.
 The successor holds only a `rapp-work-pointer-successor/1` record with exact
 authority-byte commitments, plus the unchanged receipt and recovery marker; it
-copies nothing, mints nothing, never reads Git internals, and never writes the
+copies nothing, mints nothing, does not rely on Git internals, and never writes the
 source. A description of a seeded Hive is corroborated against the source's
 own Hive records, including a publication's genesis declaration found through
 its current pointer. World ids up to 128 characters exist only inside the new
