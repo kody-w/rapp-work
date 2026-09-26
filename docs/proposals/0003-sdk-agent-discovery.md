@@ -1,10 +1,10 @@
 For the owner
-- Decision: discover *_agent.py files as inert data, never as runnable code.
-- You approve: opt-in discovery records and parser bounds only.
+- Decision: discover *_agent.py as inert data and bound all Python parsing.
+- You approve: opt-in agent records plus default Portable Neuron parser bounds.
 - After approval: the draft implementation can be reviewed, then SDK pins/version move.
 - If approved: Workspaces can see Brainstem agents without executing them.
 - If held: single-file agents remain invisible to SDK discovery.
-- Risk: parser bounds may reject pathological files that Python might still parse.
+- Risk: small-but-out-of-bound neurons, such as 257-term expressions, now refuse for safety.
 
 # Proposal 0003: SDK discovery records single-file agents as inert data
 
@@ -46,7 +46,8 @@ This draft fixes all of them:
   The review was right that this is the same kind of change draft 1 rejected
   for other options. Discovery of agents is now opt-in through a new closed
   input member, `agents: true`. Every request that 1.0.0 accepts returns its
-  1.0.0 result, apart from the embedded static API document (section 3).
+  1.0.0 result, apart from the embedded static API document and Portable
+  Neurons that exceed the new parser safety bounds (section 3).
 - **Imprecise normative text (medium).** The class bound now counts distinct
   names, as the code always did. Manifest nodes, depth, and every binding form
   of `__manifest__` are defined exactly; function and lambda parameters and
@@ -350,8 +351,9 @@ whose measure stops at such a budget, or that finds no budget left, is
 
 ### 2.3 What this means in practice (non-normative)
 
-- `discover` without `agents` behaves as 1.0.0 did, including on trees full
-  of agent files: it does not open them.
+- `discover` without `agents` does not open agent files, as in 1.0.0. Its
+  result differs from 1.0.0 only in the embedded static API document and in
+  Portable Neurons outside the §11.2 bounds, which are refused before parsing.
 - `discover` with `agents: true` returns one record per `*_agent.py`: its
   hash, a parser verdict, its `BasicAgent` subclass names, and five of the
   manifest fields RAR defines (`schema`, `name`, `version`, `display_name`,
@@ -374,9 +376,9 @@ whose measure stops at such a budget, or that finds no budget left, is
 | Token or surface | Change |
 |---|---|
 | `rapp-work-result/1` envelope (seven members) | None |
-| Discover result for every request 1.0.0 accepts | Same member set, same records, same refusals, same bytes, except the `api` member (next row). Vectors in section 7.1 |
+| Discover result for every request 1.0.0 accepts | Same envelope and same records for sources inside the parser bounds; the `api` member changes, and Portable Neurons outside §11.2 bounds now produce `REFUSE_DISCOVERY_METADATA` instead of a neuron record |
 | `rapp-work-static-api/1` (`api.json`) | Same key set and grammar. Two values change: one string added to one `optional_inputs` array, and one refusal summary string reworded. Its bytes appear in every `status` and `discover` result |
-| Closed `discover` input | One new optional member, `agents`. Requests without it are unchanged |
+| Closed `discover` input | One new optional member, `agents`. Requests without it are unchanged except for the static API document and Portable Neurons refused by the parser safety bounds |
 | Discover result for a request with `agents: true` | Has an `agents` member, and `refusals` can list agent files. 1.0.0 refuses such a request, so no result that existed before changes |
 | `rapp-work-discovered-skill/1`, `rapp-work-discovered-plugin/1` | None |
 | `rapp-work-portable-neuron/1` | Same shape and bytes for every neuron within the §11.2 bounds. A neuron outside them is refused, as a neuron the parser rejects is refused today |
@@ -408,28 +410,30 @@ This draft makes agent discovery opt-in. The options, weighed again:
 | (a) Always add `agents: []` | Every discover result changes shape | Rejected |
 | (b) Add `agents` when the tree holds agent files (draft 1) | Results of 1.0.0 requests change shape and refusals under unchanged labels | Rejected: needs an owner ruling |
 | (c) Put agent records into `neurons` or `refusals` | Changes an existing array's grammar in place | Rejected: violates Article 2 |
-| (d) Opt-in closed input member `agents: true` | No result of a request that 1.0.0 accepts changes shape. The static API document keeps its shape; two values change | **Chosen** |
+| (d) Opt-in closed input member `agents: true`, plus default Portable Neuron parser bounds | Agent records appear only for a new request that 1.0.0 refuses; default Portable Neurons outside §11.2 bounds now refuse under the existing result envelope | **Chosen, with owner ruling requested in Open question 1** |
 | (e) Mint `rapp-work-sdk/2` or `rapp-work-result/2` | Lawful, but moves every consumer to a new label to add one inert record kind | Held in reserve (Open question 1) |
 
-Why (d) is lawful without an owner ruling:
+Why (d) needs the owner's Article 2 ruling:
 
 - No labeled artifact changes its key set, field grammar, or hash rule.
   `rapp-work-result/1` keeps its seven members. `rapp-work-static-api/1` keeps
   its keys and grammar: an `optional_inputs` array is still an array of input
   names, and `refusals` is still an array of summary strings.
-- Every result that could exist before this change is reproduced exactly,
-  apart from the static API document embedded in it. The vector in section 7.1
-  proves it on a tree full of agent files: after the 1.0.0 static API
-  document is put back, the result is byte-identical to 1.0.0's.
-- The new shape appears only in the result of a new request, which 1.0.0
+- Agent records appear only in the result of a new request, which 1.0.0
   refuses (`REFUSE_INPUT_KEYS`). A consumer that holds such a result also
   holds the request that asked for it.
-- The new records carry their own new token.
+- The default Portable Neuron guard does change some accepted requests: a
+  neuron outside §11.2 bounds now becomes `REFUSE_DISCOVERY_METADATA`. This is
+  intentional safety, not a new shape. Examples include a tiny 257-term string
+  concatenation, a 641-digit decimal literal, or a 40,000-line data table.
+- Open question 1 asks the owner whether that default-path safety refusal can
+  stay under `rapp-work-sdk/1` or must move to a new label.
 
 What (d) still changes, stated plainly: the `api` member of every `status` and
-`discover` result, because it embeds `api.json`. Draft 1 rejected (d) to keep
-those bytes. That weighed byte identity above shape stability, which is what
-Article 2 protects. A static API document exists to describe the operation
+`discover` result, because it embeds `api.json`, and default Portable Neurons
+outside the parser bounds now refuse before `ast.parse`. Draft 1 rejected (d)
+to keep API bytes. That weighed byte identity above shape stability, which is
+what Article 2 protects. A static API document exists to describe the operation
 surface, so it must change whenever the surface grows; sibling proposals G2
 (`update` gains `moves` and `inverse_of`) and G4 (`migrate` gains `hive` and
 `successor`) change it the same way, in different arrays. The cost is paid once
@@ -579,7 +583,8 @@ shares those paths, which is also true today.
 
 - No data or files migrate; discovery writes nothing.
 - Callers that do not send `agents` see no change except the embedded static
-  API document.
+  API document and the safety refusal for Portable Neurons outside §11.2
+  parser bounds.
 - The Brainstem app and the G17 agent opt in with `agents: true` (CLI
   `--agents`). Against an SDK without this proposal, that request is refused
   with `REFUSE_INPUT_KEYS`, and the caller can fall back to reading nothing.
@@ -754,7 +759,7 @@ GitHub CI does not run for branch pushes in this repository.
   `live_directory`, and `inspect_agent_entry`.
 - `src/rapp_work/discovery.py`: agent files are collected only when `agents`
   is true, then inspected in code-point order of path and root with one budget.
-  Without `agents`, `*_agent.py` files take the unchanged 1.0.0 path.
+  Without `agents`, `*_agent.py` files take the unchanged 1.0.0 path; Portable Neuron sources still get the default parser-bound guard.
 - `src/rapp_work/neuron.py`: `PortableNeuron.inspect` measures the text before
   its unchanged `ast.parse`.
 - `src/rapp_work/api.py`, `src/rapp_work/cli.py`, `src/rapp_work/data/api.json`:
@@ -765,7 +770,7 @@ GitHub CI does not run for branch pushes in this repository.
 - **Gating.** Agent discovery is opt-in: only a request with `agents: true`
   gets agent records or agent refusals, and 1.0.0 refuses that request. The
   default is unchanged and fail-closed. The Portable Neuron guard is not
-  opt-in: it only refuses sources that could crash or exhaust the process, and
+  opt-in: it refuses sources outside the fixed nesting, digit, replacement-field, or token bounds, and
   every neuron within the bounds is inspected exactly as before. Tests cover
   both sides of each gate. The branch is experimental and is not merged; the
   owner decides.
@@ -795,9 +800,10 @@ pins in `protocols/index.json` and `src/rapp_work/data/profiles.json` and runs
 
 ## 10. Open questions for the owner
 
-1. **Article 2 reading.** Is the operation's accepted input set part of what
-   `rapp-work-sdk/1` denotes? If yes, this proposal (and G2 and G4) moves to a
-   new label (option e).
+1. **Article 2 reading.** Is the operation's accepted input set, or the default
+   Portable Neuron parser-bound refusal, part of what `rapp-work-sdk/1`
+   denotes? If yes, this proposal (and G2 and G4) moves to a new label
+   (option e).
 2. **Bounds.** Nesting 256 (real agents reach 79), cost 131,072 per file (real
    agents reach 44,813), 640 decimal digits, 1,024 replacement fields per run,
    and a call budget of 8,388,608 (the whole RAR catalog needs 4.9 million).
@@ -815,8 +821,9 @@ pins in `protocols/index.json` and `src/rapp_work/data/profiles.json` and runs
    `syntax` agrees across interpreters for newer syntax, at the cost of
    rejecting syntax that a newer Brainstem would load?
 7. **Neuron budget.** Portable Neurons get the per-file bounds but no call
-   budget, so that default `discover` keeps its 1.0.0 results. Should a
-   later revision give neurons a budget too?
+   budget, so that default `discover` keeps its 1.0.0 call-level behavior apart from
+   per-file parser-bound refusals. Should a later revision give neurons a
+   budget too?
 8. **Bytecode flag.** Should a record say when `__pycache__` beside a live
    agent holds bytecode the kernel may prefer (section 4)? That needs a
    bounded, no-follow listing of `__pycache__`, which discovery skips today.
@@ -848,7 +855,7 @@ Python, including Portable Neurons, is preceded by a token-level measure with
 fixed nesting, cost, integer, and replacement-field bounds, which removes a
 process crash on Python 3.10 and bounds time and memory per file and per call.
 Requests without `agents` return their 1.0.0 results apart from the embedded
-static API document (vectors `592c1820…1a36` and `10482008…21ba`). The SDK
+static API document and Portable Neurons refused by the parser safety bounds (vectors `592c1820…1a36` and `10482008…21ba`). The SDK
 specification pins follow the new §11 bytes; the frozen signed registry is
 unaffected. Full rationale: `docs/proposals/0003-sdk-agent-discovery.md`.
 
