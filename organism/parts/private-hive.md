@@ -13,7 +13,7 @@ lines:
   - one owner
   - bound by hive_rappid
 ---
-A Private Hive is the `rapp-hive/1` profile, in force today: `kody-w/rapp-work`'s own signed registry pins it. The kody-w estate's registry does not pin it yet; phase 4 signs that pin.
+A Private Hive is the `rapp-hive/1` profile, in force today: `kody-w/rapp-work`'s own signed registry (`registry_seq` 0) pins it at today's bytes, though that registry's `rapp-work/1` pin, the historical root `SPEC.md`, is history, not an adoption. The kody-w estate's registry does not pin it yet; phase 4 signs that pin.
 
 - Its declaration names one Hive, its world, one owner, its members, rooms and channels.
 - An organization binds exactly one of them by its `hive_rappid`.

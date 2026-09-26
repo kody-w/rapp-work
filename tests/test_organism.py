@@ -79,9 +79,9 @@ def test_the_lock_in_page_ends_at_the_distributed_hive() -> None:
     [
         ("crossings/folder-hive-organization.md", "to: organization", "to: nowhere", "names `nowhere`"),
         ("crossings/estate-organization.md", "arrow: up", "arrow: down", "points against"),
-        ("gaps/G18.md", "phase: 1", "phase: 6", "`phase` is 1 to 5"),
-        ("gaps/G18.md", "who: you", "who: nobody", "`who` is one of"),
-        ("gaps/G18.md", "blocks: brainstem", "blocks: nowhere", "`blocks` names"),
+        ("gaps/G19.md", "phase: 1", "phase: 6", "`phase` is 1 to 5"),
+        ("gaps/G19.md", "who: you", "who: nobody", "`who` is one of"),
+        ("gaps/G19.md", "blocks: brainstem", "blocks: nowhere", "`blocks` names"),
         ("lock.md", '  - "1: accept or refuse RAPP proposal 0002 (G19), Tier 2 loading: a draft on '
          '`experimental/proposal-0002-tier2-parity`"\n', "", "no phase 1 step in lock.md names G19"),
         ("lock.md", "Public copy, the Brainstem app", "the Brainstem app", "Public copy is not in RAPP/1 yet"),
@@ -90,7 +90,7 @@ def test_the_lock_in_page_ends_at_the_distributed_hive() -> None:
         ("clean-pull.md", '"RAR: 50"', '"RAR: fifty"', "each `mentions` item reads"),
         ("clean-pull.md", "phase: 2", "phase: 3", "no phase 3 step in lock.md says"),
         ("clean-pull.md", '"proposed: the installer', '"maybe: the installer', "each `door` item reads"),
-        ("lock.md", '"1: merge the amendment', '"2: merge the amendment', "names G18, which is no phase 2 gap"),
+        ("lock.md", '"1: ratify the RAPP Work Constitution', '"2: ratify the RAPP Work Constitution', "names G8, which is no phase 2 gap"),
         ("lock.md", 'end: "distributed-hive:', 'end: "nowhere:', "`end` reads `<part id>: words`"),
         ("gaps/G24.md", "phase: 3", "phase: 4", "a phase 3 step names G24, which is no phase 3 gap"),
     ],

@@ -22,9 +22,9 @@ phases:
   - "Switch it on: estate owner"
   - "Graduate into RAPP/1: engineering, through the rings"
 steps:
-  - "1: merge the amendment of RAPP proposal 0001 (G18), a documentation fix only, reserved for the maintainer (XXVIII.4, XXX.2); the proposal (`kody-w/RAPP#119`) is merged"
   - "1: accept or refuse RAPP proposal 0002 (G19), Tier 2 loading: a draft on `experimental/proposal-0002-tier2-parity`"
   - "1: ratify the RAPP Work Constitution and its Part V (G8, G9)"
+  - "1: done: RAPP proposal 0001 and its amendment are merged (`kody-w/RAPP#119`, `kody-w/RAPP#124`), so RAPP's Constitution says only top-level agents are live"
   - "2: fix RAPP's and RAR's non-conformant eggs and RAR's bounded scan (`kody-w/RAPP#121`, which only the maintainer merges, and `kody-w/RAR#1116`; both open)"
   - "2: give rapp-model-hive's frames a trusted anchor (`kody-w/rapp-model-hive#2`, open; it needs the owner's registry entries)"
   - "2: re-sweep until every repo of the RAPP/1 stack is certified (the dogfood)"

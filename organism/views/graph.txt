@@ -11,7 +11,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                   ▲ ask · answer · confirm Hive plans
                                   ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
-│ RAR             │           │ 5 · BRAINSTEM              [6 to graduate] │
+│ RAR             │           │ 5 · BRAINSTEM              [5 to graduate] │
 │ one-file agents │           │ the one surface you talk to                │
 │ you add one to  │           ├─────────────────────────────┬──────────────┤
 │ agents/         │─copy in──►│ BRAINSTEM                   │ BRAINSTEM    │

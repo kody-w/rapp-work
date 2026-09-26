@@ -13,7 +13,7 @@ It also says what it takes to lock RAPP/1, the one LTS release of the whole stac
 | `parts/` | Parts inside a layer, and parts beside the stack |
 | `crossings/` | How anything moves between layers, one crossing per file |
 | `journeys/` | E1 to E7: end to end, through every layer |
-| `gaps/` | One file per gap, G01 to G24: what is still open, and which lock-in phase closes each. A dropped gap leaves its number unused (G21). |
+| `gaps/` | One file per gap, G01 to G24: what is still open, and which lock-in phase closes each. A closed or dropped gap leaves its number unused: G18 closed when RAPP's Constitution took the live-agents rule (`kody-w/RAPP#119`, `#124`), and G21 was dropped. |
 | `invariants.md` | What holds everywhere |
 | `dogfood.md` | The RAPP Hive, where the organism is tried for real |
 | `health.md` | The health words every `health` and `status` starts with |
