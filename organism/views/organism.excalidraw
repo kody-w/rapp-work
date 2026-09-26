@@ -2263,11 +2263,11 @@
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "old-hive-folder-hive",
+     "id": "hive-hive-mind",
      "type": "arrow"
     },
     {
-     "id": "private-hive-hive-mind",
+     "id": "old-hive-folder-hive",
      "type": "arrow"
     }
    ],
@@ -4403,7 +4403,7 @@
      "type": "text"
     },
     {
-     "id": "private-hive-hive-mind",
+     "id": "hive-hive-mind",
      "type": "arrow"
     }
    ],
@@ -5400,9 +5400,9 @@
   {
    "id": "hive-copy-folder-hive:141",
    "type": "text",
-   "x": 948.5,
+   "x": 968.5,
    "y": 693.0,
-   "width": 183,
+   "width": 143,
    "height": 31,
    "angle": 0,
    "strokeColor": "#000000",
@@ -5425,8 +5425,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "signed commits, verified before\ncheckout",
-   "originalText": "signed commits, verified before\ncheckout",
+   "text": "commits, verified before\ncheckout",
+   "originalText": "commits, verified before\ncheckout",
    "fontSize": 12.5,
    "fontFamily": 2,
    "containerId": "hive-copy-folder-hive",
@@ -5496,10 +5496,10 @@
   {
    "id": "private-hive-organization:143",
    "type": "text",
-   "x": 429.5,
-   "y": 873.0,
-   "width": 181,
-   "height": 31,
+   "x": 412.0,
+   "y": 881.0,
+   "width": 216,
+   "height": 16,
    "angle": 0,
    "strokeColor": "#000000",
    "backgroundColor": "transparent",
@@ -5521,8 +5521,8 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "work.vector: the accepted Hive\ncheckpoint",
-   "originalText": "work.vector: the accepted Hive\ncheckpoint",
+   "text": "work.vector: the accepted checkpoint",
+   "originalText": "work.vector: the accepted checkpoint",
    "fontSize": 12.5,
    "fontFamily": 2,
    "containerId": "private-hive-organization",
@@ -6108,103 +6108,7 @@
    "verticalAlign": "middle"
   },
   {
-   "id": "old-hive-folder-hive",
-   "type": "arrow",
-   "x": 330,
-   "y": 800,
-   "width": 132,
-   "height": 0,
-   "angle": 0,
-   "strokeColor": "#343a40",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 2,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [
-    "old-hive-folder-hive"
-   ],
-   "frameId": null,
-   "roundness": null,
-   "seed": 156,
-   "version": 1,
-   "versionNonce": 156,
-   "isDeleted": false,
-   "boundElements": [
-    {
-     "id": "old-hive-folder-hive:157",
-     "type": "text"
-    }
-   ],
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "points": [
-    [
-     0,
-     0
-    ],
-    [
-     132,
-     0
-    ]
-   ],
-   "lastCommittedPoint": null,
-   "startBinding": {
-    "elementId": "outside-knowledge",
-    "focus": 0,
-    "gap": 1
-   },
-   "endBinding": {
-    "elementId": "hive",
-    "focus": 0,
-    "gap": 1
-   },
-   "startArrowhead": null,
-   "endArrowhead": "arrow",
-   "elbowed": false
-  },
-  {
-   "id": "old-hive-folder-hive:157",
-   "type": "text",
-   "x": 352.0,
-   "y": 784.0,
-   "width": 88,
-   "height": 28,
-   "angle": 0,
-   "strokeColor": "#495057",
-   "backgroundColor": "transparent",
-   "fillStyle": "solid",
-   "strokeWidth": 1,
-   "strokeStyle": "solid",
-   "roughness": 0,
-   "opacity": 100,
-   "groupIds": [
-    "old-hive-folder-hive"
-   ],
-   "frameId": null,
-   "roundness": null,
-   "seed": 157,
-   "version": 1,
-   "versionNonce": 157,
-   "isDeleted": false,
-   "boundElements": null,
-   "updated": 1,
-   "link": null,
-   "locked": false,
-   "text": "carried signed\nrequests",
-   "originalText": "carried signed\nrequests",
-   "fontSize": 11,
-   "fontFamily": 2,
-   "containerId": "old-hive-folder-hive",
-   "lineHeight": 1.25,
-   "autoResize": true,
-   "textAlign": "center",
-   "verticalAlign": "middle"
-  },
-  {
-   "id": "private-hive-hive-mind",
+   "id": "hive-hive-mind",
    "type": "arrow",
    "x": 1238,
    "y": 837,
@@ -6219,17 +6123,17 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "private-hive-hive-mind"
+    "hive-hive-mind"
    ],
    "frameId": null,
    "roundness": null,
-   "seed": 158,
+   "seed": 156,
    "version": 1,
-   "versionNonce": 158,
+   "versionNonce": 156,
    "isDeleted": false,
    "boundElements": [
     {
-     "id": "private-hive-hive-mind:159",
+     "id": "hive-hive-mind:157",
      "type": "text"
     }
    ],
@@ -6262,7 +6166,7 @@
    "elbowed": false
   },
   {
-   "id": "private-hive-hive-mind:159",
+   "id": "hive-hive-mind:157",
    "type": "text",
    "x": 1266.0,
    "y": 829.0,
@@ -6277,7 +6181,103 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "private-hive-hive-mind"
+    "hive-hive-mind"
+   ],
+   "frameId": null,
+   "roundness": null,
+   "seed": 157,
+   "version": 1,
+   "versionNonce": 157,
+   "isDeleted": false,
+   "boundElements": null,
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "text": "agreements",
+   "originalText": "agreements",
+   "fontSize": 11,
+   "fontFamily": 2,
+   "containerId": "hive-hive-mind",
+   "lineHeight": 1.25,
+   "autoResize": true,
+   "textAlign": "center",
+   "verticalAlign": "middle"
+  },
+  {
+   "id": "old-hive-folder-hive",
+   "type": "arrow",
+   "x": 330,
+   "y": 800,
+   "width": 132,
+   "height": 0,
+   "angle": 0,
+   "strokeColor": "#343a40",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 2,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "old-hive-folder-hive"
+   ],
+   "frameId": null,
+   "roundness": null,
+   "seed": 158,
+   "version": 1,
+   "versionNonce": 158,
+   "isDeleted": false,
+   "boundElements": [
+    {
+     "id": "old-hive-folder-hive:159",
+     "type": "text"
+    }
+   ],
+   "updated": 1,
+   "link": null,
+   "locked": false,
+   "points": [
+    [
+     0,
+     0
+    ],
+    [
+     132,
+     0
+    ]
+   ],
+   "lastCommittedPoint": null,
+   "startBinding": {
+    "elementId": "outside-knowledge",
+    "focus": 0,
+    "gap": 1
+   },
+   "endBinding": {
+    "elementId": "hive",
+    "focus": 0,
+    "gap": 1
+   },
+   "startArrowhead": null,
+   "endArrowhead": "arrow",
+   "elbowed": false
+  },
+  {
+   "id": "old-hive-folder-hive:159",
+   "type": "text",
+   "x": 346.0,
+   "y": 784.0,
+   "width": 100,
+   "height": 28,
+   "angle": 0,
+   "strokeColor": "#495057",
+   "backgroundColor": "transparent",
+   "fillStyle": "solid",
+   "strokeWidth": 1,
+   "strokeStyle": "solid",
+   "roughness": 0,
+   "opacity": 100,
+   "groupIds": [
+    "old-hive-folder-hive"
    ],
    "frameId": null,
    "roundness": null,
@@ -6289,11 +6289,11 @@
    "updated": 1,
    "link": null,
    "locked": false,
-   "text": "agreements",
-   "originalText": "agreements",
+   "text": "carried requests\n(folder Hives)",
+   "originalText": "carried requests\n(folder Hives)",
    "fontSize": 11,
    "fontFamily": 2,
-   "containerId": "private-hive-hive-mind",
+   "containerId": "old-hive-folder-hive",
    "lineHeight": 1.25,
    "autoResize": true,
    "textAlign": "center",

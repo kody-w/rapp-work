@@ -161,11 +161,10 @@
 <line x1="780" y1="678" x2="780" y2="740" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="792" y="713" font-size="12.5">bring: one signed copy + provenance</text>
 <line x1="1040" y1="678" x2="1040" y2="740" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
-<text x="1052" y="704" font-size="12.5">signed commits, verified before</text>
+<text x="1052" y="704" font-size="12.5">commits, verified before</text>
 <text x="1052" y="722" font-size="12.5">checkout</text>
 <line x1="520" y1="858" x2="520" y2="920" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="532" y="884" font-size="12.5">work.vector: the accepted Hive</text>
-<text x="532" y="902" font-size="12.5">checkpoint</text>
+<text x="532" y="893" font-size="12.5">work.vector: the accepted checkpoint</text>
 <line x1="780" y1="858" x2="780" y2="920" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#ahr)"/>
 <text x="792" y="893" font-size="12.5">proposed (G5, G10)</text>
 <line x1="850" y1="1100" x2="850" y2="1038" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
@@ -215,11 +214,11 @@
 <text x="380" y="649" font-size="11" text-anchor="middle" fill="#495057">pinned</text>
 <line x1="1238" y1="764" x2="1370" y2="764" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="1304" y="757" font-size="11" text-anchor="middle" fill="#495057">approved files</text>
-<line x1="330" y1="800" x2="462" y2="800" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
-<text x="380" y="780" font-size="11" text-anchor="middle" fill="#495057">carried signed</text>
-<text x="380" y="793" font-size="11" text-anchor="middle" fill="#495057">requests</text>
 <line x1="1238" y1="837" x2="1370" y2="837" stroke="#868e96" stroke-width="2.5" stroke-dasharray="5 5" marker-start="url(#ahg)" marker-end="url(#ahg)"/>
 <text x="1304" y="830" font-size="11" text-anchor="middle" fill="#495057">agreements</text>
+<line x1="330" y1="800" x2="462" y2="800" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
+<text x="380" y="780" font-size="11" text-anchor="middle" fill="#495057">carried requests</text>
+<text x="380" y="793" font-size="11" text-anchor="middle" fill="#495057">(folder Hives)</text>
 <line x1="1370" y1="982" x2="1230" y2="982" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="1300" y="975" font-size="11" text-anchor="middle" fill="#495057">release evidence</text>
 <line x1="1230" y1="1149" x2="1370" y2="1149" stroke="#868e96" stroke-width="2.5" stroke-dasharray="5 5" marker-end="url(#ahg)"/>

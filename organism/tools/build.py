@@ -890,15 +890,16 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; } .conn .dim b { color: #868e96; }
 .conn .mk { display: inline-block; height: 6.2pt; border-left: 1.4px dotted; margin: 0 3px 0 1px; vertical-align: -0.6pt; }
 .side { border: 1.4px solid #495057; background: #f1f3f5; border-radius: 7px; padding: 2px 7px 3px 7px; font-size: 7.1pt; }
-.side[data-a]::after { content: attr(data-a); position: absolute; top: 34%; font-size: 12pt; color: #343a40; font-weight: 700; }
-.side.in[data-a]::after { right: -0.145in; } .side.out[data-a]::after { left: -0.155in; }
+.side[data-a]::after { content: attr(data-a); position: absolute; top: 36%; font-size: 9pt; line-height: 1; color: #343a40;
+                       font-weight: 700; }  /* 9pt: the arrow's ink fits the 0.13in gap between the boxes */
+.side.in[data-a]::after { right: -0.128in; } .side.out[data-a]::after { left: -0.128in; }
 .side.dim[data-a]::after { color: #868e96; } .side.red[data-a]::after { color: #c92a2a; }
 .side .h .xl { flex: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; margin-top: 1.6px; }
 .side.in .h .xl { text-align: right; }
 .xa { position: relative; z-index: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; align-self: center; }
 .xa.first { align-self: end; margin-bottom: 3px; }
-.xa b { font-size: 12pt; font-weight: 700; color: #343a40; margin: 0 1px; vertical-align: -1.5pt; }
-.xa.in { justify-self: end; margin-right: -0.145in; } .xa.out { justify-self: start; margin-left: -0.155in; }
+.xa b { font-size: 9pt; font-weight: 700; color: #343a40; margin: 0; vertical-align: -0.5pt; }
+.xa.in { justify-self: end; margin-right: -0.128in; } .xa.out { justify-self: start; margin-left: -0.128in; }
 .xa.dim b { color: #868e96; } .xa.red b { color: #c92a2a; }
 .bottom { display: grid; grid-template-columns: 1.6fr 1.12fr 0.78fr; gap: 0.1in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
@@ -1068,7 +1069,7 @@ def pages(t):
         used = sorted(own.values())
         cells = "".join(f'<span class="{kind(c).strip()}" style="grid-column: {own[c["stem"]] + 1} / '
                         f'{next((u for u in used if u > own[c["stem"]]), len(row)) + 1}">{w}</span>' for c, w in spans)
-        return (f'<div class="conn at" style="grid-template-columns: {" ".join(str(p["span"]) + "fr" for p in row)}">'
+        return (f'<div class="conn at" style="grid-template-columns: {" ".join(f"minmax(0, {p['span']}fr)" for p in row)}">'
                 f'{cells}</div>')
 
     def steps(ph):  # each gap a step names is drawn as its chip, in the colors of its status, glued to its marks
@@ -1115,7 +1116,8 @@ def pages(t):
     loop = '<span class="loopa">\u2192</span>'.join(
         f'<div class="step"><b>{k} {inline(step.split(": ", 1)[0])}</b>{inline(step.split(": ", 1)[1])}</div>'
         for k, step in enumerate(d["loop"], 1))
-    rules = "".join(f"<li><b>{inline(lead)}</b></li>" for lead, _ in t["invariants"]["rules"])  # one line each
+    rules = "".join(f"<li><b>{inline(lead)[::-1].replace(' ', chr(160), 1)[::-1]}</b></li>"
+                    for lead, _ in t["invariants"]["rules"])  # one line each; the last two words stay together
     dashed = {"gap": '<span class="lm red"><i class="mk"></i>\u25bc</span>',  # the marks the page draws
               "candidate": '<span class="lm">\u2192</span>'}
     words = [" ".join(dashed.get(k, "") + chip(k) for k in list(STATUS)[i:i + 5]) for i in (0, 5)]
@@ -1159,7 +1161,7 @@ def pages(t):
 <pre class="tree">{e(chr(10).join(smart(a).ljust(pad) + smart(b) for a, b in tree))}</pre>
 <div class="loop">{loop}<span class="loopa">\u21bb</span></div>
 <div>{inline(d["body"])}</div></div>
-<div class="panel"><h2>{e(short)} <span class="chip ref">page 2: the lock-in</span></h2>
+<div class="panel"><h2>{e(short)} <span class="chip ref">the lock-in page</span></h2>
 <div class="note lead">{inline(". ".join(lock["definition"]) + ".")}</div>
 <div class="plan">{summary}</div>{end_line}</div>
 <div class="panel"><h2>What holds everywhere</h2>

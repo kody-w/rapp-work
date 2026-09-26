@@ -45,10 +45,10 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
 │                 │           │              │              │ device       │
 │                 │           │              │              │ [exp] newest │
 │                 │           └──────────────┴───┬──────────┴───┬──────────┘
-│                 │                              │ bring: one   ▲ signed commits, verified before
-│                 │                              │ signed copy  │ checkout
-│  carried signed │                              ▼ + provenance ▼
-│        requests │           ┌────────────────────────────────────────────┐  ┌───────────────────┐
+│                 │                              │ bring: one   ▲ commits, verified before checkout
+│         carried │                              │ signed copy  │
+│        requests │                              ▼ + provenance ▼
+│  (folder Hives) │           ┌────────────────────────────────────────────┐  ┌───────────────────┐
 │                 │──────────►│ 3 · HIVE                   [6 to graduate] │  │ PUBLIC COPY       │
 └─────────────────┘           │ where the members share work               │─►│ ► approved files  │
                               ├──────────────┬─────────────────────────────┤  │ exactly the       │
@@ -63,29 +63,29 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                               └───┬──────────┴───┬─────────────────────────┘  │ other             │
                                   │ work.vector: ┊ proposed (G5, G10)         │ organizations'    │
                                   │ the accepted ┊                            │ Hives, by         │
-                                  │ Hive         ┊                            │ agreement only    │
-                                  ▼ checkpoint   ▼                            │ rapp-federation/1 │
-                              ┌────────────────────────────────────────────┐  │ · Hive Hub cards  │
-                              │ 2 · ORGANIZATION           [4 to graduate] │  │ [candidate]       │
-                              │ the accountable body                       │  │ newest            │
-                              │ One owner · one world · one policy · one   │  └───────────────────┘
-                              │ release scope · exactly one Hive           │
-                              │ Body stream: catalog · vector ·            │  ┌───────────────────┐
-                              │ migration · receipt · observation ·        │  │ RELEASE RINGS     │
-                              │ rollback                                   │◄─│ ◄ release         │
-                              │ [specified] newest                         │  │ evidence          │
-                              └────────────────────────────────────────────┘  │ canary → nightly  │
-                                                     ▲ authorizes the owner   │ → alpha → beta    │
-                                                     │ (estate registry)      │ → preprod →       │
-                              ┌────────────────────────────────────────────┐  │ grail ·           │
-                              │ 1 · ESTATE                 [2 to graduate] │  │ rapp-cicd/1 ·     │
-                              │ an owner's signed registry                 │  │ rapp-deploy/1     │
-                              │ Who may sign as whom · which protocols are │  │ [specified]       │
-                              │ pinned · which Grail kernel each release   │  │ newest            │
-                              │ scope pins                                 │  └───────────────────┘
-                              │ Append-only · rappid.json · a signed       │
-                              │ registry · an owner anchor out of band     │  ┌───────────────────┐
-                              │ [in force]                                 │─►│ DISTRIBUTED HIVE  │
+                                  ▼ checkpoint   ▼                            │ agreement only    │
+                              ┌────────────────────────────────────────────┐  │ rapp-federation/1 │
+                              │ 2 · ORGANIZATION           [4 to graduate] │  │ · Hive Hub cards  │
+                              │ the accountable body                       │  │ [candidate]       │
+                              │ One owner · one world · one policy · one   │  │ newest            │
+                              │ release scope · exactly one Hive           │  └───────────────────┘
+                              │ Body stream: catalog · vector ·            │
+                              │ migration · receipt · observation ·        │  ┌───────────────────┐
+                              │ rollback                                   │  │ RELEASE RINGS     │
+                              │ [specified] newest                         │◄─│ ◄ release         │
+                              └────────────────────────────────────────────┘  │ evidence          │
+                                                     ▲ authorizes the owner   │ canary → nightly  │
+                                                     │ (estate registry)      │ → alpha → beta    │
+                              ┌────────────────────────────────────────────┐  │ → preprod →       │
+                              │ 1 · ESTATE                 [2 to graduate] │  │ grail ·           │
+                              │ an owner's signed registry                 │  │ rapp-cicd/1 ·     │
+                              │ Who may sign as whom · which protocols are │  │ rapp-deploy/1     │
+                              │ pinned · which Grail kernel each release   │  │ [specified]       │
+                              │ scope pins                                 │  │ newest            │
+                              │ Append-only · rappid.json · a signed       │  └───────────────────┘
+                              │ registry · an owner anchor out of band     │
+                              │ [in force]                                 │  ┌───────────────────┐
+                              │                                            │─►│ DISTRIBUTED HIVE  │
                               └────────────────────────────────────────────┘  │ ► pins its root   │
                                                      ▲ RAPP/1 frames ·        │ the RAPP/1        │
                                                      │ RAPPIDs · registry     │ network as one    │
