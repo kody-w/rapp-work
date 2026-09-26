@@ -154,8 +154,7 @@
 <line x1="520" y1="278" x2="520" y2="340" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
 <text x="532" y="313" font-size="12.5">ask · answer · confirm Hive plans</text>
 <line x1="520" y1="498" x2="520" y2="560" stroke="#343a40" stroke-width="2.5" marker-start="url(#ah)" marker-end="url(#ah)"/>
-<text x="532" y="524" font-size="12.5">SDK operations (not wired to the</text>
-<text x="532" y="542" font-size="12.5">Brainstem yet, G17)</text>
+<text x="532" y="533" font-size="12.5">SDK operations (not wired yet, G17)</text>
 <line x1="780" y1="498" x2="780" y2="552" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="792" y="533" font-size="12.5">operates your Hive copies and references</text>
 <line x1="780" y1="678" x2="780" y2="740" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>

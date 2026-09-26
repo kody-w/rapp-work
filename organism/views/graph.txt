@@ -30,8 +30,6 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                   ▲ SDK          │ operates your Hive copies and references
                                   │ operations   │
                                   │ (not wired   │
-                                  │ to the       │
-                                  │ Brainstem    │
                                   ▼ yet, G17)    ▼
 ┌─────────────────┐           ┌────────────────────────────────────────────┐
 │ OUTSIDE         │           │ 4 · YOUR DEVICE            [8 to graduate] │

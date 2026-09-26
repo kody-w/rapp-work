@@ -359,7 +359,7 @@ def joined(x):
     """A box's lines as one run of text: sentences and → steps flow on; other phrases take a ·."""
     out = ""
     for line in (smart(plain(line)) for line in x.get("lines", [])):
-        glue = " " if out.endswith((".", "!", "?", "\u201d")) or line.startswith("\u2192") else " \u00b7 "
+        glue = " " if out.endswith((".", "!", "?", "\u201d")) or line.startswith("\u2192") else "\u00a0\u00b7 "
         out += (glue if out else "") + line
     return out
 
@@ -890,16 +890,16 @@ h1 { font-size: 16pt; margin: 0; letter-spacing: -0.2px; }
 .conn .red { color: #a61e1e; } .conn .red b { color: #c92a2a; } .conn .dim b { color: #868e96; }
 .conn .mk { display: inline-block; height: 6.2pt; border-left: 1.4px dotted; margin: 0 3px 0 1px; vertical-align: -0.6pt; }
 .side { border: 1.4px solid #495057; background: #f1f3f5; border-radius: 7px; padding: 2px 7px 3px 7px; font-size: 7.1pt; }
-.side[data-a]::after { content: attr(data-a); position: absolute; top: 36%; font-size: 9pt; line-height: 1; color: #343a40;
-                       font-weight: 700; }  /* 9pt: the arrow's ink fits the 0.13in gap between the boxes */
-.side.in[data-a]::after { right: -0.128in; } .side.out[data-a]::after { left: -0.128in; }
+.side[data-a]::after { content: attr(data-a); position: absolute; top: 36%; font-size: 8pt; line-height: 1; color: #343a40;
+                       font-weight: 700; }  /* 8pt, centred in the 0.13in gap, clear of both borders */
+.side.in[data-a]::after { right: calc(-0.065in - 4pt - 1.4px); } .side.out[data-a]::after { left: calc(-0.065in - 4pt - 1.4px); }
 .side.dim[data-a]::after { color: #868e96; } .side.red[data-a]::after { color: #c92a2a; }
 .side .h .xl { flex: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; margin-top: 1.6px; }
 .side.in .h .xl { text-align: right; }
 .xa { position: relative; z-index: 1; font-size: 6.4pt; color: #343a40; white-space: nowrap; align-self: center; }
 .xa.first { align-self: end; margin-bottom: 3px; }
-.xa b { font-size: 9pt; font-weight: 700; color: #343a40; margin: 0; vertical-align: -0.5pt; }
-.xa.in { justify-self: end; margin-right: -0.128in; } .xa.out { justify-self: start; margin-left: -0.128in; }
+.xa b { font-size: 8pt; font-weight: 700; color: #343a40; margin: 0; vertical-align: -0.3pt; }
+.xa.in { justify-self: end; margin-right: calc(-0.065in - 4pt); } .xa.out { justify-self: start; margin-left: calc(-0.065in - 4pt); }
 .xa.dim b { color: #868e96; } .xa.red b { color: #c92a2a; }
 .bottom { display: grid; grid-template-columns: 1.6fr 1.12fr 0.78fr; gap: 0.1in; flex: 1; }
 .panel { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 4px 8px; background: #fcfcfd; }
@@ -916,7 +916,7 @@ footer { font-size: 6.4pt; color: #555; display: flex; justify-content: space-be
 """
 
 
-LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radius: 2px; } .chip.ref { background: #fff; border-color: #adb5bd; }
+LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radius: 2px; } .ref { font-size: 6.6pt; font-weight: 600; color: #495057; }
 .chip.lock.done { border-color: #2f9e44; } .chip.lock.none { border-color: #868e96; border-style: dashed; font-weight: 500; }
 .newest { background-image: repeating-linear-gradient(135deg, var(--h) 0 1.6px, transparent 1.6px 6px); }
 .side.newest { --h: #adb5bd; }
@@ -1052,7 +1052,7 @@ def pages(t):
                     if c["stem"] not in own and free:
                         before = [own[x["stem"]] for x in gap[:k] if x["stem"] in own]
                         after = [col for col in free if not before or col > max(before)]
-                        own[c["stem"]] = after[-1] if after else free[0]
+                        own[c["stem"]] = after[0] if after else free[0]
                 if len(own) == len(gap):
                     return row, own
             return None
@@ -1162,9 +1162,9 @@ def pages(t):
 <pre class="tree">{e(chr(10).join(smart(a).ljust(pad) + smart(b) for a, b in tree))}</pre>
 <div class="loop">{loop}<span class="loopa">\u21bb</span></div>
 <div>{inline(d["body"])}</div></div>
-<div class="panel"><h2>{e(short)} <span class="chip ref">the lock-in page</span></h2>
+<div class="panel"><h2>{e(short)} <span class="ref">details: the lock-in page \u2192</span></h2>
 <div class="note lead">{inline(". ".join(lock["definition"]) + ".")}</div>
-<div class="plan">{summary}</div>{end_line}</div>
+<div class="plan">{summary}{end_line}</div></div>
 <div class="panel"><h2>What holds everywhere</h2>
 <ul class="inv">{rules}</ul></div>
 </section>
