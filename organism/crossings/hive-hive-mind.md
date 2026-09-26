@@ -2,7 +2,7 @@
 from: hive
 to: hive-mind
 what: Agreements, grants, receipts
-authorized_by: "Both owners' signed consent and agreement. A crossing between worlds is refused unless every owning spec allows it (`rapp-hive/1` §12; `rapp-federation/1` §6; historical root [`SPEC.md`](https://github.com/kody-w/rapp-work/blob/main/SPEC.md) §3)"
+authorized_by: "Both owners' signed consent and a bilateral agreement (`rapp-federation/1` §6). Crossing a world boundary needs explicit authorization on both sides, with purpose and provenance (historical root [`SPEC.md`](https://github.com/kody-w/rapp-work/blob/main/SPEC.md) §3); `rapp-hive/1` §12 refuses cross-world assimilation"
 home: "`rapp-federation/1`"
 health: candidate; folder Hives can be found through Hive Hub cards (experimental, G12)
 arrow: both

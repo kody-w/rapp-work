@@ -11,7 +11,7 @@ lines:
 ---
 The distributed Hive is the RAPP/1 network as one Hive of plain folders and files. It is where RAPP/1 LTS ends: a person pulls full RAPP/1 from static data.
 
-- In the draft convention, each repository, a station, keeps its own member space: its card `.rapp/member.md` and what it shares under `.rapp/shared/`, changed by its own commits. No station publishes a card yet.
+- In the draft convention, each repository, a station, keeps its own member space: its card `.rapp/member.md` and what it shares under `.rapp/shared/`, changed by its own commits. No station publishes a card yet; the first cards are proposed in open pull requests, such as `kody-w/rapp-1#44` and `kody-w/RAR#1117`.
 - A Hive root is a Hive's public copy; for the RAPP Hive, `kody-w/rapp-hive-public`. It keeps one pointer per station, `members/<station>.md`; an LTS pointer pins the station's commit and the hash of each file read there. The public copy now publishes 317 pointers: 313 read their station at `HEAD`, and 4 pin an LTS commit on the `rapp1-lts` channel.
 - It is all found by raw URL, with no server: RAPP's seed, then the operator's beacon, then `estate.json`, then the Hive root, then each station (RAPP Constitution Articles XLVI and XLVII, and proposal 0020).
 - LTS, the default, reads each station at its pinned commit and checks every hash. Newest reads each at `HEAD`. The Hive agent's `resolve` reads only the LTS way: each station at its pinned commit, every file checked, into a local copy.

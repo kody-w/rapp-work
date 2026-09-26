@@ -165,7 +165,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 | [Hive copy ↔ Folder Hive](crossings/hive-copy-folder-hive.md) | Commits, both ways | Your device key's signature, judged at its parent; the device verifies before it checks anything out | experimental |
 | [References → Folder Hive](crossings/references-folder-hive.md) | One signed copy stamped with `brought_from` and `brought_sha256` | Your signature; the plan says it will be visible to the Hive's members | experimental |
 | [Folder Hive → Public copy](crossings/folder-hive-public-copy.md) | Exactly the files of an approved manifest | The approvals number; `check-public` verifies the copy | experimental |
-| [Hive ↔ Hive Mind](crossings/hive-hive-mind.md) | Agreements, grants, receipts | Both owners' signed consent and agreement. A crossing between worlds is refused unless every owning spec allows it (`rapp-hive/1` §12; `rapp-federation/1` §6; historical root [`SPEC.md`](https://github.com/kody-w/rapp-work/blob/main/SPEC.md) §3) | candidate (G12) |
+| [Hive ↔ Hive Mind](crossings/hive-hive-mind.md) | Agreements, grants, receipts | Both owners' signed consent and a bilateral agreement (`rapp-federation/1` §6). Crossing a world boundary needs explicit authorization on both sides, with purpose and provenance (historical root [`SPEC.md`](https://github.com/kody-w/rapp-work/blob/main/SPEC.md) §3); `rapp-hive/1` §12 refuses cross-world assimilation | candidate (G12) |
 | [Outside knowledge → Folder Hive](crossings/old-hive-folder-hive.md) | An old Hive's signed join requests | The old signatures, checked with RAPP/1's hash and signature math; the new Hive's rules | experimental |
 | [Folder Hive → Organization](crossings/folder-hive-organization.md) | “The organization accepted this Hive state” | Nothing yet (proposed: a folder-Hive organization records the accepted head in a signed vector, its owner signing as the Hive's notary; G5, G10) | gap (G10) |
 | [Private Hive → Organization](crossings/private-hive-organization.md) | A signed Hive vector (`work.vector`) naming the accepted checkpoint | The organization's signer; a consumer accepts it only after verifying the checkpoint under `rapp-hive/1` | specified (G16) |
@@ -199,7 +199,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 | [G20](gaps/G20.md) | The Brainstem app's path to the production ring | open |
 | [G22](gaps/G22.md) | “Workspace” names two things | proposed |
 | [G23](gaps/G23.md) | The LTS Windows installer cannot pin the LTS kernel | proposed |
-| [G24](gaps/G24.md) | RAPP Workspace/1's frozen identity pins its READMEs | idea |
+| [G24](gaps/G24.md) | RAPP Workspace/1's frozen identity pins its READMEs | proposed |
 
 ## RAPP/1 LTS: what it takes to lock the whole thing
 
