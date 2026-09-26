@@ -165,7 +165,7 @@
 <line x1="520" y1="858" x2="520" y2="920" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="532" y="893" font-size="12.5">work.vector: the accepted checkpoint</text>
 <line x1="780" y1="858" x2="780" y2="920" stroke="#c92a2a" stroke-width="2.5" stroke-dasharray="8 6" marker-end="url(#ahr)"/>
-<text x="792" y="893" font-size="12.5">proposed (G5, G10)</text>
+<text x="792" y="893" font-size="12.5">gap: G5 and G10 proposed</text>
 <line x1="850" y1="1100" x2="850" y2="1038" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>
 <text x="862" y="1073" font-size="12.5">authorizes the owner (estate registry)</text>
 <line x1="850" y1="1300" x2="850" y2="1238" stroke="#343a40" stroke-width="2.5" marker-end="url(#ah)"/>

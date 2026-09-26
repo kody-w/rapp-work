@@ -68,7 +68,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                               │              │ yet (G10)                   │  │ HIVE MIND         │
                               │              │ [exp] newest                │◄►│ ◄► agreements     │
                               └───┬──────────┴───┬─────────────────────────┘  │ other             │
-                                  │ work.vector: ┊ proposed (G5, G10)         │ organizations'    │
+                                  │ work.vector: ┊ gap: G5 and G10 proposed   │ organizations'    │
                                   │ the accepted ┊                            │ Hives, by         │
                                   ▼ checkpoint   ▼                            │ agreement only    │
                               ┌────────────────────────────────────────────┐  │ rapp-federation/1 │
