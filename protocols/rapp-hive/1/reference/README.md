@@ -37,13 +37,23 @@ artifact's `utc`, matching retired keys by SPKI tail.
   of the current owner of the registry it names (`epoch`). After a
   succession, the successor should promptly advance the Mother stream and
   every receipt stream past the boundary.
-- A tombstone also refuses frames that were already accepted. Choose a
-  compromise cutoff later than every accepted frame, receipt, and signed egg
-  of that key that you still trust, in particular the Mother head and every
-  receipt-stream head the successor will extend. An earlier cutoff fails
-  closed: `restore()` refuses that Mother head and latches, and a receipt
-  stream through a refused receipt cannot be extended. Such history is
-  recovered by a new Hive, not by forking the Mother stream.
+- A tombstone also refuses frames that were already accepted, and `restore()`
+  re-evaluates every decision and fork diagnostic that the Mother history
+  records. Choose a compromise cutoff later than every accepted frame,
+  receipt, and signed egg of that key that you still trust, in particular the
+  Mother head and every receipt-stream head the successor will extend. It
+  must also be strictly later than every frame of that key that an accepted
+  convergence lists and verified as a candidate, whatever status or reason
+  code it records (`accepted`, `duplicate`, `conflict`, `superseded`, or
+  `quarantined`, including `stream-fork` and `fork-ancestor`), and every
+  frame of that key in the authenticated ancestry of such a frame, trusted
+  or not; a listed frame that failed candidate verification does not count.
+  Reconcile an untrusted recorded conflict above the cutoff; never cut it
+  off below it. An earlier cutoff fails closed: `restore()` refuses that
+  Mother head ("decisions differ" or "fork evidence differs") and latches,
+  and a receipt stream through a refused receipt cannot be extended. History
+  that accepted an untrusted frame is recovered by a new Hive, not by
+  forking the Mother stream.
 - Under succession, `checkpoint()` also carries `owner_lineage` and
   `registry_lifecycle`. Pass the registry members of the last persisted
   checkpoint back as `retained_registry` (`RETAINED_REGISTRY_KEYS`); it

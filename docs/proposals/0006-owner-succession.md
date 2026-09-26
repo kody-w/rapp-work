@@ -1,9 +1,20 @@
 # Proposal 0006: owner succession in the Hive reference and the SDK
 
+## Proposal-only acceptance note
+
+Merging this proposal accepts the design only. It does **not** activate owner
+succession, change any signed `rapp-hive/1` SPEC byte, re-sign the registry,
+or ship the reference implementation. The reference implementation stays on
+`experimental/gap-g6-owner-succession` until the owner accepts this proposal;
+its implementation pull request is then opened as a draft and linked back here.
+The owner should apply SPEC text, re-sign, or bump the SDK only after that
+reference branch has merged and passed its own review.
+
+
 ## Status
 
 Draft, not accepted. Branch `experimental/gap-g6-owner-succession`, revised
-after independent review rounds 1 and 2 (see Review disposition). The owner
+after independent review rounds 1, 2, and 3 (see Review disposition). The owner
 decides what moves. Intended release: `rapp-work` `1.1.0` (additive; the
 package version and `SDK_VERSION` are unchanged on this branch).
 
@@ -23,7 +34,8 @@ no owner and are out of scope. G6 blocks the Private Hive part.
   its text is proposed here only.
 - `rapp-work-sdk/1` (`protocols/rapp-work-sdk/1/SPEC.md`) a new section 5.1
   and an inserted section 12 paragraph. That file is not registry-pinned; the
-  edit is on this branch with its profile pins refreshed.
+  edit is staged on the separate reference branch, not in this proposal-only
+  PR.
 
 ## Context: what is true today
 
@@ -235,16 +247,44 @@ no owner and are out of scope. G6 blocks the Private Hive part.
     Mother head after it, unrestorable for every verifier that holds the
     tombstone: `restore()` refuses and the gate latches, and no successor can
     extend that head, because its chain carries the refused frame. A receipt
-    stream through a refused receipt can likewise no longer be extended. A
-    member key is no different: a cutoff before an accepted member frame voids
-    the convergence that accepted it, whose decisions no longer re-evaluate
-    (this already holds for a direct-owner tombstone on `main`). The proposed
-    text therefore requires every compromise cutoff to be later than every
-    accepted frame, receipt, and signed egg of the compromised key that the
-    owner still trusts. Under the causal bounds every frame reachable from an
-    accepted Mother head is no later than that head, so for an owner key the
-    trusted Mother and receipt heads are what the cutoff must clear, and for a
-    member key its accepted frames; a signed egg carries its own
+    stream through a refused receipt can likewise no longer be extended. For
+    a member key, "accepted" is the wrong boundary (review round 3).
+    Restoring a Mother head re-evaluates every candidate that its
+    convergences list, with the authenticated ancestry of each, and requires
+    the recorded decisions and fork diagnostics to match. A cutoff at or
+    before any such frame of the key that verified changes that evaluation
+    whatever the frame's recorded status: a `conflict`, a `superseded`
+    parent, a `stream-fork` pair, fork branches that are only the signed
+    sources of a listed frame (`fork-ancestor`, never listed themselves),
+    and even a frame quarantined for an ordinary reason, which as a
+    candidate shaped the conflict components that other decisions derive
+    from. Restore then fails closed ("decisions differ" or "fork evidence
+    differs") and latches, and a verifier following the Mother stream live
+    refuses that head too. This already holds for a direct-owner tombstone
+    on `main`. The proposed text therefore keeps the owner rule, a cutoff
+    later than every accepted frame, receipt, and signed egg of the
+    compromised key that the owner still trusts, and adds for every key a
+    cutoff strictly later than every frame of that key that an accepted
+    convergence in the Mother history the owner will extend lists and
+    verified as a candidate, whatever its recorded status or reason code,
+    and every frame of that key in the authenticated ancestry of such a
+    frame, trusted or not. That rule is deliberately simpler than the exact
+    boundary: some quarantined frames would not break a restore, but whether
+    one does depends on the whole evaluation of its convergence. It counts
+    only candidates that verified: a listed frame whose own bytes, ancestry,
+    or authorization failed (for example one the member signed for another
+    member's area) evaluates the same under any cutoff, and counting it
+    would let whoever holds the key pin the cutoff with such a frame dated
+    far ahead behind a summary inside the convergence (vector). A listed
+    frame that the owner does not trust is not cut off: an unresolved
+    `conflict` is reconciled above the cutoff by an owner reconciliation that
+    supersedes it, and a `superseded` or `quarantined` frame adds nothing to
+    the catalog. Under the causal bounds every verified frame that an
+    accepted Mother history lists, and every frame in the ancestry of one,
+    is no later than its head. So for an owner key the trusted Mother and
+    receipt heads are what the cutoff must clear (when that key signed the
+    head, the new rule adds nothing), for a member key its latest verified
+    listed or ancestral frame, and a signed egg carries its own
     `created_utc`. History the successor does not trust has one remedy here:
     RAPP/1 section 14's re-genesis, which for a Hive means a new Hive, since
     `rapp-hive/1` registers its declaration as the Mother genesis and defines
@@ -287,12 +327,15 @@ with:
 
 with:
 
-> 2. The owner-signed declaration at the Mother's registered creation genesis.
->    The declaration owner is the estate owner in effect at the declaration's
->    `utc` (RAPP/1 section 13.2): in the direct-owner profile, the anchored
->    estate owner; under owner succession, the owner whose tenure contains that
->    time. Declarations, reconciliations, convergences, and projection
->    receipts are signed by the owner in effect at their own `utc`. A
+> 2. The owner-signed declaration at the Mother's registered creation genesis,
+>    and every later declaration accepted on the Mother stream once G1 is
+>    accepted and activated. The declaration owner is the estate owner in effect
+>    at the declaration's `utc` (RAPP/1 section 13.2): in the direct-owner
+>    profile, the anchored estate owner; under owner succession, the owner whose
+>    tenure contains that time. Declarations, reconciliations, convergences, and
+>    projection receipts are signed by the owner in effect at their own `utc`.
+>    A successor owner does not inherit declared membership unless a later
+>    declaration names that successor as owner under G1. A
 >    successor never re-signs or invalidates history signed inside a
 >    predecessor's tenure and does not inherit a predecessor's declared
 >    membership. Mother Hive `stream_id` is exactly `hive_rappid`.
@@ -315,21 +358,41 @@ with:
 **Section 8.1, second new paragraph after item 5.** Insert:
 
 > A tombstone refuses its key at and after `revoked_utc`, including frames
-> already accepted (RAPP/1 sections 7.5 step 6 and 10). The `revoked_utc` of
-> a compromise tombstone MUST therefore be later than the time of every
-> accepted frame, receipt, and signed egg of the compromised key that the
-> owner still trusts. For an estate owner's `compromise` re-anchor this
-> includes, when that key signed them, the Mother head and every
-> receipt-stream head the successor will extend; for a member key, every
-> frame of that member that a convergence accepted. A cutoff at or before
-> such a frame makes that frame unverifiable for every verifier that holds
-> the tombstone: restoring a Mother head whose history contains or accepted
-> it fails closed, so no owner can extend that head, and a receipt stream
-> through such a receipt can no longer be extended. This profile defines no
-> in-place repair of that history. It is recovered only by a new Hive, a new
-> declaration and `hive_rappid` at a newly registered genesis, because the
-> Mother genesis of this profile is its declaration and this profile defines
-> no Mother re-genesis (RAPP/1 sections 12.1 and 14).
+> already accepted (RAPP/1 sections 7.5 step 6 and 10), and restoring a
+> Mother head re-evaluates from authenticated bytes every decision and fork
+> diagnostic that its convergences record. The `revoked_utc` of a compromise
+> tombstone MUST therefore be later than the time of every accepted frame,
+> receipt, and signed egg of the compromised key that the owner still
+> trusts. For an estate owner's `compromise` re-anchor this includes, when
+> that key signed them, the Mother head and every receipt-stream head the
+> successor will extend. For every compromised key, owner or member, that
+> `revoked_utc` MUST also be strictly later than the time of every frame of
+> that key that an accepted convergence in the Mother history the owner will
+> extend lists as a candidate whose signed bytes, complete ancestry, and
+> authorization verified in that convergence's evaluation (section 8.2),
+> whatever status or reason code the convergence records for it
+> (`accepted`, `duplicate`, `conflict`, `superseded`, or `quarantined`,
+> including `stream-fork` and `fork-ancestor`), and of every frame of that
+> key in the authenticated ancestry of such a candidate, whether or not the
+> owner trusts that frame. A listed frame that failed that verification does
+> not bound the cutoff: refusing its key leaves it refused, as recorded. A
+> verified listed frame that the owner does not trust stays below the
+> cutoff: such a recorded `conflict` is reconciled above the cutoff, never
+> cut off below it, by a signed owner reconciliation (section 8.3) that is
+> dated after the cutoff and supersedes the frame; a `superseded` or
+> `quarantined` frame already adds nothing to the catalog; and a Mother
+> history that accepted such a frame is not extended (below). A cutoff at or
+> before any frame that this paragraph requires it to follow makes that
+> frame unverifiable for every verifier that holds the tombstone: restoring
+> a Mother head whose history contains, lists, or retains it fails closed
+> (the frame itself is refused, or the recorded decisions or fork evidence
+> no longer match authenticated evaluation), so no owner can extend that
+> head, and a receipt stream through such a receipt can no longer be
+> extended. This profile defines no in-place repair of that history. It is
+> recovered only by a new Hive, a new declaration and `hive_rappid` at a
+> newly registered genesis, because the Mother genesis of this profile is
+> its declaration and this profile defines no Mother re-genesis (RAPP/1
+> sections 12.1 and 14).
 
 **Section 9.1, new paragraph after the numbered list.** Insert:
 
@@ -386,10 +449,13 @@ with:
 >   verification, which no retained state precedes, relies on the trusted
 >   issuance context for that provenance;
 > - the causal bounds of sections 8.1 and 9.1 hold; and
-> - a compromise cutoff at or before an accepted frame of the compromised key
->   fails closed (section 8.1): `restore()` refuses that Mother head and the
->   gate stays failed, and a receipt stream through such a receipt is not
->   extended.
+> - a compromise cutoff at or before a frame that section 8.1 requires it to
+>   follow fails closed: an accepted Mother frame or receipt of the owner
+>   key, or any frame of the key that an accepted convergence lists and
+>   verified as a candidate, whatever its recorded status or reason code, or
+>   that the authenticated ancestry of such a frame contains. `restore()`
+>   refuses that Mother head and the gate stays failed, and a receipt stream
+>   through such a receipt is not extended.
 >
 > A production adapter must supply fresh registry retrieval, persistent
 > high-water marks with their retained registry state, append provenance for a
@@ -559,18 +625,28 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   also refuses frames that were already accepted, so its cutoff decides which
   history survives. A cutoff later than every trusted Mother head and receipt
   head keeps that history restorable, and the successor extends it (vector).
-  A cutoff at or before an accepted frame of the compromised key fails closed
-  for every verifier that holds the tombstone. If that frame is one of the
-  owner's Mother frames, or a member frame that a convergence accepted, the
-  Mother history is unrestorable: `restore()` refuses, the gate latches, and
-  no successor can extend that head. If it is an accepted receipt, its
-  receipt stream is stranded: no later receipt can extend it (vectors; the
-  member case already holds for direct-owner tombstones on `main`).
-  Nothing untrusted is accepted. The one remedy specified is a new Hive. The
-  reference would let a fresh verifier restore the last trusted Mother frame
-  and accept a successor-signed convergence competing at the next `seq`, but
-  a consumer that persisted the later head refuses that as a reorg (RAPP/1
-  section 7.6), so it is not claimed as a recovery (open question 14).
+  A cutoff at or before a frame of the compromised key that the kept history
+  still carries fails closed for every verifier that holds the tombstone. If
+  that frame is one of the owner's Mother frames, or any frame of the key
+  that a convergence lists and verified as a candidate, whatever status or
+  reason code it records, or that the authenticated ancestry of such a frame
+  contains, the Mother history is unrestorable: `restore()` refuses
+  ("decisions differ" or "fork evidence differs"), the gate latches, and no
+  successor can extend that head; a verifier following the stream live
+  refuses that head too. If it is an accepted receipt, its receipt stream is
+  stranded: no later receipt can extend it (vectors: member frames recorded
+  as accepted, `conflict`, `superseded`, `quarantined` as
+  `blocked-ancestor`, and `stream-fork`, and fork branches that are only the
+  signed sources of listed frames; the member cases already hold for
+  direct-owner tombstones on `main`). A listed frame that failed candidate
+  verification never constrains the cutoff, so a key holder cannot pin it
+  with one (vector), and a recorded conflict that the owner does not trust
+  is reconciled above the cutoff instead (vector). Nothing untrusted is
+  accepted. The one remedy specified is a new Hive. The reference would let
+  a fresh verifier restore the last trusted Mother frame and accept a
+  successor-signed convergence competing at the next `seq`, but a consumer
+  that persisted the later head refuses that as a reorg (RAPP/1 section
+  7.6), so it is not claimed as a recovery (open question 14).
 - **Residual risks that remain (documented, not claimed closed).** (1) A
   predecessor that is also a declared member can still sign member frames
   dated inside its tenure; they reach the catalog only if an owner in tenure
@@ -580,7 +656,11 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   key carries a tombstone dated at or before the rotation, even when that
   tombstone is issued later, so a key that leaks after a routine rotation
   cannot be revoked for its own tenure without invalidating the registry
-  (open question 3).
+  (open question 3). (4) A compromised member key stays valid below its
+  cutoff, which must follow every verified frame of that key that the kept
+  Mother history lists or retains, so it can still sign frames dated before
+  that cutoff; they reach the catalog only if an owner converges them, and a
+  cutoff placed just after the latest such frame keeps that window small.
 - **Same-append provenance (RAPP/1 section 6.3)** is enforced exactly when the
   retained state is one sequence behind, refused across skipped sequences, and
   delegated to the trusted issuance context for a first verification, as the
@@ -649,10 +729,21 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   Mother stream from its last trusted frame: consumers that persisted the
   later head refuse it (RAPP/1 section 7.6; open question 14).
 - **Member rotation or compromise:** the same registry steps, signed by the
-  owner in tenure; the same-append rule applies to a member compromise, and
-  its cutoff must be later than every frame of that member that a
-  convergence accepted and you still trust. An earlier cutoff voids the
-  convergence that accepted the frame, with the same consequence.
+  owner in tenure; the same-append rule applies to a member compromise. The
+  cutoff must be strictly later than every frame of that member that an
+  accepted convergence lists and verified as a candidate, whatever status
+  or reason code it records (`accepted`, `duplicate`, `conflict`,
+  `superseded`, or `quarantined`, including `stream-fork` and
+  `fork-ancestor`), and every frame of that member in the authenticated
+  ancestry of such a frame, whether you trust the frame or not; a listed
+  frame that failed candidate verification does not count. Place the cutoff
+  as close after the latest of them as you can. A recorded conflict you do
+  not trust is reconciled above the cutoff, never cut off below it: sign a
+  reconciliation of its component after the cutoff and converge it, and it
+  supersedes the frame. An earlier cutoff makes the Mother head that lists
+  or retains the frame unrestorable, with the same consequence as for the
+  owner key; if that history accepted a member frame you do not trust,
+  start a new Hive as above.
 - **This repository's own estate:** `registry.json` and root `SPEC.md` stay
   frozen. Adopting succession for it is the estate owner's signing decision.
 
@@ -671,7 +762,7 @@ All identities are real Ed25519 keys from published fixture seeds.
 
 **Hive (`python3 protocols/rapp-hive/1/reference/hive_conformance.py`, 22
 checks):** H21 requires the reference's `rapp.py` and `rapp_registry.py` to
-equal their pins; H22 runs `succession_conformance.py` (34 vectors):
+equal their pins; H22 runs `succession_conformance.py` (39 vectors):
 
 | Vector | Result |
 |---|---|
@@ -698,6 +789,12 @@ equal their pins; H22 runs `succession_conformance.py` (34 vectors):
 | compromise cutoff before (120) or exactly at (130) A's accepted Mother head: restore of that head; then checkpoint, manifest, restore of an earlier head, convergence; a fresh verifier extending that head | refused (tombstoned); refused ×4 (latched); refused (tombstoned) |
 | compromise cutoff (132) after the Mother head but before A's accepted receipt: B advances the Mother head; B's receipt extending that receipt | accepted; refused (tombstoned), state unchanged |
 | member compromise cutoff before (120) or after (126) a member frame that a convergence accepted (125) | restore refused (decisions differ) and latched; restores |
+| member cutoff (120) after bob's only accepted frame (11) but before his frame (125) recorded as `conflict` with alice's (124): restore; then checkpoint, manifest, restore of the prior head, a proposal; a live verifier at the prior head offered the recorded head | refused (decisions differ); refused ×4 (latched); refused, state unchanged |
+| the same history with a cutoff (126) after every listed frame of bob: restore; alice's reconciliation dated above the cutoff (150), converged; fresh `restore()` | identical catalog and retained frames; accepted, both parents superseded; identical |
+| member cutoff (120) or (126) with bob's frame (125) recorded as `superseded` by alice's reconciliation | refused (decisions differ) and latched; restores |
+| member cutoff (120) or (126) with bob's fork branches (124, 125) listed (`stream-fork`), or never listed and only the signed sources of alice's listed frames (`fork-ancestor`) | refused (fork evidence differs) and latched; restores, and a branch offered again stays quarantined |
+| member cutoff (120) or (126) with bob's frame (125) listed but quarantined as `blocked-ancestor`, whose presence left alice's reconciliation unmatched | refused (decisions differ: refusing it from the start accepts that reconciliation) and latched; restores |
+| member cutoff (120) with a listed frame of bob's that failed candidate authorization (another member's area), dated 125, or dated far ahead behind a summary of 125 | restores, identical catalog (an unverified frame never bounds the cutoff) |
 | back-dated convergence by retired A over a post-boundary frame (E1): live gate; fresh `restore()`; behind a false candidate summary | refused ×3; state unchanged |
 | back-dated convergence by A over pre-boundary state (the residual); after B's convergence at the boundary, A dated before it, A at it | accepted; refused (time order), refused (superseded) |
 | compromised A back-dated below its cutoff over a frame from after the cutoff | refused |
@@ -757,8 +854,8 @@ lawful history. Rerun for this revision with the same result.
 **Controlled mutations.** Each mutation was applied to a scratch copy (the
 clone was never modified), the targeted suite run, and the copy discarded.
 The SDK suite ran from inside the copy against the copy's `src` (checked by
-printing the imported module path). Round 3 reran the whole set against this
-revision; all 50 turned the suite red:
+printing the imported module path). This revision reran the whole set, with
+three new mutations for the round-3 vectors; all 53 turned the suite red:
 
 | Mutation | Killed by |
 |---|---|
@@ -791,8 +888,11 @@ revision; all 50 turned the suite red:
 | H-M25 retained registry state not shape-checked | `test_retained_registry_state_is_required_closed_and_checkpointed` |
 | H-M26 the receipt bound also waits for trusted tombstone issuance (the round-2 clause, now dropped) | `test_later_member_lifecycle_records_do_not_delay_the_current_owner_receipt` |
 | H-M27 the receipt bound is the latest re-anchor of any identity (the round-2 form) | same test |
-| H-M28 a failed restore does not latch the gate | `test_compromise_cutoff_at_or_before_an_accepted_frame_of_the_compromised_key_fails_closed` |
-| H-M29 under succession a tombstoned key still signs (supersession still refused) | that test, `test_compromise_cutoff_after_the_last_trusted_heads_restores_and_the_heir_advances_them`, and three earlier compromise and revocation vectors |
+| H-M28 a failed restore does not latch the gate | `test_compromise_cutoff_at_or_before_an_accepted_frame_of_the_compromised_key_fails_closed` and the four fail-closed member-cutoff vectors (conflict, superseded, fork evidence, listed quarantined) |
+| H-M29 under succession a tombstoned key still signs (supersession still refused) | that test, `test_compromise_cutoff_after_the_last_trusted_heads_restores_and_the_heir_advances_them`, the four fail-closed member-cutoff vectors, and three earlier compromise and revocation vectors |
+| H-M30 fork evidence is not compared on acceptance or restore | `test_member_cutoff_before_fork_evidence_fails_closed` (both the listed and the source-only fork) |
+| H-M31 recorded decision statuses are not compared on acceptance or restore | `test_member_cutoff_before_a_recorded_conflict_fails_closed_and_the_owner_reconciles_above_it`, `test_member_cutoff_before_a_superseded_frame_fails_closed`, `test_member_cutoff_before_a_listed_quarantined_frame_fails_closed`, and the accepted-frame member case |
+| H-M32 a tombstone refuses its key's whole history, not only at and after its cutoff | the four fail-closed member-cutoff vectors (a cutoff after every listed frame no longer restores), `test_a_listed_frame_that_failed_verification_does_not_bound_the_member_cutoff`, and five earlier compromise vectors |
 | S-M1 SDK loads `rapp_registry.py` without its pinned hash | `test_tampered_registry_reference_or_pin_is_refused_before_use` |
 | S-M2 SDK retirement by exact RAPPID | `test_renamed_alias_cannot_revive_a_retired_key` |
 | S-M3 SDK old anchor may walk through a compromise | `test_owner_compromise_needs_a_new_anchor_and_trusted_issuance`, `test_lineage_continues_under_a_new_anchor_after_owner_compromise` |
@@ -897,7 +997,7 @@ keeps `3.2.0`, so a combined merge picks one version (open question 11).
 Recommended order: merge G6 first (the registry authority layer), then rebase
 G1 onto it as G1 describes, regenerating the vendored copy, the lock, and the
 inventory. For the SDK SPEC, the siblings' own recommendations agree on G6,
-G3, G7, G2, G4, then G17, with G11 whenever it is accepted; recompute the SDK
+G3, G7, G2, then G11 before G4, then G17; recompute the SDK
 SPEC pins and the inventory after each merge.
 
 ## Open questions for the owner
@@ -929,8 +1029,11 @@ SPEC pins and the inventory after each merge.
    strictly later than its base head (RAPP/1 section 7.5 step 4 allows equal
    `utc`; G1 uses the same strict rule for later declarations). Keep it?
 6. Should a re-anchored member or owner inherit declared membership? This
-   proposal says no; with G1, a successor owner re-declares the roster (see
-   Related proposals).
+   proposal says no by default. With G1 as proposed today, the roster stays
+   frozen after an owner rotation until a G1 follow-up lets a later
+   declaration name the successor owner under the owner-in-effect rule;
+   otherwise the owner must start a new Hive for roster changes after
+   succession.
 7. Upstream (RAPP/1 section 13.3): `estate_owner` is "exactly one
    non-deprecated" but its member set has no `deprecated`, and the pinned
    reference accepts exactly one `estate_owner` entry. A successor registry
@@ -967,9 +1070,11 @@ SPEC pins and the inventory after each merge.
 
 ## Owner actions needed
 
-1. Accept or refuse this proposal and the `rapp-work-sdk/1` insertions on the
-   branch.
-2. Accept the `rapp-hive/1` section 8.1, 9.1, and 14.2 text, then update
+1. Accept or refuse this proposal. Merging this proposal accepts the design,
+   not the staged code.
+2. If accepted, review the draft reference implementation PR on
+   `experimental/gap-g6-owner-succession`; only after it merges, apply the
+   `rapp-hive/1` section 8.1, 9.1, and 14.2 text, then update
    `protocols/rapp-hive/1/SPEC.md` and its pins (`protocols/index.json`,
    `src/rapp_work/data/profiles.json`, the legacy skill's `vendor/hive/SPEC.md`
    copy and lock `protocol.spec_sha256`) and re-sign `registry.json`.
@@ -1030,8 +1135,7 @@ retained-lineage overclaim (lifecycle entry hashes retained), missing refusal
 vectors and surviving mutations, SDK same-append, and the eager
 `rapp_registry` import. All six were fixed, with vectors and mutations.
 
-**Round 2** (review of `8e5e44e`: 1 medium, 4 low), answered in this
-revision:
+**Round 2** (review of `8e5e44e`: 1 medium, 4 low), answered in `7af9cbb`:
 
 1. *Medium: owner-compromise recovery worked only when no accepted frame was
    dated at or after the cutoff.* Reproduced exactly: with direct-owner
@@ -1082,6 +1186,84 @@ revision:
    sibling was re-read at a recorded commit and the trial merges rerun; the
    G7 section 12 conflict is listed with its resolution (keep both
    paragraphs), and the move of `main` to `0da52a6` is noted.
+
+**Round 3** (review of `7af9cbb`: 0 high, 1 medium), answered in this fourth
+revision:
+
+1. *Medium: the member-key cutoff rule covered only accepted frames.*
+   Reproduced exactly with the reviewer's probes. bob's only accepted frame
+   is at 11, and an accepted convergence records his frame at 125 as a
+   `conflict` with alice's at 124, as `superseded` by alice's
+   reconciliation, or as one of a `stream-fork` pair at 124 and 125. A
+   member-compromise registry with bob's cutoff at 120 satisfied the text at
+   `7af9cbb`, yet `restore(head)` refuses ("decisions differ from
+   authenticated evaluation" for the first two, "fork evidence differs" for
+   the fork) and latches, while a cutoff of 126 restores all three. The code
+   is right: RAPP/1 section 7.5 step 6 refuses the frame, and restoring
+   re-evaluates every recorded decision. The text was wrong, so the fix is
+   in the text.
+
+   Two more probes showed that "every listed frame" alone is still not
+   enough, and that the recorded status really does not matter. Fork
+   branches that are never listed, only the signed sources of alice's listed
+   frames (`fork-ancestor`), fail the same way. So does a frame of bob's that
+   is listed but quarantined for an ordinary reason (`blocked-ancestor`):
+   while it was a candidate it joined a conflict component and left alice's
+   reconciliation unmatched, and refusing it from the start accepts that
+   reconciliation instead. In a third probe a frame quarantined as
+   `unaccepted-ancestor` happened not to matter; the rule stays simple
+   rather than track which quarantines do. A fourth probe bounded the rule
+   from the other side: a listed frame of bob's that failed candidate
+   verification (signed for alice's area) restores under any cutoff, even
+   with bytes dated far after its convergence behind a summary inside it.
+   Counting such frames would let whoever holds the key push every lawful
+   cutoff arbitrarily far ahead, so only candidates that verified count.
+
+   Proposed section 8.1 keeps the owner-key rule as it was and adds: "For
+   every compromised key, owner or member, that `revoked_utc` MUST also be
+   strictly later than the time of every frame of that key that an accepted
+   convergence in the Mother history the owner will extend lists as a
+   candidate whose signed bytes, complete ancestry, and authorization
+   verified in that convergence's evaluation (section 8.2), whatever status
+   or reason code the convergence records for it (`accepted`, `duplicate`,
+   `conflict`, `superseded`, or `quarantined`, including `stream-fork` and
+   `fork-ancestor`), and of every frame of that key in the authenticated
+   ancestry of such a candidate, whether or not the owner trusts that
+   frame. A listed frame that failed that verification does not bound the
+   cutoff: refusing its key leaves it refused, as recorded." It then says
+   that a verified listed frame the owner does not trust stays below the
+   cutoff: a recorded conflict is reconciled above the cutoff, never cut off
+   below it; a superseded or quarantined frame adds nothing to the catalog;
+   and a history that accepted an untrusted frame is not extended (a new
+   Hive). For an owner key that signed the kept Mother head the new sentence
+   adds nothing, because under the causal bounds every verified listed or
+   ancestral frame is no later than that head. Design decision 12, the
+   section 14.2 bullet, the security analysis (with a fourth residual risk:
+   the compromised member key stays valid below its later cutoff), the
+   Migration member entry, `CHANGELOG.md`, and `reference/README.md` follow.
+
+   New H22 vectors (39 in all):
+   `test_member_cutoff_before_a_recorded_conflict_fails_closed_and_the_owner_reconciles_above_it`,
+   `test_member_cutoff_before_a_superseded_frame_fails_closed`,
+   `test_member_cutoff_before_fork_evidence_fails_closed` (listed and
+   source-only branches), and
+   `test_member_cutoff_before_a_listed_quarantined_frame_fails_closed`. Each
+   asserts that 120 is later than every accepted frame of bob's and that 126
+   is later than every listed or ancestral one; that 120 fails closed and
+   latches (checkpoint, manifest, restore of the prior head, and a proposal
+   are refused); and that 126 restores the same catalog and retained frames.
+   In the conflict vector a live verifier holding the 120 cutoff also
+   refuses the recorded head, with its state unchanged, and under the 126
+   cutoff alice's reconciliation dated 150 supersedes both parents and a
+   fresh restore is identical. A fifth,
+   `test_a_listed_frame_that_failed_verification_does_not_bound_the_member_cutoff`,
+   restores under the 120 cutoff with that unverified frame dated 125 or far
+   ahead. New mutations H-M30 (fork evidence not compared), H-M31 (recorded
+   decision statuses not compared), and H-M32 (a tombstone refuses its
+   key's whole history) are killed by these vectors, and so are H-M28 and
+   H-M29; all 53 mutations turn the suites red. No code changed:
+   `hive_acceptance.py`, its vendored copy, and the lock are as in
+   `7af9cbb`.
 
 ## References
 

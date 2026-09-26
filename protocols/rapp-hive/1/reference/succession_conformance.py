@@ -10,6 +10,7 @@ import base64
 import copy
 import hashlib
 import importlib.util
+import json
 import sys
 import unittest
 
@@ -32,6 +33,25 @@ DEFAULT_CHECKPOINT_KEYS = {"registry_seq", "registry_hash", "hive_rappid", "moth
 def retained_from(checkpoint):
     """The retained registry state inside a persisted succession checkpoint()."""
     return {key: checkpoint[key] for key in RETAINED_REGISTRY_KEYS}
+
+
+def signed_by(estate, hashes, name):
+    """The frames among `hashes` that `name` signed, decoded from their exact bytes, in time order."""
+    frames = (json.loads(estate.chains[value][-1]) for value in hashes)
+    return sorted((frame for frame in frames
+                   if R.parse_detached_jws(frame["sig"])[0]["kid"] == estate.identities[name]),
+                  key=lambda frame: (frame["utc"], frame["frame_hash"]))
+
+
+def listed(estate, head):
+    """Every candidate that an accepted convergence in `head`'s Mother history lists, whatever its decision."""
+    return {candidate["frame_hash"] for raw in estate.chains[head["frame_hash"]][1:]
+            for candidate in json.loads(raw)["payload"]["candidates"]}
+
+
+def waves(gate):
+    """The retained frames of a gate's artifact manifest, including authenticated fork evidence."""
+    return [item["hash"] for item in gate.artifact_manifest()["artifacts"] if item["space"] == "rapp/1:wave"]
 
 
 class SuccessionEstate(Estate):
@@ -201,6 +221,19 @@ class SuccessionEstate(Estate):
         """The owner-compromise registry: alice's key revoked from `revoked`, heir the new out-of-band anchor."""
         burned = self.tombstone("alice", revoked=revoked, issued=BOUNDARY, signer="heir")
         return self.registry(9, owner="heir", lifecycle=[self.reanchor("alice", "heir", case="compromise"), burned])
+
+    def member_recovery(self, revoked):
+        """The member-compromise registry: bob's key revoked from `revoked`, bob-next his successor identity."""
+        compromise = self.reanchor("bob", "bob-next", case="compromise", seconds=140, signer="alice")
+        burned = self.tombstone("bob", revoked=revoked, issued=140, signer="alice")
+        return self.registry(9, lifecycle=[compromise, burned])
+
+    def conflicting(self):
+        """bob's only accepted frame (11), then concurrent changes of one key by alice (124) and by bob (125)."""
+        first = self.object("bob", 11, ["bob/key"])
+        mine = self.object("alice", 124, ["shared/k"], stream=self.stream("alice", "k"), target="members/alice/k.json")
+        theirs = self.object("bob", 125, ["shared/k"], stream=self.stream("bob", "k"), target="members/bob/k.json")
+        return first, mine, theirs
 
 
 def unsigned(frame):
@@ -499,6 +532,151 @@ class OwnerSuccessionVectors(unittest.TestCase):
                         gate.restore(head["frame_hash"])
                     with self.assertRaisesRegex(ValueError, "failed history recovery"):
                         gate.checkpoint()
+
+    def assert_member_cutoff_must_follow(self, estate, direct, first, head, needed, reason):
+        """bob's cutoff 120 is later than every frame of his that a convergence accepted, all that a rule about
+        accepted frames would ask, but not later than `needed`, frames of his that the Mother history lists or
+        retains: restoring fails closed and the gate latches. A cutoff of 126, strictly later than every frame of
+        his that the history lists or retains, restores the same history."""
+        accepted = signed_by(estate, [item["frame_hash"] for item in direct.catalog["frames"]], "bob")
+        self.assertTrue(accepted and all(frame["utc"] < stamp(120) for frame in accepted))
+        self.assertTrue(needed and all(stamp(120) <= frame["utc"] < stamp(126) for frame in needed))
+        retained = direct.registry.retained_registry
+        gate = estate.gate(estate.member_recovery(120), retained_registry=retained)
+        with self.assertRaisesRegex(ValueError, reason):
+            gate.restore(head["frame_hash"])
+        for call in (gate.checkpoint, gate.artifact_manifest, lambda: gate.restore(first["frame_hash"]),
+                     lambda: estate.proposal(gate, seconds=131)):
+            with self.assertRaisesRegex(ValueError, "failed history recovery"):
+                call()
+        gate = estate.gate(estate.member_recovery(126), retained_registry=retained)
+        self.assertEqual(gate.restore(head["frame_hash"])["mother_head_frame_hash"], head["frame_hash"])
+        self.assertEqual((gate.catalog, waves(gate)), (direct.catalog, waves(direct)))
+        return gate
+
+    def test_member_cutoff_before_a_recorded_conflict_fails_closed_and_the_owner_reconciles_above_it(self):
+        estate = SuccessionEstate()
+        b1, mine, theirs = estate.conflicting()
+        direct = estate.gate(estate.registry(), succession=None)
+        first = estate.commit(direct, estate.proposal(direct, b1, seconds=100))
+        proposal = estate.proposal(direct, mine, theirs, seconds=130)
+        self.assertEqual({decision_map(proposal)[mine["frame_hash"]], decision_map(proposal)[theirs["frame_hash"]]},
+                         {"conflict"})
+        head = estate.commit(direct, proposal)
+        # The owner's reconciliation, dated after the cutoff; made first, so the recovery registry registers it.
+        resolver = estate.reconcile([mine, theirs], signer="alice", seconds=150, base=head)
+        gate = self.assert_member_cutoff_must_follow(estate, direct, first, head, [theirs], "decisions differ")
+        # A live verifier holding the earlier cutoff refuses that head too, so it cannot follow the Mother stream.
+        live = estate.gate(estate.member_recovery(120), retained_registry=direct.registry.retained_registry)
+        live.restore(first["frame_hash"])
+        before = live.checkpoint()
+        with self.assertRaisesRegex(ValueError, "decisions differ"):
+            live.accept_convergence(head["frame_hash"])
+        self.assertEqual(live.checkpoint(), before)
+        # An untrusted recorded conflict is reconciled above the cutoff, never cut off below it.
+        remedy = estate.proposal(gate, mine, theirs, resolver, seconds=155)
+        self.assertEqual(decision_map(remedy), {mine["frame_hash"]: "superseded", theirs["frame_hash"]: "superseded",
+                                                resolver["frame_hash"]: "accepted"})
+        self.assertEqual(remedy["status"], "converged")
+        final = estate.commit(gate, remedy)
+        self.assertEqual({item["frame_hash"] for item in gate.catalog["frames"]},
+                         {b1["frame_hash"], resolver["frame_hash"]})
+        fresh = estate.gate(estate.member_recovery(126), retained_registry=retained_from(gate.checkpoint()))
+        self.assertEqual(fresh.restore(final["frame_hash"]), gate.checkpoint())
+
+    def test_member_cutoff_before_a_superseded_frame_fails_closed(self):
+        estate = SuccessionEstate()
+        b1, mine, theirs = estate.conflicting()
+        direct = estate.gate(estate.registry(), succession=None)
+        first = estate.commit(direct, estate.proposal(direct, b1, seconds=100))
+        resolver = estate.reconcile([mine, theirs], signer="alice", seconds=128, base=first)
+        # A fresh authenticated registry registers the resolver stream.
+        direct = estate.gate(estate.registry(), succession=None)
+        direct.restore(first["frame_hash"])
+        proposal = estate.proposal(direct, mine, theirs, resolver, seconds=130)
+        self.assertEqual(decision_map(proposal), {mine["frame_hash"]: "superseded",
+                                                  theirs["frame_hash"]: "superseded",
+                                                  resolver["frame_hash"]: "accepted"})
+        head = estate.commit(direct, proposal)
+        self.assert_member_cutoff_must_follow(estate, direct, first, head, [theirs], "decisions differ")
+
+    def test_member_cutoff_before_fork_evidence_fails_closed(self):
+        for cited in (False, True):
+            with self.subTest(cited=cited):
+                estate = SuccessionEstate()
+                b1 = estate.object("bob", 11, ["bob/key"])
+                branches = [estate.object("bob", 124, ["bob/one"], previous=b1),
+                            estate.object("bob", 125, ["bob/two"], previous=b1)]
+                offered = branches
+                if cited:
+                    # The branches are never listed, only the signed sources of alice's listed frames.
+                    offered = [estate.object("alice", 126, ["alice/one"], stream=estate.stream("alice", "one"),
+                                             sources=[branches[0]]),
+                               estate.object("alice", 127, ["alice/two"], stream=estate.stream("alice", "two"),
+                                             sources=[branches[1]])]
+                direct = estate.gate(estate.registry(), succession=None)
+                first = estate.commit(direct, estate.proposal(direct, b1, seconds=100))
+                proposal = estate.proposal(direct, *offered, seconds=130)
+                self.assertEqual({(item["status"], item["reason_code"]) for item in proposal["decisions"]},
+                                 {("quarantined", "fork-ancestor" if cited else "stream-fork")})
+                head = estate.commit(direct, proposal)
+                branch_hashes = {branch["frame_hash"] for branch in branches}
+                self.assertEqual(listed(estate, head) & branch_hashes, set() if cited else branch_hashes)
+                self.assertLessEqual(branch_hashes, set(waves(direct)))
+                if cited:
+                    # Every frame of bob's that a convergence lists is before 120 here: only the ancestry is later.
+                    self.assertTrue(all(frame["utc"] < stamp(120)
+                                        for frame in signed_by(estate, listed(estate, head), "bob")))
+                gate = self.assert_member_cutoff_must_follow(estate, direct, first, head, branches,
+                                                             "fork evidence differs")
+                # The restored frontier keeps the fork: a branch offered again is still quarantined.
+                self.assertEqual(decision_map(estate.proposal(gate, branches[0], seconds=131)),
+                                 {branches[0]["frame_hash"]: "quarantined"})
+
+    def test_member_cutoff_before_a_listed_quarantined_frame_fails_closed(self):
+        estate = SuccessionEstate()
+        b1 = estate.object("bob", 11, ["bob/key"])
+        p = estate.object("bob", 112, ["k2"], previous=b1, target="members/bob/p.json")
+        q = estate.object("alice", 113, ["k2"], stream=estate.stream("alice", "q"), target="members/alice/q.json")
+        g = estate.object("alice", 121, ["k1"], stream=estate.stream("alice", "g"), target="members/alice/g.json")
+        h = estate.object("alice", 122, ["k1"], stream=estate.stream("alice", "h"), target="members/alice/h.json")
+        f = estate.object("bob", 125, ["k1"], previous=p, target="members/bob/f.json")
+        direct = estate.gate(estate.registry(), succession=None)
+        first = estate.commit(direct, estate.proposal(direct, b1, seconds=100))
+        resolver = estate.reconcile([g, h], signer="alice", seconds=128, base=first)
+        direct = estate.gate(estate.registry(), succession=None)
+        direct.restore(first["frame_hash"])
+        proposal = estate.proposal(direct, p, q, g, h, f, resolver, seconds=130)
+        decisions = {item["frame_hash"]: (item["status"], item["reason_code"]) for item in proposal["decisions"]}
+        # bob's F is quarantined for an ordinary reason (it extends P, an unresolved conflict). While it was still a
+        # candidate it joined G and H's component, so alice's reconciliation of exactly G and H matched no component.
+        self.assertEqual(decisions[f["frame_hash"]], ("quarantined", "blocked-ancestor"))
+        self.assertEqual(decisions[resolver["frame_hash"]], ("quarantined", "invalid-reconciliation"))
+        self.assertEqual({decisions[frame["frame_hash"]][0] for frame in (p, q, g, h)}, {"conflict"})
+        head = estate.commit(direct, proposal)
+        # Refusing F from the start would accept that reconciliation instead, so the recorded decisions differ.
+        self.assert_member_cutoff_must_follow(estate, direct, first, head, [f], "decisions differ")
+
+    def test_a_listed_frame_that_failed_verification_does_not_bound_the_member_cutoff(self):
+        # Signed by bob but aimed at alice's area, so candidate authorization refuses it under any registry. Were it
+        # to bound the cutoff, bytes dated far ahead behind a summary inside the convergence would pin the cutoff.
+        for seconds in (125, 10**6):
+            with self.subTest(seconds=seconds):
+                estate = SuccessionEstate()
+                b1 = estate.object("bob", 11, ["bob/key"])
+                stray = estate.object("bob", seconds, ["bob/stray"], stream=estate.stream("bob", "stray"),
+                                      target="members/alice/stray.json")
+                direct = estate.gate(estate.registry(), succession=None)
+                estate.commit(direct, estate.proposal(direct, b1, seconds=100))
+                candidates = estate.candidates(stray)
+                candidates[0]["utc"] = stamp(125)
+                proposal = direct.preview_convergence(candidates, stamp(130))
+                self.assertEqual([(item["status"], item["reason_code"]) for item in proposal["decisions"]],
+                                 [("quarantined", "invalid-candidate")])
+                head = estate.commit(direct, proposal)
+                gate = estate.gate(estate.member_recovery(120), retained_registry=direct.registry.retained_registry)
+                self.assertEqual(gate.restore(head["frame_hash"])["mother_head_frame_hash"], head["frame_hash"])
+                self.assertEqual(gate.catalog, direct.catalog)
 
     def test_missing_or_untrusted_issuance_is_refused_never_guessed(self):
         estate = SuccessionEstate()
