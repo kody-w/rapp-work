@@ -854,7 +854,7 @@ retirement of a deprecated key; the new removal vector now does.
 | M5 | `world_id` may change | `test_hive_world_policy_and_schema_are_immutable` |
 | M6 | Explicit owner-succession boundary removed | `test_the_owner_is_unique_and_unchanged` (2 subtests: the refusal is still made by the registry-owner check, but no longer names G6) |
 | M7 | A declared room may disappear or change area/access | `test_declared_rooms_persist_with_their_area_and_access` (3 subtests) |
-| M8 | Proposal becomes the default | all 4 `DefaultGateRefusesLaterDeclarations` vectors |
+| M8 | Proposal becomes the default | 4 of the 5 `DefaultGateRefusesLaterDeclarations` vectors (the genesis-owner vector sets the flag explicitly, so it runs in both modes either way) |
 | M9 | Base convergence reverts to the head-is-convergence rule | `test_convergence_base_commitments_across_a_declaration`, `test_authority_channel_switch_and_current_projection_at_a_declaration_head`, `test_a_no_op_declaration_only_advances_the_mother_head` |
 | M10 | A `roster-revoked` pending candidate still aborts the convergence | 3 vectors error (pending conflict, pending dependents, restore) |
 | M11 | Current receipt must bind the head payload even at a declaration head | 2 vectors error (channel switch, restore) |
@@ -1105,3 +1105,5 @@ If G1 is merged first, the same points apply in reverse: G6's merge replaces
   the same hazard exists on `main`). A default-mode vector now pins the
   declaration owner check on the registered genesis (mutation M1), and the
   status relay names only the new status word.
+- **Round 3 review** (`1899e52`): clean, with one low finding (the M8 row now
+  says 4 of the 5 default-gate vectors turn red).
