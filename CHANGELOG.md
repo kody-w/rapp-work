@@ -5,11 +5,13 @@
 - Proposal 0011 (gap G11), documentation only: name the SDK's pointer-only
   Organization the "workspace index", with the new record tokens
   `rapp-work-workspace-index/1` and `rapp-work-workspace-index-pointers/1`,
-  while every `rapp-work-organization/1` and
-  `rapp-work-organization-pointers/1` record keeps verifying. See
-  `docs/proposals/0011-workspace-index-name.md`. No code, token, profile
-  text, pin or behavior changes. Intended releases if accepted: 1.1.0 (read
-  both forms) and 1.2.0 (write the new form, convert through migration).
+  and retire the Organization form by total migration: every
+  `rapp-work-organization/1` and `rapp-work-organization-pointers/1` record
+  keeps verifying through a migration window that the owner ends (decision
+  D1). See `docs/proposals/0011-workspace-index-name.md`. No code, token,
+  profile text, pin or behavior changes. Intended releases if accepted: 1.1.0
+  (read both forms), 1.2.0 (write the new form, convert through migration),
+  1.3.0 (stop writing the old form), then a read sunset the owner names.
 
 ## 1.0.0 — 2026-09-18
 
