@@ -321,24 +321,18 @@ with:
 
 **Section 8.1 item 2.** Replace:
 
-> 2. The owner-signed declaration at the Mother's registered creation genesis.
->    In the direct-owner profile, the declaration owner is the anchored estate
->    owner. Mother Hive `stream_id` is exactly `hive_rappid`.
-
-with:
-
-> 2. The owner-signed declaration at the Mother's registered creation genesis,
->    and every later declaration accepted on the Mother stream once G1 is
->    accepted and activated. The declaration owner is the estate owner in effect
->    at the declaration's `utc` (RAPP/1 section 13.2): in the direct-owner
->    profile, the anchored estate owner; under owner succession, the owner whose
->    tenure contains that time. Declarations, reconciliations, convergences, and
->    projection receipts are signed by the owner in effect at their own `utc`.
->    A successor owner does not inherit declared membership unless a later
->    declaration names that successor as owner under G1. A
->    successor never re-signs or invalidates history signed inside a
->    predecessor's tenure and does not inherit a predecessor's declared
->    membership. Mother Hive `stream_id` is exactly `hive_rappid`.
+> 2. The owner-signed declaration at the Mother's registered creation genesis
+>    and, when later declarations are activated, every later declaration
+>    accepted on the Mother stream. The declaration owner is the estate owner
+>    in effect at the declaration's `utc` under the active RAPP/1 registry: in
+>    the direct-owner profile, the anchored estate owner; under owner
+>    succession, the owner whose tenure contains that time. Declarations,
+>    reconciliations, convergences, and projection receipts are signed by the
+>    owner in effect at their own `utc`. A successor owner does not inherit
+>    declared membership; after an owner rotation, roster changes require a
+>    follow-up specification that changes declaration succession rules or a new
+>    Hive. A successor never re-signs or invalidates history signed inside a
+>    predecessor's tenure. Mother Hive `stream_id` is exactly `hive_rappid`.
 
 **Section 8.1, new paragraph after item 5.** Insert:
 
@@ -468,7 +462,7 @@ Optional editorial change, section 8.2 second bullet: "registry SPKI/RAPPID
 binding, and time-scoped revocation" becomes "registry SPKI/RAPPID binding,
 and time-scoped supersession and revocation".
 
-### B. `rapp-work-sdk/1` normative text (on this branch)
+### B. `rapp-work-sdk/1` normative text (staged on the reference branch after acceptance)
 
 New section 5.1, inserted after section 5:
 
@@ -579,7 +573,7 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   (open question 11).
 - **Downstream pins:** a consumer that pins `hive_acceptance.py` or the
   `rapp-work-sdk/1` SPEC by SHA-256 at `main` keeps working at that commit; if
-  it adopts this branch it must re-pin both (`hive_acceptance.py`
+  it adopts the reference branch it must re-pin both (`hive_acceptance.py`
   `88184a7e…` → `e8488e2f…`; SDK SPEC `cf64a90f…` → `19802755…`). The
   five-file default deployment of context item 5 keeps working without
   `rapp_registry.py`. See Owner actions for the estate-lead items.
@@ -650,7 +644,7 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
 - **Residual risks that remain (documented, not claimed closed).** (1) A
   predecessor that is also a declared member can still sign member frames
   dated inside its tenure; they reach the catalog only if an owner in tenure
-  converges them, and G1 is the way to retire that member. (2) Standalone
+  converges them; this proposal does not provide a way to retire that owner-member after rotation. A future roster-succession rule or a new Hive is required. (2) Standalone
   artifacts dated inside a tenure, such as an owner-signed `invite` egg,
   verify forever. (3) The pinned reference refuses a rotation whose outgoing
   key carries a tombstone dated at or before the rotation, even when that
@@ -702,7 +696,7 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   successor `spki`; append `re-anchor {case:"rotation"}` signed by the outgoing
   owner (`sig` and `old_key_sig`); name the successor in the single
   `estate_owner` entry, as the pinned reference requires; increment
-  `registry_seq`; sign with the successor key. The successor then promptly
+  `registry_seq`; sign with the successor key. After rotation, roster changes are frozen until a follow-up declaration rule or a new Hive; the successor then promptly
   appends a Mother convergence (re-offering a settled frame is enough) and a
   receipt on every receipt stream, at or after the boundary. Consumers keep
   their original anchor and their retained state.
@@ -946,8 +940,8 @@ operation reaches it. Neither path signs or writes.
 Sibling draft branches in `kody-w/rapp-work` touch some of the same files.
 Nothing here edits them. For this revision each was fetched and read
 read-only (`git show origin/<branch>:<path>`) at the commit below; all are
-based on `main` at `29ead23`, as this branch is. A trial `git merge-tree` of
-this branch with each reports:
+based on `main` at `29ead23`, as the reference branch is. A trial `git merge-tree` of
+the reference branch with each reports:
 
 | Branch (proposal) | Commit read | Conflicting files | How to resolve |
 |---|---|---|---|
@@ -962,31 +956,31 @@ this branch with each reports:
 **The SDK SPEC section 12 conflict with G7.** At `68b549c`, G7 inserts its
 own paragraph ("Unreviewed instruction-file changes in a Workspace or
 Organization ...") before the unchanged section 12 paragraph, at the same
-place as this branch's insertion, so `protocols/rapp-work-sdk/1/SPEC.md`
+place as the reference branch's insertion, so `protocols/rapp-work-sdk/1/SPEC.md`
 conflicts there. Resolve it by keeping both paragraphs: G7's first, then this
 branch's ("In the list below, owner rotation means performing it ..."),
 directly above the list it qualifies; the existing paragraph stays
 byte-identical. Then recompute `spec_sha256` in `protocols/index.json` and
 `src/rapp_work/data/profiles.json`. G2 and G3 edit other SPEC sections and
-merge with this branch's SPEC text cleanly. G7's proposal still describes
-this branch as rewriting the section 12 paragraph; since round 2 it only
+merge with the reference branch's SPEC text cleanly. G7's proposal still describes
+the reference branch as rewriting the section 12 paragraph; since round 2 it only
 inserts one, and the two insertions compose.
 
 **`main` has moved.** `main` is now `0da52a6` (the RAPP/1 network header:
-`README.md` and `RELEASE-INVENTORY.json`). A trial merge of this branch with
+`README.md` and `RELEASE-INVENTORY.json`). A trial merge of the reference branch with
 it conflicts only in `RELEASE-INVENTORY.json`, which is regenerated with
 `python3 tools/release_inventory.py --write` after the merge.
 
 **G1 interaction.** G1 lets the owner sign later roster declarations and keeps
 the owner RAPPID immutable across them ("an owner change is succession (gap
 G6)"). With both merged: (1) G1's later-declaration owner check must use
-`registry.owner_at(frame["utc"])` (this branch's `tenured`) rather than
+`registry.owner_at(frame["utc"])` (the reference branch's `tenured`) rather than
 `registry.owner`, or a declaration dated inside a predecessor's tenure is
 misjudged; (2) until G1's owner-immutability invariant is relaxed to accept a
 later declaration whose owner is the owner in effect at its `utc`, a successor
 holds Mother authority but cannot re-declare the roster (design decision 10);
 and (3) G1 already makes later declarations strictly later than the Mother
-head, which matches this branch's rule for convergences under succession.
+head, which matches the reference branch's rule for convergences under succession.
 G1 at `1899e52` agrees: its section 13.1 recommends G6 first, keeps this
 branch's `owner == owner_at(utc) == signer` check with its own invariants
 before it, and renumbers its own check from H21 to H23. It also notes that
@@ -1090,9 +1084,9 @@ SPEC pins and the inventory after each merge.
    (`88184a7e…`) and the `rapp-work-sdk/1` SPEC (`cf64a90f…`) at `29ead23`,
    fetches only `hive_acceptance.py`, `rapp_hive.py`, `rapp.py`,
    `rapp_profile.py`, and the `rapp-hive/1` `SPEC.md`, and imports
-   `hive_acceptance`. It keeps working at `29ead23`, and with this branch's
+   `hive_acceptance`. It keeps working at `29ead23`, and with the reference branch's
    lazy import that five-file set also runs this branch's default gate. If the
-   kit adopts this branch it re-pins `hive_acceptance.py` (`e8488e2f…`) and the
+   kit adopts the reference branch it re-pins `hive_acceptance.py` (`e8488e2f…`) and the
    SDK SPEC (`19802755…`); it needs `rapp_registry.py` (`eec22844…`) only to
    enable succession.
 2. The G16 registry entry pins the `rapp-hive/1` spec hash (`79aeef7b…`).
