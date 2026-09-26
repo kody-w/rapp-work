@@ -798,9 +798,13 @@ def excalidraw(d):
         return el
 
     def words(sh, owner, x, y, w, h, **kw):  # one text element: free, or bound to its owner
-        text = "\n".join(part["s"] for part in texts.get(owner["id"], [])) if owner else sh["s"]
-        size = texts[owner["id"]][-1]["size"] if owner else sh["size"]
-        color = texts[owner["id"]][0]["color"] if owner else sh["color"]
+        parts = texts.get(owner["id"], []) if owner else [sh]
+        size = parts[-1]["size"]
+        rows = [parts[0]["s"]]
+        for a, b in zip(parts, parts[1:]):  # the SVG's spacing: a wider gap, as below a title, is a blank line
+            rows += [""] * max(0, round((b["y"] - a["y"]) / (size * 1.25)) - 1) + [b["s"]]
+        text = "\n".join(rows)
+        color = parts[0]["color"]
         el = add("text", {"g": sh["g"]}, x, y, w, round(size * 1.25 * (text.count("\n") + 1)), text=text,
                  originalText=text, fontSize=size, fontFamily=2, containerId=owner["id"] if owner else None,
                  lineHeight=1.25, autoResize=True, strokeWidth=1, strokeColor=color, **kw)
@@ -812,7 +816,8 @@ def excalidraw(d):
             el = add("rectangle", sh, sh["x"], sh["y"], sh["w"], sh["h"], strokeColor=sh["stroke"],
                      strokeWidth=sh["width"], backgroundColor=sh["hatch"] or sh["fill"] or "transparent",
                      fillStyle="hachure" if sh["hatch"] else "solid",  # newest: striped
-                     strokeStyle="dotted" if sh["dot"] else "dashed" if sh["dash"] else "solid", roundness={"type": 3})
+                     strokeStyle="dotted" if sh["dot"] else "dashed" if sh["dash"] else "solid",
+                     roundness={"type": 3, "value": 10})  # the SVG's corner radius, clear of the words
             if sh["id"] in texts:
                 small = texts[sh["id"]][0]["middle"]
                 words(sh, el, sh["x"] + 5, sh["y"] + 5, sh["w"] - 10, sh["h"] - 10, textAlign="center" if small
