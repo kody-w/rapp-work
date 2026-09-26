@@ -1,5 +1,16 @@
 # Proposal 0001: owner-signed later declarations for `rapp-hive/1`
 
+## Proposal-only acceptance note
+
+Merging this proposal accepts the design only. It does **not** activate later
+declarations, change any signed `rapp-hive/1` SPEC byte, re-sign the registry,
+or ship the reference implementation. The reference implementation stays on
+`experimental/gap-g1-roster-declaration` until the owner accepts this proposal;
+its implementation pull request is then opened as a draft and linked back here.
+The owner should apply the SPEC text and re-sign only after that reference
+branch has merged and passed its own review.
+
+
 | Field | Value |
 | --- | --- |
 | Status | **Draft, not accepted.** Nothing here is normative until the `rapp-hive/1` owner accepts it and re-signs the registry. |
@@ -321,13 +332,18 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 > is that the deciding verifier's registry lacks the frame's signing key or
 > its stream's creation genesis; the owner leaves such a frame out of the
 > convergence until that registry registers them. A registry change that
-> makes a recorded quarantine verify, or makes a recorded acceptance fail,
-> makes every verifier holding it refuse to restore the Hive's history: its
-> `restore()` fails closed and latches. The owner **MUST NOT**
-> deprecate the `spki` entry of a key that signed accepted Hive history, other
-> than through a RAPP/1 §10 re-anchor, including when its identity is removed:
-> a verifier that cannot resolve that key cannot re-verify the Mother history.
-> Key compromise remains a RAPP/1 §10 tombstone.
+> changes the verification result of any frame that an accepted convergence
+> records can make every verifier holding it refuse to restore the Hive's
+> history: `restore()` fails closed and latches. That includes frames recorded
+> as `accepted`, `duplicate`, `conflict`, `superseded`, `quarantined`,
+> `stream-fork`, and fork ancestors whose signed bytes, ancestry, and
+> authorization verified when the convergence was accepted. The owner **MUST
+> NOT** deprecate the `spki` entry of any key that signed such a recorded or
+> retained frame, other than through a RAPP/1 §10 re-anchor, including when
+> its identity is removed: a verifier that cannot resolve that key cannot
+> re-verify the Mother history. Key compromise remains a RAPP/1 §10
+> tombstone; its cutoff must follow the G6 rule before this history is
+> extended.
 
 ### 4.2 §3.1: key release uses the roster in effect
 
@@ -362,8 +378,12 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 >
 > **PROPOSED item 2:** "The owner-signed declaration at the Mother's registered
 > creation genesis and every later declaration accepted on the Mother stream
-> (§3.2). In the direct-owner profile, the declaration owner is the anchored
-> estate owner. Mother Hive `stream_id` is exactly `hive_rappid`."
+> (§3.2). `owner-signed` means the signer is the estate owner in effect at
+> the declaration's `utc` under the active RAPP/1 registry; in the
+> direct-owner profile that owner is the anchored estate owner. A successor
+> owner does not inherit declared membership unless a later declaration names
+> that successor as owner under §3.2. Mother Hive `stream_id` is exactly
+> `hive_rappid`."
 
 > **Current item 3:** "The locally accepted Mother frame head, last
 > convergence particle hash (or null immediately after the declaration), and
@@ -649,11 +669,16 @@ Confirmed by the default-mode vectors and the registry vector:
   the key makes a refreshed verifier refuse to restore the Hive and latch
   (`test_a_recorded_registry_quarantine_makes_a_later_refresh_fail_closed`),
   and deprecating a removed member's key does the same
-  (`test_removal_keeps_the_removed_members_registry_key`). Both are safe, but
-  they stop that verifier from restoring the Hive, so the proposed text
-  forbids both (registry first; never deprecate a key that signed accepted
-  history). A compromise tombstone keeps accepted history verifiable and
-  refuses the key's later signatures, as today.
+  (`test_removal_keeps_the_removed_members_registry_key`). The same failure
+  occurs for a key that signed a frame only listed as a conflict, duplicate,
+  superseded frame, quarantine, stream-fork, or fork ancestor by an accepted
+  convergence, because restore recomputes those decisions from authenticated
+  bytes. Both are safe, but they stop that verifier from restoring the Hive,
+  so the proposed text forbids both (registry first; never deprecate a key
+  that signed any verified frame the accepted Mother history records or
+  retains). A compromise tombstone keeps history verifiable only when its
+  cutoff is later than every frame G6 requires it to follow; otherwise restore
+  fails closed, as today.
 - **Signature variants.** A settled frame's exemption applies only to its
   exact verified bytes. A re-signed variant is re-checked for signer/producer
   binding in the walk (`test_resigned_variant_of_a_settled_frame_is_not_exempt`).
@@ -709,8 +734,10 @@ Confirmed by the default-mode vectors and the registry vector:
      The tombstone refuses the key's signatures at or after `revoked_utc`; the
      removal also refuses its unsettled frames stamped before that, which a
      tombstone alone cannot (§7, back-dating). As today, a tombstone dated at
-     or before an accepted frame of that key makes that frame unverifiable;
-     RAPP/1 §14 advises advancing affected heads past `revoked_utc`.
+     or before any verified frame of that key that an accepted convergence
+     records or retains makes the Mother head unrestorable; G6 states the
+     full cutoff rule, and RAPP/1 §14 advises advancing affected heads past
+     `revoked_utc`.
   4. *Member key rotation.* A RAPP/1 re-anchor mints a new RAPPID, and the
      direct-owner reference refuses re-anchor records (G6). Until then,
      register the new key as a new identity, admit it, and remove the old
@@ -975,7 +1002,7 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
 5. Release as `rapp-work` 1.1.0, merging in the order of §13.1.
 6. **Estate lead or owner:** the estate signing kit pins
    `protocols/rapp-hive/1/reference/hive_acceptance.py` by SHA-256 at base
-   `29ead23` (`88184a7e…`). This branch changes that file, so refresh that pin
+   `29ead23` (`88184a7e…`). The draft implementation branch changes that file, so refresh that pin
    when the reference ships; on activation the kit's `rapp-hive/1` SPEC pin
    moves too. This workstream does not edit the kit.
 7. The lead relays G1's new status word, `proposed`, to the organism.
@@ -986,15 +1013,14 @@ PR):
 > **Title:** Proposal 0001: owner-signed later declarations for rapp-hive/1 (G1)
 >
 > **Body:** Adds draft proposal
-> `docs/proposals/0001-rapp-hive-roster-declaration.md` and an opt-in reference
-> mode, `HiveAcceptance(..., roster_declarations=True)`. The default gate still
-> refuses every later declaration. There is no SPEC, schema or registry change;
-> activation needs the owner to accept the text and re-sign the registry. The
-> new check H21 has 96 vectors: default refusal, proposal positives and
-> refusals, the registry side of roster changes, and a replay of all 56
-> authenticated vectors in proposal mode. 20 controlled mutations each turn
-> critical vectors red. The vendored `rapp-private-hive` copy moves to skill
-> version 3.2.1. Local CI mirror: Python 3.13 and 3.10.
+> `docs/proposals/0001-rapp-hive-roster-declaration.md`. The reference mode
+> stays on branch `experimental/gap-g1-roster-declaration` until proposal
+> acceptance, then opens as a draft implementation PR. There is no SPEC, schema or registry change;
+> activation needs the owner to accept the text, merge the draft
+> implementation, and only then apply the SPEC text and re-sign the registry.
+> The implementation branch currently carries H23 vectors for default refusal,
+> proposal positives and refusals, the registry side of roster changes, and a
+> replay of authenticated vectors in proposal mode.
 
 ## 13. Interactions with other gaps
 
@@ -1061,8 +1087,10 @@ If G1 is merged first, the same points apply in reverse: G6's merge replaces
 
 - **Before activation.** Drop the branch. Nothing normative or signed was
   changed.
-- **Code.** Reverting this branch's commits restores the previous reference
-  bytes, the vendored copy, the skill version and lock, and the inventory.
+- **Code.** Reverting the later implementation branch restores the previous
+  reference bytes, the vendored copy, the skill version and lock, and the
+  inventory. Reverting this proposal-only PR removes only this proposal and
+  its inventory entry.
 - **After activation.** An estate that has accepted later declarations cannot
   return to a verifier that refuses them and still verify its own Mother
   history. The old verifier fails closed; it never silently mis-verifies. The
