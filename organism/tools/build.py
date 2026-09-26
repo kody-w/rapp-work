@@ -1069,7 +1069,8 @@ def pages(t):
         used = sorted(own.values())
         cells = "".join(f'<span class="{kind(c).strip()}" style="grid-column: {own[c["stem"]] + 1} / '
                         f'{next((u for u in used if u > own[c["stem"]]), len(row)) + 1}">{w}</span>' for c, w in spans)
-        return (f'<div class="conn at" style="grid-template-columns: {" ".join(f"minmax(0, {p['span']}fr)" for p in row)}">'
+        columns = " ".join("minmax(0, %dfr)" % p["span"] for p in row)  # columns never grow to fit their words
+        return (f'<div class="conn at" style="grid-template-columns: {columns}">'
                 f'{cells}</div>')
 
     def steps(ph):  # each gap a step names is drawn as its chip, in the colors of its status, glued to its marks
@@ -1293,7 +1294,7 @@ def genome(t, graph):
         ["ID", "Gap", "Status"], [[f"[{g['id']}](gaps/{g['stem']}.md)", g["gap"], status(g["status"])] for g in gaps])
     lock = t["lock"]
     L += ["", f"## {lock['name']}", ""] + [f"- {item}." for item in lock["definition"]]
-    L += ["", f"It pins {pins(lock)} (RAPP/1 \u00a7\u00a711.1, 13.3). Why, and every step: [lock.md](lock.md)."]
+    L += ["", f"It pins {pins(lock)} (RAPP/1 \u00a7\u00a711.1, 13.3; `rapp-cicd/1` \u00a72). Why, and every step: [lock.md](lock.md)."]
     L += table(["Phase", "Who acts", "Gaps it closes"], lock_plan(t, steps=False))
     L += ["", f"**{t['pull']['name']}** ([clean-pull.md](clean-pull.md)): {mentions(t, short=True)}"]
     if lock["goal"]:

@@ -18,4 +18,4 @@ An estate is one owner's signed list of what is theirs.
 - It lives where its owner publishes it, usually the owner's own repository, and only grows: each signed version appends entries and raises `registry_seq`.
 - An organization's owner gets their authority from here.
 - The kody-w estate's signed registry, `kody-w/rapp-map`'s `ecosystem-spec.json` at `registry_seq` 2, pins `rapp/1`, `rapp-cicd/1` and `rapp-deploy/1`.
-- No estate declares the Brainstem's kernel yet. RAPP's unsigned `KERNEL_PIN.json` pins its LTS channel at `kody-w/rapp-installer@brainstem-v0.6.9`; the newest `brainstem-v*` tag, `brainstem-v0.6.16`, is what the installer's `main` ships, and nothing pins it yet (G15).
+- No estate declares the Brainstem's kernel yet. RAPP's unsigned `KERNEL_PIN.json` pins its LTS channel at `kody-w/rapp-installer@brainstem-v0.6.9`; the newest `brainstem-v*` tag, `brainstem-v0.6.16`, is what the installer's `main` ships, and nothing signed pins it yet (G15).

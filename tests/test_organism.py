@@ -90,7 +90,7 @@ def test_the_lock_in_page_ends_at_the_distributed_hive() -> None:
         ("clean-pull.md", '"RAR: 50"', '"RAR: fifty"', "each `mentions` item reads"),
         ("clean-pull.md", "phase: 2", "phase: 3", "no phase 3 step in lock.md says"),
         ("clean-pull.md", '"proposed: the installer', '"maybe: the installer', "each `door` item reads"),
-        ("lock.md", '"1: merge RAPP proposal 0001', '"2: merge RAPP proposal 0001', "names G18, which is no phase 2 gap"),
+        ("lock.md", '"1: merge the amendment', '"2: merge the amendment', "names G18, which is no phase 2 gap"),
         ("lock.md", 'end: "distributed-hive:', 'end: "nowhere:', "`end` reads `<part id>: words`"),
         ("gaps/G24.md", "phase: 3", "phase: 4", "a phase 3 step names G24, which is no phase 3 gap"),
     ],

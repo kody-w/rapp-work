@@ -22,7 +22,7 @@ phases:
   - "Switch it on: estate owner"
   - "Graduate into RAPP/1: engineering, through the rings"
 steps:
-  - "1: merge RAPP proposal 0001 (G18, `kody-w/RAPP#119`), then its amendment: a documentation fix only, yours because RAPP reserves both merges for the maintainer (XXVIII.4, XXX.2)"
+  - "1: merge the amendment of RAPP proposal 0001 (G18), a documentation fix only, reserved for the maintainer (XXVIII.4, XXX.2); the proposal (`kody-w/RAPP#119`) is merged"
   - "1: accept or refuse RAPP proposal 0002 (G19), Tier 2 loading: a draft on `experimental/proposal-0002-tier2-parity`"
   - "1: ratify the RAPP Work Constitution and its Part V (G8, G9)"
   - "2: fix RAPP's and RAR's non-conformant eggs and RAR's bounded scan (`kody-w/RAPP#121`, which only the maintainer merges, and `kody-w/RAR#1116`; both open)"
@@ -36,7 +36,7 @@ steps:
   - "3: rapp-work/1, by sibling profiles (G5, G10); RAPP's Constitution and RAPP Workspace/1 (G22, G24)"
   - "3: a gap that cannot close in time waits for a later RAPP, with the owner's sign-off"
   - "4: sign both kernel channels: a `grail-kernel` entry for the LTS scope, and one for a successor scope (G15)"
-  - "4: sign the remaining protocol pins; that switches on the Workspaces and RAR"
+  - "4: sign the remaining protocol pins; that estate-activates the Workspaces and RAR"
   - "4: activate `rapp-work/1` (G16), so the Organization is in force"
   - "4: authorize the network pulse signer: pulses (experimental) version the map and the network's health"
   - "4: switch on the Distributed Hive: accept RAPP proposal 0020, then merge the drafts of beacon 1.1, `estate.json` and the operator's acceptance in RAPP's seed"

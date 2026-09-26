@@ -210,7 +210,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 - Everything in it is in force; nothing in it is experimental.
 - The newest channel holds experiments until they graduate: one successor scope per newer kernel.
 
-It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Workspace/1, `rapp-work-sdk/1`, `rapp-registry/1.1`, `rapp-cicd/1`, `rapp-deploy/1`, and the agents and apps that ship with it (RAPP/1 §§11.1, 13.3). Why, and every step: [lock.md](lock.md).
+It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Workspace/1, `rapp-work-sdk/1`, `rapp-registry/1.1`, `rapp-cicd/1`, `rapp-deploy/1`, and the agents and apps that ship with it (RAPP/1 §§11.1, 13.3; `rapp-cicd/1` §2). Why, and every step: [lock.md](lock.md).
 
 | Phase | Who acts | Gaps it closes |
 |---|---|---|
@@ -220,7 +220,7 @@ It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Wo
 | 4. Switch it on | estate owner | G15, G16 |
 | 5. Graduate into RAPP/1 | engineering, through the rings | G12, G13, G14, G17, G20 |
 
-**Keep the default pull clean** ([clean-pull.md](clean-pull.md)): on 2026-09-25, 9 of 15 default branches mentioned “experimental” (most: rapp-hive-public, 338 files): mentions, not problems. The file also lists the front door, where people find RAPP/1.
+**Keep the default pull clean** ([clean-pull.md](clean-pull.md)): on 2026-09-26, 9 of 15 default branches mentioned “experimental” (most: rapp-hive-public, 338 files): mentions, not problems. The file also lists the front door, where people find RAPP/1.
 
 **Where it ends: the [Distributed Hive](parts/distributed-hive.md)** (experimental): RAPP/1 LTS resolves as a distributed Hive, so a person pulls full RAPP/1 from static data. The RAPP/1 network as one Hive, found by raw URL: RAPP's seed → beacon → `estate.json` → Hive root → a pointer per repository → its `.rapp/member.md`, at its LTS commit.
 
@@ -233,7 +233,7 @@ It pins the LTS kernel `brainstem-v0.6.9`, `rapp-hive/1`, `rapp-work/1`, RAPP Wo
 | [E3](journeys/E3.md) | The team publishes a page. |
 | [E4](journeys/E4.md) | An old Hive moves. |
 | [E5](journeys/E5.md) | Something goes wrong. |
-| [E6](journeys/E6.md) | Two organizations work together (candidate; folder Hives after G12). |
+| [E6](journeys/E6.md) | Two organizations work together (candidate; Private Hives only). |
 | [E7](journeys/E7.md) | The Hive agent grows up. |
 
 ## What holds everywhere

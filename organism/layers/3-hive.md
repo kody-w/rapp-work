@@ -12,4 +12,4 @@ The Hive is where members share work. It comes in two kinds today, side by side,
 
 - A **folder Hive** is markdown with git underneath and no owner inside. It is experimental, and an organization cannot bind one yet (G10).
 - A **`rapp-hive/1` Private Hive** has one owner and signed RAPP/1 frames. It is in force, pinned by `kody-w/rapp-work`'s own signed registry, and it is the only kind of Hive an organization can bind, once an estate activates `rapp-work/1` (G16).
-- A **distributed Hive** is the RAPP/1 network as one Hive: each repository keeps its member space in `.rapp/`, and a Hive root's pointers pin each one at its LTS commit. It is experimental, and it is where RAPP/1 LTS ends. The views draw it beside the estate, whose `estate.json` is to pin its root (RAPP proposal 0020).
+- A **distributed Hive** is the RAPP/1 network as one Hive: in the draft convention, each repository keeps its member space in `.rapp/`, and a Hive root's pointers pin each one at its LTS commit. It is experimental, and it is where RAPP/1 LTS ends. The views draw it beside the estate, whose `estate.json` is to pin its root (RAPP proposal 0020).
