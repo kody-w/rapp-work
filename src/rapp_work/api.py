@@ -175,7 +175,7 @@ def _discover(inputs: dict[str, Any]) -> dict[str, Any]:
     item = closed_object(
         inputs,
         required={"roots"},
-        optional={"max_entries"},
+        optional={"agents", "max_entries"},
         where="discover input",
     )
     require(
@@ -190,7 +190,13 @@ def _discover(inputs: dict[str, Any]) -> dict[str, Any]:
         "REFUSE_INPUT_SHAPE",
         "discover max_entries must be an integer",
     )
-    return discover_roots([Path(value) for value in item["roots"]], maximum=maximum)
+    agents = item.get("agents", False)
+    require(type(agents) is bool, "REFUSE_INPUT_SHAPE", "discover agents must be Boolean")
+    return discover_roots(
+        [Path(value) for value in item["roots"]],
+        maximum=maximum,
+        agents=agents,
+    )
 
 
 def _apply_fields(item: dict[str, Any], *, operation: str) -> tuple[bool, Any, Any]:

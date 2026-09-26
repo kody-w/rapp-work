@@ -32,7 +32,7 @@ migrate(inputs)
 |---|---|---|
 | `status` | — | `root` |
 | `verify` | — | `root` |
-| `discover` | `roots` | `max_entries` |
+| `discover` | `roots` | `agents`, `max_entries` |
 | `scaffold` | `root`, `kind`, `owner_label`, `slug`, `world_id`, `mode` | `apply`, `plan`, `plan_sha256` |
 | `update` | `root` | `apply`, `plan`, `plan_sha256` |
 | `migrate` | `source`, `target` | `apply`, `plan`, `plan_sha256` |
@@ -41,9 +41,12 @@ For effectful operations, omitting `apply` returns a plan. `apply: true`
 requires both the complete plan object and its exact canonical SHA-256.
 
 A `discover` result groups its inert records in `skills`, `plugins`, and
-`neurons`, and lists `refusals`. It adds an `agents` member of inert
-`rapp-work-discovered-agent/1` records only when it finds at least one
-Brainstem single-file agent (`*_agent.py`); see `rapp-work-sdk/1` §11.1.
+`neurons`, and lists `refusals`. With `agents: true` it also reads Brainstem
+single-file agents (`*_agent.py`) and adds an `agents` member, possibly empty,
+of inert `rapp-work-discovered-agent/1` records; see `rapp-work-sdk/1` §11.1.
+Discovery parses Python source only after a token-level measure shows that it
+is within fixed nesting and cost bounds, and one call spends at most a fixed
+parse budget on agents (§11.2).
 
 ## Typed models
 

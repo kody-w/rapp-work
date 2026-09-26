@@ -30,6 +30,7 @@ def parser() -> JSONArgumentParser:
     discover = commands.add_parser("discover")
     discover.add_argument("--root", action="append", dest="roots", required=True)
     discover.add_argument("--max-entries", type=int, default=10_000)
+    discover.add_argument("--agents", action="store_true")
 
     scaffold = commands.add_parser("scaffold")
     scaffold.add_argument("--root", required=True)
@@ -75,7 +76,10 @@ def _inputs(args: argparse.Namespace) -> dict[str, Any]:
     if operation in {"status", "verify"}:
         return {"root": args.root}
     if operation == "discover":
-        return {"max_entries": args.max_entries, "roots": args.roots}
+        inputs: dict[str, Any] = {"max_entries": args.max_entries, "roots": args.roots}
+        if args.agents:
+            inputs["agents"] = True
+        return inputs
     if operation == "scaffold":
         value: dict[str, Any] = {
             "kind": args.kind,

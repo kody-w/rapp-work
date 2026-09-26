@@ -3,15 +3,22 @@
 ## Unreleased (proposal, not accepted)
 
 - Proposal 0003 (gap G3, `docs/proposals/0003-sdk-agent-discovery.md`):
-  `discover` records Brainstem single-file agents (`*_agent.py`) as inert
-  `rapp-work-discovered-agent/1` data in a new `agents` result member that is
-  present only when at least one record exists. Agent source is parsed, never
-  imported, compiled to bytecode, or executed; `live` marks a file at the top
-  level of the scanned root's `agents/` directory by position only, and
-  `basic_agent.py` is recorded as the base class. Trees without agent files keep byte-identical
-  discover output. The proposed normative text is `rapp-work-sdk/1` §11.1 and
-  the SDK profile pins follow its bytes. The package version is unchanged
-  until the owner accepts a release.
+  `discover` accepts the optional input `agents` (CLI `--agents`). With
+  `agents: true` it records Brainstem single-file agents (`*_agent.py`) as
+  inert `rapp-work-discovered-agent/1` data in an `agents` result member.
+  Agent source is parsed, never imported, compiled to bytecode, or executed;
+  `live` marks a file at the top level of the scanned root's live `agents`
+  directory by position only, and `basic_agent.py` is recorded as the base
+  class. Without `agents`, discover results are unchanged apart from the
+  embedded static API document.
+- Every parse of discovered Python, including Portable Neurons, now follows a
+  token-level measure with fixed nesting, cost, integer-literal, and
+  replacement-field bounds, which removes a process crash on Python 3.10 and
+  bounds time and memory. A Portable Neuron outside the bounds is refused like
+  one the parser rejects.
+- The proposed normative text is `rapp-work-sdk/1` §11.1 and §11.2, and the
+  SDK profile pins follow its bytes. The package version is unchanged until
+  the owner accepts a release.
 
 ## 1.0.0 — 2026-09-18
 

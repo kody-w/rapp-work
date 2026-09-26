@@ -27,7 +27,7 @@
       "authority": "package-qualified-integration-profile",
       "activation": "workspace-integration-not-estate-authority",
       "spec_path": "protocols:rapp-work-sdk/1/SPEC.md",
-      "spec_sha256": "1e7022905e1e028ef684e5d4edaf71aa555d08e1e1bf82572fbe81b1308f6e7d",
+      "spec_sha256": "ef4f7acef71942b27724dfc9d168051688565ca2c2619662f650954322dbdb6a",
       "schema_path": "protocols:rapp-work-sdk/1/schema.json",
       "schema_sha256": "a931fe3ec14a8c02962f0680e5c831070c4054b3787f1aa427458f4403849029"
     },

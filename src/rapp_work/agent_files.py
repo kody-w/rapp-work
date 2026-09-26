@@ -3,13 +3,17 @@ from __future__ import annotations
 import ast
 import codecs
 import hashlib
+import os
 import re
+import stat
+import threading
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias
 
 from ._paths import read_regular
+from ._python_source import INVALID, MAX_SOURCE_COST, OVER_COST, WITHIN, measure_source
 from .errors import Refusal, require
 
 AGENT_SCHEMA = "rapp-work-discovered-agent/1"
@@ -25,25 +29,53 @@ MAX_CLASS_NAME_CHARS = 256
 MAX_MANIFEST_DEPTH = 16
 MAX_MANIFEST_NODES = 4096
 MAX_MANIFEST_FIELD_CHARS = 1024
+MAX_CALL_PARSE_COST = 8_388_608
 
 # PEP 263 declaration, checked on the first two physical lines.
 _ENCODING_DECLARATION = re.compile(rb"^[ \t\f]*#.*?coding[:=][ \t]*([-\w.]+)")
 _FIRST_TWO_LINES = re.compile(rb"([^\r\n]*)(?:\r\n|\r|\n)?([^\r\n]*)")
 _SIGNED_NUMBER_TYPES = (int, float, complex)
+# Warning filters are process-wide; one lock keeps concurrent discover calls from interleaving them.
+_PARSE_LOCK = threading.Lock()
 
 ManifestFields: TypeAlias = tuple[tuple[str, str | None], ...]
+Identity: TypeAlias = tuple[int, int]
+
+
+class ParseBudget:
+    """Cost units one ``discover`` call may spend measuring and parsing agent sources."""
+
+    def __init__(self, units: int | None = None) -> None:
+        self.remaining = MAX_CALL_PARSE_COST if units is None else units
 
 
 def is_agent_file_name(name: str) -> bool:
     return name.endswith(AGENT_SUFFIX)
 
 
-def live_directory(root: Path) -> Path:
-    return root if root.name == LIVE_DIRECTORY else root / LIVE_DIRECTORY
-
-
 def display_path(path: Path) -> str:
     return str(path).encode("utf-8", "backslashreplace").decode("utf-8")
+
+
+def _directory_identity(path: Path) -> Identity | None:
+    try:
+        info = os.stat(path, follow_symlinks=False)
+    except OSError:
+        return None
+    return (int(info.st_dev), int(info.st_ino)) if stat.S_ISDIR(info.st_mode) else None
+
+
+def live_directory(root: Path) -> Identity | None:
+    """Identity of the directory the name ``agents`` resolves to for a scanned root.
+
+    Names resolve as the file system resolves them, so a case-insensitive volume
+    finds ``Agents`` for ``agents`` exactly as the Brainstem kernel's glob does.
+    """
+
+    own = _directory_identity(root)
+    if own is not None and _directory_identity(root.parent / LIVE_DIRECTORY) == own:
+        return own
+    return _directory_identity(root / LIVE_DIRECTORY)
 
 
 def _utf8_declaration(name: bytes) -> bool:
@@ -66,16 +98,27 @@ def _source_text(raw: bytes) -> str | None:
     return text
 
 
-def _parse(text: str) -> ast.Module | None:
+def _parse(text: str, budget: ParseBudget) -> tuple[str, ast.Module | None]:
     if "\x00" in text:
-        return None
+        return "invalid", None
+    allowance = min(MAX_SOURCE_COST, budget.remaining)
+    if allowance <= 0:
+        return "over-budget", None
+    measure = measure_source(text, allowance)
+    budget.remaining -= min(measure.cost, allowance)
+    if measure.verdict == OVER_COST:
+        return ("over-limit" if allowance == MAX_SOURCE_COST else "over-budget"), None
+    if measure.verdict == INVALID:
+        return "invalid", None
+    if measure.verdict != WITHIN:
+        return "over-limit", None
     try:
-        # Parser warnings would otherwise follow the host's warning filters.
-        with warnings.catch_warnings():
+        with _PARSE_LOCK, warnings.catch_warnings():
+            # Parser warnings would otherwise follow the host's warning filters.
             warnings.simplefilter("ignore")
-            return ast.parse(text, filename="<rapp-work-agent>", mode="exec")
+            return "parsed", ast.parse(text, filename="<rapp-work-agent>", mode="exec")
     except Exception:
-        return None
+        return "invalid", None
 
 
 def _names_base_class(base: ast.expr) -> bool:
@@ -102,6 +145,21 @@ def _agent_classes(tree: ast.Module) -> tuple[str, ...]:
     return tuple(names)
 
 
+_NAMED_BINDINGS: tuple[type[ast.AST], ...] = (
+    ast.AsyncFunctionDef,
+    ast.ClassDef,
+    ast.ExceptHandler,
+    ast.FunctionDef,
+    ast.MatchAs,
+    ast.MatchStar,
+    *(
+        getattr(ast, name)
+        for name in ("ParamSpec", "TypeVar", "TypeVarTuple")
+        if hasattr(ast, name)
+    ),
+)
+
+
 def _manifest_binding_sites(tree: ast.Module) -> int:
     declarations: set[int] = set()
     sites = 0
@@ -120,18 +178,10 @@ def _manifest_binding_sites(tree: ast.Module) -> int:
                 and isinstance(node.value, ast.Name)
                 and node.value.id == MANIFEST_NAME
             )
-        elif isinstance(
-            node,
-            (
-                ast.AsyncFunctionDef,
-                ast.ClassDef,
-                ast.ExceptHandler,
-                ast.FunctionDef,
-                ast.MatchAs,
-                ast.MatchStar,
-            ),
-        ):
-            sites += node.name == MANIFEST_NAME
+        elif isinstance(node, ast.arg):
+            sites += node.arg == MANIFEST_NAME
+        elif isinstance(node, _NAMED_BINDINGS):
+            sites += getattr(node, "name", None) == MANIFEST_NAME
         elif isinstance(node, ast.MatchMapping):
             sites += node.rest == MANIFEST_NAME
         elif isinstance(node, ast.alias):
@@ -162,6 +212,8 @@ def _repeats_constant_key(value: ast.expr) -> bool:
 
 
 def _literal_verdict(value: ast.expr) -> str:
+    """Classify a manifest value; nodes are displays, constants, and signed constants."""
+
     if not isinstance(value, ast.Dict):
         return "not-literal"
     stack: list[tuple[ast.expr, int]] = [(value, 1)]
@@ -250,7 +302,14 @@ class DiscoveredAgent:
     SCHEMA = AGENT_SCHEMA
 
     @classmethod
-    def inspect(cls, path: Path, *, root: Path) -> DiscoveredAgent:
+    def inspect(
+        cls,
+        path: Path,
+        *,
+        root: Path,
+        live: Identity | None,
+        budget: ParseBudget,
+    ) -> DiscoveredAgent:
         require(
             is_agent_file_name(path.name),
             "REFUSE_AGENT",
@@ -261,22 +320,24 @@ class DiscoveredAgent:
         manifest_status: str | None = None
         manifest: ManifestFields | None = None
         text = _source_text(raw)
-        tree = _parse(text) if text is not None else None
         if text is None:
             syntax = "unsupported-encoding"
-        elif tree is None:
-            syntax = "invalid"
         else:
-            syntax = "parsed"
-            classes = _agent_classes(tree)
-            manifest_status, manifest = _manifest(tree)
+            syntax, tree = _parse(text, budget)
+            if tree is not None:
+                classes = _agent_classes(tree)
+                manifest_status, manifest = _manifest(tree)
         return cls(
             path=path,
             root=root,
             sha256=hashlib.sha256(raw).hexdigest(),
             bytes=len(raw),
             role="base-class" if path.name == BASE_CLASS_FILE else "agent",
-            live=not path.name.startswith(".") and path.parent == live_directory(root),
+            live=(
+                live is not None
+                and not path.name.startswith(".")
+                and _directory_identity(path.parent) == live
+            ),
             syntax=syntax,
             classes=classes,
             manifest_status=manifest_status,
@@ -303,11 +364,17 @@ class DiscoveredAgent:
         }
 
 
-def inspect_agent_entry(path: Path, *, root: Path) -> DiscoveredAgent | dict[str, Any]:
+def inspect_agent_entry(
+    path: Path,
+    *,
+    root: Path,
+    live: Identity | None,
+    budget: ParseBudget,
+) -> DiscoveredAgent | dict[str, Any]:
     shown = display_path(path)
     try:
         require(shown == str(path), "REFUSE_AGENT_NAME", "agent path is not valid UTF-8")
-        return DiscoveredAgent.inspect(path, root=root)
+        return DiscoveredAgent.inspect(path, root=root, live=live, budget=budget)
     except (Refusal, ValueError, OSError) as error:
         code = error.code if isinstance(error, Refusal) else "REFUSE_DISCOVERY_METADATA"
         return {"code": code, "message": str(error), "path": shown}

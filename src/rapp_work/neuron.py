@@ -2,15 +2,28 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import io
+import tokenize
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from ._json import canonical_sha256
 from ._paths import absolute_path, read_regular, write_new
+from ._python_source import MAX_SOURCE_COST, WITHIN, measure_source
 from .errors import require
 
 MAX_NEURON_BYTES = 1024 * 1024
+
+
+def _within_parse_bounds(raw: bytes) -> bool:
+    # Measure the text the parser will read: PEP 263 decoding, exactly as the parser decodes.
+    try:
+        encoding, _ = tokenize.detect_encoding(io.BytesIO(raw).readline)
+        text = raw.decode(encoding)
+    except (SyntaxError, UnicodeDecodeError, LookupError):
+        return False
+    return measure_source(text, MAX_SOURCE_COST).verdict == WITHIN
 
 
 def _literal_metadata(tree: ast.AST) -> dict[str, Any] | None:
@@ -57,6 +70,8 @@ class PortableNeuron:
             "REFUSE_NEURON",
             "Portable Neuron compatibility accepts inert Python source only",
         )
+        if not _within_parse_bounds(raw):
+            raise ValueError("Portable Neuron source is not valid bounded Python syntax")
         try:
             tree = ast.parse(raw, filename=str(path), mode="exec")
         except (SyntaxError, ValueError, MemoryError, RecursionError) as error:

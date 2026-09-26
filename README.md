@@ -46,7 +46,8 @@ rapp-work discover --root .
 
 `status`, `verify`, and `discover` are read-only. Discovery records only bounded
 metadata and hashes. It never imports or executes a plugin, skill, Portable
-Neuron, or Brainstem single-file agent (`*_agent.py`).
+Neuron, or Brainstem single-file agent (`*_agent.py`). Add `--agents` to
+`discover` to also record single-file agents as inert data.
 
 ### Plan, review, apply
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import builtins
+import copy
 import hashlib
 import importlib
 import importlib.util
@@ -9,6 +10,7 @@ import json
 import os
 import runpy
 import sys
+import threading
 import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -16,16 +18,36 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from agent_trees import (
+    BASE_SOURCE,
+    DRAFT_SOURCE,
+    HELLO_SOURCE,
+    build_agent_tree,
+    build_mixed_tree,
+    build_tree_without_agents,
+)
+from agent_trees import write as _write
 
 from rapp_work import discover
-from rapp_work._json import canonical_text
-from rapp_work.agent_files import MAX_AGENT_BYTES, MAX_AGENT_CLASSES, MAX_CLASS_NAME_CHARS
+from rapp_work._json import canonical_sha256, canonical_text
+from rapp_work.agent_files import (
+    MAX_AGENT_BYTES,
+    MAX_AGENT_CLASSES,
+    MAX_CLASS_NAME_CHARS,
+    MAX_MANIFEST_DEPTH,
+    MAX_MANIFEST_NODES,
+)
 from rapp_work.cli import main
+from rapp_work.discovery import api_metadata
 
-# Computed from the unmodified `rapp-work-sdk/1` 1.0.0 implementation (origin/main 29ead23)
-# for `build_tree_without_agents`, on Python 3.10 and 3.13.
+# Computed with the unmodified `rapp-work-sdk/1` 1.0.0 implementation (origin/main 29ead23)
+# on Python 3.10 and 3.13. The first is the complete envelope for `build_tree_without_agents`;
+# the second is the envelope without `result.api` for that tree and for `build_mixed_tree`.
 LEGACY_TREE_SHA256 = "104820080267095c3d8aee9b05934957b26c9e18f5b6ac267f3019e8d03921ba"
-AGENT_TREE_SHA256 = "e71ec3c56a5d5765a5e7b3dce0859e009a79cf746f01e635e83edc8c85d09c49"
+LEGACY_WITHOUT_API_SHA256 = "592c18208d8fdbd43bab6416459d6f99226320f74abad3319013207b254b1a36"
+LEGACY_STATIC_API_SHA256 = "aba158699a5b6760aafada5874517e1b49df6fd0c281426ea2191f21c5a7e34d"
+# `build_agent_tree` with `agents: true`, without `result.api`.
+AGENT_TREE_SHA256 = "9569e81b2f16a49e815816c3e1ae6072d107f8944f22e666f5e01da7d9c72af7"
 RECORD_KEYS = {
     "authority",
     "bytes",
@@ -44,51 +66,17 @@ RECORD_KEYS = {
     "treatment",
 }
 MANIFEST_KEYS = {"description", "display_name", "name", "schema", "version"}
-
-BASE_SOURCE = b'''class BasicAgent:
-    def __init__(self, name=None, metadata=None):
-        self.name = name or "BasicAgent"
-
-    def perform(self, **kwargs):
-        return "Not implemented."
-'''
-
-HELLO_SOURCE = b'''"""A small example agent."""
-
-from agents.basic_agent import BasicAgent
-
-__manifest__ = {
-    "schema": "rapp-agent/1.0",
-    "name": "@example/hello_agent",
-    "version": "1.0.0",
-    "display_name": "Hello",
-    "description": "Says hello to example.com.",
-    "tags": ["example", "greeting"],
-    "requires_env": [],
-}
+SYNTAX_VALUES = {"parsed", "invalid", "unsupported-encoding", "over-limit", "over-budget"}
 
 
-class HelloAgent(BasicAgent):
-    def __init__(self):
-        super().__init__(name="Hello")
-
-    def perform(self, **kwargs):
-        return "hello"
-'''
-
-DRAFT_SOURCE = b'''from agents.basic_agent import BasicAgent
+def _discover(*roots: Path, **inputs: Any) -> dict[str, Any]:
+    return discover({"roots": [str(root) for root in roots], "agents": True, **inputs})
 
 
-class DraftAgent(BasicAgent):
-    def perform(self, **kwargs):
-        return "draft"
-'''
-
-
-def _write(path: Path, data: bytes) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-    return path
+def _without_api(envelope: dict[str, Any]) -> dict[str, Any]:
+    value = copy.deepcopy(envelope)
+    del value["result"]["api"]
+    return value
 
 
 def _normalized_sha256(value: Any, root: Path) -> str:
@@ -98,12 +86,19 @@ def _normalized_sha256(value: Any, root: Path) -> str:
 
 def _records(envelope: dict[str, Any]) -> list[dict[str, Any]]:
     assert envelope["status"] == "ok", envelope
-    return list(envelope["result"].get("agents", []))
+    return list(envelope["result"]["agents"])
 
 
 def _by_path(envelope: dict[str, Any], root: Path) -> dict[str, dict[str, Any]]:
     return {
         str(Path(record["path"]).relative_to(root)): record for record in _records(envelope)
+    }
+
+
+def _by_stem(envelope: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        Path(record["path"]).name.removesuffix("_agent.py"): record
+        for record in _records(envelope)
     }
 
 
@@ -114,39 +109,13 @@ def _refusals(envelope: dict[str, Any], root: Path) -> dict[str, str]:
     }
 
 
-def build_tree_without_agents(root: Path) -> None:
-    _write(
-        root / ".github/skills/example/SKILL.md",
-        b"---\nname: example-skill\n---\nNever execute.\n",
-    )
-    _write(root / "plugin/plugin.py", b"raise SystemExit('never run')\n")
-    _write(
-        root / "plugin/rapp-work-plugin.json",
-        b'{"capabilities":["example"],"entrypoint":"plugin.py",'
-        b'"name":"example-plugin","schema":"rapp-work-plugin/1","version":"1.0.0"}',
-    )
-    _write(
-        root / "neurons/example/agent.py",
-        b"metadata = {'name': 'Example neuron', 'parameters': {}}\n",
-    )
-    agents = root / "agents"
-    _write(agents / "README.md", b"# Agents\n")
-    _write(agents / "notes_agent.md", b"Not Python.\n")
-    _write(agents / "Upper_AGENT.py", b"x = 1\n")
-    _write(agents / "old_agent.py.bak", b"x = 1\n")
-    _write(agents / "folder_agent.py/inner.txt", b"data\n")
-    os.symlink(agents / "README.md", agents / "link_agent.py")
-    os.mkfifo(agents / "pipe_agent.py")
-
-
-def build_agent_tree(root: Path) -> None:
-    agents = root / "agents"
-    _write(agents / "basic_agent.py", BASE_SOURCE)
-    _write(agents / "hello_agent.py", HELLO_SOURCE)
-    _write(agents / "broken_agent.py", b"def broken(:\n")
-    _write(agents / "latin_agent.py", b"# -*- coding: latin-1 -*-\nname = 'caf\xe9'\n")
-    _write(agents / "experimental/draft_agent.py", DRAFT_SOURCE)
-    _write(root / "notes/copy_agent.py", HELLO_SOURCE)
+def _case_insensitive(directory: Path) -> bool:
+    probe = directory / "CaseProbe"
+    probe.mkdir()
+    try:
+        return (directory / "caseprobe").exists()
+    finally:
+        probe.rmdir()
 
 
 @contextmanager
@@ -202,6 +171,53 @@ def _execution_tripwires(literal_nodes: list[str], violations: list[str]) -> Ite
             setattr(owner, name, value)
 
 
+def _legacy_static_api() -> dict[str, Any]:
+    legacy = copy.deepcopy(api_metadata())
+    (operation,) = [value for value in legacy["operations"] if value["name"] == "discover"]
+    operation["optional_inputs"].remove("agents")
+    index = legacy["refusals"].index("plugin, skill, neuron, or agent execution")
+    legacy["refusals"][index] = "plugin, skill, or neuron execution"
+    return legacy
+
+
+def test_default_discover_ignores_agent_files_exactly_as_1_0_0(sandbox: Path) -> None:
+    for name, builder in (("plain", build_tree_without_agents), ("mixed", build_mixed_tree)):
+        root = sandbox / name
+        root.mkdir()
+        builder(root)
+        envelope = discover({"roots": [str(root)]})
+        assert envelope["status"] == "ok"
+        assert "agents" not in envelope["result"]
+        assert _normalized_sha256(_without_api(envelope), root) == LEGACY_WITHOUT_API_SHA256
+        restored = copy.deepcopy(envelope)
+        restored["result"]["api"] = _legacy_static_api()
+        assert _normalized_sha256(restored, root) == LEGACY_TREE_SHA256
+        assert discover({"roots": [str(root)], "agents": False}) == envelope
+
+
+def test_static_api_differs_from_1_0_0_only_by_the_agents_input() -> None:
+    (operation,) = [value for value in api_metadata()["operations"] if value["name"] == "discover"]
+    assert operation["optional_inputs"] == ["agents", "max_entries"]
+    assert canonical_sha256(_legacy_static_api()) == LEGACY_STATIC_API_SHA256
+
+
+def test_agents_member_is_present_exactly_when_requested(sandbox: Path) -> None:
+    build_tree_without_agents(sandbox)
+    requested = _discover(sandbox)
+    assert requested["result"]["agents"] == []
+    plain = discover({"roots": [str(sandbox)]})
+    assert {key: value for key, value in requested["result"].items() if key != "agents"} == plain[
+        "result"
+    ]
+
+
+@pytest.mark.parametrize("value", [1, 0, "true", None, [], {}])
+def test_agents_input_must_be_a_boolean(sandbox: Path, value: Any) -> None:
+    envelope = discover({"roots": [str(sandbox)], "agents": value})
+    assert envelope["status"] == "refused"
+    assert envelope["refusal"]["code"] == "REFUSE_INPUT_SHAPE"
+
+
 def test_top_level_agents_directory_files_are_live_and_subfolders_are_organization(
     sandbox: Path,
 ) -> None:
@@ -214,7 +230,7 @@ def test_top_level_agents_directory_files_are_live_and_subfolders_are_organizati
     _write(home / "loose_agent.py", DRAFT_SOURCE)
     _write(home / "vendor/agents/delta_agent.py", DRAFT_SOURCE)
 
-    as_home = _by_path(discover({"roots": [str(home)]}), home)
+    as_home = _by_path(_discover(home), home)
     assert {path: record["live"] for path, record in as_home.items()} == {
         "agents/.hidden_agent.py": False,
         "agents/_agent.py": True,
@@ -227,7 +243,7 @@ def test_top_level_agents_directory_files_are_live_and_subfolders_are_organizati
     assert all(record["root"] == str(home) for record in as_home.values())
 
     agents_root = home / "agents"
-    as_agents_dir = _by_path(discover({"roots": [str(agents_root)]}), agents_root)
+    as_agents_dir = _by_path(_discover(agents_root), agents_root)
     assert {path: record["live"] for path, record in as_agents_dir.items()} == {
         ".hidden_agent.py": False,
         "_agent.py": True,
@@ -240,11 +256,26 @@ def test_top_level_agents_directory_files_are_live_and_subfolders_are_organizati
 def test_live_is_relative_to_each_scanned_root(sandbox: Path) -> None:
     home = sandbox / "brainstem"
     agent = _write(home / "agents/alpha_agent.py", DRAFT_SOURCE)
-    records = _records(discover({"roots": [str(home), str(sandbox)]}))
+    records = _records(_discover(home, sandbox))
     assert [(record["path"], record["root"], record["live"]) for record in records] == [
         (str(agent), str(sandbox), False),
         (str(agent), str(home), True),
     ]
+
+
+def test_live_follows_the_file_system_name_resolution(sandbox: Path) -> None:
+    # The kernel's glob of `<home>/agents/*_agent.py` finds `Agents/` on a case-insensitive volume.
+    home = sandbox / "brainstem"
+    _write(home / "Agents/upper_agent.py", DRAFT_SOURCE)
+    insensitive = _case_insensitive(sandbox)
+    assert _by_path(_discover(home), home)["Agents/upper_agent.py"]["live"] is insensitive
+    upper = home / "Agents"
+    assert _by_path(_discover(upper), upper)["upper_agent.py"]["live"] is insensitive
+    linked = sandbox / "linked"
+    _write(linked / "real/one_agent.py", DRAFT_SOURCE)
+    os.symlink(linked / "real", linked / "agents")
+    records = _by_path(_discover(linked), linked)
+    assert records["real/one_agent.py"]["live"] is False
 
 
 def test_base_class_file_is_recorded_as_base_class_never_as_an_agent(sandbox: Path) -> None:
@@ -254,7 +285,7 @@ def test_base_class_file_is_recorded_as_base_class_never_as_an_agent(sandbox: Pa
         sandbox / "agents/tampered/basic_agent.py",
         BASE_SOURCE + b"\n\nclass Smuggled(BasicAgent):\n    pass\n",
     )
-    records = _by_path(discover({"roots": [str(sandbox)]}), sandbox)
+    records = _by_path(_discover(sandbox), sandbox)
     top = records["agents/basic_agent.py"]
     assert (top["role"], top["live"], top["classes"], top["syntax"]) == (
         "base-class",
@@ -268,7 +299,9 @@ def test_base_class_file_is_recorded_as_base_class_never_as_an_agent(sandbox: Pa
     assert records["agents/tampered/basic_agent.py"]["role"] == "base-class"
 
 
-def test_basic_agent_subclasses_are_named_by_syntax_only(sandbox: Path) -> None:
+def test_basic_agent_subclasses_are_named_by_syntax_only_in_code_point_order(
+    sandbox: Path,
+) -> None:
     source = b'''import agents.basic_agent as base
 from agents.basic_agent import BasicAgent
 
@@ -281,7 +314,7 @@ class Other:
     pass
 
 
-class A(BasicAgent):
+class Zeta(BasicAgent):
     pass
 
 
@@ -301,11 +334,15 @@ class _E(BasicAgent):
     pass
 
 
+class alpha(BasicAgent):
+    pass
+
+
 class H(BasicAgentMixin):
     pass
 
 
-class A(BasicAgent):
+class Zeta(BasicAgent):
     pass
 
 
@@ -320,29 +357,29 @@ def factory():
     return G
 '''
     _write(sandbox / "agents/classes_agent.py", source)
-    (record,) = _records(discover({"roots": [str(sandbox)]}))
-    assert record["classes"] == ["A", "B", "D", "_E"]
+    (record,) = _records(_discover(sandbox))
+    assert record["classes"] == ["B", "D", "Zeta", "_E", "alpha"]
 
 
-def test_class_bounds_refuse_the_record(sandbox: Path) -> None:
-    many = b"".join(
-        f"class A{index}(BasicAgent):\n    pass\n".encode()
-        for index in range(MAX_AGENT_CLASSES + 1)
-    )
-    _write(sandbox / "agents/many_agent.py", many)
-    long_name = "L" * (MAX_CLASS_NAME_CHARS + 1)
-    _write(sandbox / "agents/long_agent.py", f"class {long_name}(BasicAgent):\n    pass\n".encode())
-    at_bound = b"".join(
-        f"class A{index}(BasicAgent):\n    pass\n".encode() for index in range(MAX_AGENT_CLASSES)
-    )
-    _write(sandbox / "agents/bound_agent.py", at_bound)
-    envelope = discover({"roots": [str(sandbox)]})
+def test_class_bound_counts_distinct_names(sandbox: Path) -> None:
+    def classes(names: list[str]) -> bytes:
+        return b"".join(f"class {name}(BasicAgent):\n    pass\n".encode() for name in names)
+
+    names = [f"A{index}" for index in range(MAX_AGENT_CLASSES + 1)]
+    _write(sandbox / "agents/many_agent.py", classes(names))
+    _write(sandbox / "agents/bound_agent.py", classes(names[:-1]))
+    _write(sandbox / "agents/repeated_agent.py", classes(["A"] * (MAX_AGENT_CLASSES + 44)))
+    _write(sandbox / "agents/long_agent.py", classes(["L" * (MAX_CLASS_NAME_CHARS + 1)]))
+    _write(sandbox / "agents/longest_agent.py", classes(["L" * MAX_CLASS_NAME_CHARS]))
+    envelope = _discover(sandbox)
     assert _refusals(envelope, sandbox) == {
         "agents/long_agent.py": "REFUSE_AGENT_METADATA",
         "agents/many_agent.py": "REFUSE_AGENT_METADATA",
     }
-    (record,) = _records(envelope)
-    assert len(record["classes"]) == MAX_AGENT_CLASSES
+    records = _by_stem(envelope)
+    assert len(records["bound"]["classes"]) == MAX_AGENT_CLASSES
+    assert records["repeated"]["classes"] == ["A"]
+    assert records["longest"]["classes"] == ["L" * MAX_CLASS_NAME_CHARS]
 
 
 def test_literal_manifest_fields_are_extracted_as_bounded_data(sandbox: Path) -> None:
@@ -365,7 +402,7 @@ def test_literal_manifest_fields_are_extracted_as_bounded_data(sandbox: Path) ->
     )
     _write(sandbox / "agents/bare_agent.py", b"x = 1\n")
     _write(sandbox / "agents/declared_agent.py", b"__manifest__: dict\n")
-    records = _by_path(discover({"roots": [str(sandbox)]}), sandbox)
+    records = _by_path(_discover(sandbox), sandbox)
 
     hello = records["agents/hello_agent.py"]
     assert hello["manifest_status"] == "literal"
@@ -394,12 +431,53 @@ def test_literal_manifest_fields_are_extracted_as_bounded_data(sandbox: Path) ->
     canonical_text(records)
 
 
+def test_manifest_display_bounds_are_exact(sandbox: Path) -> None:
+    def wide(count: int, element: str) -> str:
+        # The outer dictionary, the key "x", and the list are three nodes.
+        return '__manifest__ = {"x": [' + ", ".join([element] * count) + "]}\n"
+
+    def nested(dictionaries: int, leaf: str) -> str:
+        value = leaf
+        for _ in range(dictionaries):
+            value = '{"a": ' + value + "}"
+        return "__manifest__ = " + value + "\n"
+
+    fill = MAX_MANIFEST_NODES - 3
+    cases = {
+        "nodes_at": wide(fill, "0"),
+        "nodes_over": wide(fill + 1, "0"),
+        "signed_at": wide(fill, "-1"),
+        "signed_over": wide(fill + 1, "-1"),
+        # A constant inside d dictionaries has depth d + 1; an empty innermost one has depth d.
+        "depth_at": nested(MAX_MANIFEST_DEPTH - 1, "1"),
+        "depth_over": nested(MAX_MANIFEST_DEPTH, "1"),
+        "empty_at": nested(MAX_MANIFEST_DEPTH - 1, "{}"),
+        "empty_over": nested(MAX_MANIFEST_DEPTH, "{}"),
+    }
+    for name, source in cases.items():
+        _write(sandbox / f"agents/{name}_agent.py", source.encode())
+    records = _by_stem(_discover(sandbox))
+    statuses = {name: record["manifest_status"] for name, record in records.items()}
+    assert statuses == {
+        "nodes_at": "literal",
+        "nodes_over": "over-limit",
+        "signed_at": "literal",
+        "signed_over": "over-limit",
+        "depth_at": "literal",
+        "depth_over": "over-limit",
+        "empty_at": "literal",
+        "empty_over": "over-limit",
+    }
+
+
 def test_non_literal_ambiguous_and_oversized_manifests_are_never_evaluated(
     sandbox: Path,
 ) -> None:
     sentinel = sandbox / "manifest-evaluated"
     effect = f"__import__('pathlib').Path({str(sentinel)!r}).write_text('ran')"
     literal = '{"schema": "rapp-agent/1.0", "name": "@example/x"}'
+    head = f"__manifest__ = {literal}\n"
+    zeros = ", ".join(["0"] * 5000)
     cases = {
         "call": f"__manifest__ = dict(name={effect})\n",
         "name_value": f"BASE = {literal}\n__manifest__ = BASE\n",
@@ -409,65 +487,75 @@ def test_non_literal_ambiguous_and_oversized_manifests_are_never_evaluated(
         "comprehension": "__manifest__ = {key: key for key in ('a', 'b')}\n",
         "concatenation": '__manifest__ = {"name": "@example/" + "x"}\n',
         "name_key": 'KEY = "name"\n__manifest__ = {KEY: "@example/x"}\n',
-        "twice": f"__manifest__ = {literal}\n__manifest__ = {literal}\n",
+        "signed_key": '__manifest__ = {-1: "x", "name": "@example/x"}\n',
+        "twice": f"{head}__manifest__ = {literal}\n",
         "conditional": f"if True:\n    __manifest__ = {literal}\n",
-        "mutated": f"__manifest__ = {literal}\n__manifest__['name'] = {effect}\n",
+        "mutated": f"{head}__manifest__['name'] = {effect}\n",
         "imported": f"import os as __manifest__\n__manifest__ = {literal}\n",
         "only_import": "from os import path as __manifest__\n",
         "chained": f"__manifest__ = __manifest__ = {literal}\n",
-        "loop": f"__manifest__ = {literal}\nfor __manifest__ in (): pass\n",
-        "deleted": f"__manifest__ = {literal}\ndel __manifest__\n",
-        "walrus": f"__manifest__ = {literal}\n(__manifest__ := 1)\n",
-        "function": f"__manifest__ = {literal}\ndef __manifest__():\n    return {effect}\n",
+        "loop": f"{head}for __manifest__ in (): pass\n",
+        "deleted": f"{head}del __manifest__\n",
+        "walrus": f"{head}(__manifest__ := 1)\n",
+        "function": f"{head}def __manifest__():\n    return {effect}\n",
+        "class_binding": f"{head}class __manifest__:\n    pass\n",
+        "except_binding": f"{head}try:\n    pass\nexcept Exception as __manifest__:\n    pass\n",
+        "match_capture": f"{head}match 1:\n    case __manifest__:\n        pass\n",
+        "match_star": f"{head}match []:\n    case [*__manifest__]:\n        pass\n",
+        "match_rest": f"{head}match {{}}:\n    case {{**__manifest__}}:\n        pass\n",
+        "parameter": f"{head}def f(__manifest__):\n    return __manifest__\n",
+        "star_parameter": f"{head}def f(*__manifest__):\n    pass\n",
+        "keyword_parameter": f"{head}def f(**__manifest__):\n    pass\n",
+        "keyword_only": f"{head}def f(*, __manifest__=None):\n    pass\n",
+        "positional_only": f"{head}def f(__manifest__, /):\n    pass\n",
+        "lambda_parameter": f"{head}g = lambda __manifest__: 1\n",
+        "local_assignment": f"{head}def f():\n    __manifest__ = 1\n",
         "duplicate_key": '__manifest__ = {"name": "@example/a", "name": "@example/b"}\n',
         "deep": "__manifest__ = {\"x\": " + "[" * 20 + "]" * 20 + "}\n",
-        "wide": "__manifest__ = {\"x\": [" + ", ".join(["0"] * 5000) + "]}\n",
-        "wide_call_last": "__manifest__ = {\"x\": [" + ", ".join(["0"] * 5000) + f", {effect}]}}\n",
-        "wide_call_first": f"__manifest__ = {{\"x\": [{effect}, " + ", ".join(["0"] * 5000) + "]}\n",
+        "wide": '__manifest__ = {"x": [' + zeros + "]}\n",
+        "wide_call_last": '__manifest__ = {"x": [' + zeros + f", {effect}]}}\n",
+        "wide_call_first": f'__manifest__ = {{"x": [{effect}, ' + zeros + "]}\n",
         "repeat_with_call": f'__manifest__ = {{"name": "@example/a", "name": {effect}}}\n',
         "unhashable_member": '__manifest__ = {"name": "@example/a", "set": {(1, [2])}}\n',
-        "wide_unhashable": "__manifest__ = {\"x\": [" + ", ".join(["0"] * 5000) + "], \"s\": {(1, [2])}}\n",
+        "wide_unhashable": '__manifest__ = {"x": [' + zeros + '], "s": {(1, [2])}}\n',
     }
+    expected = dict.fromkeys(cases, "ambiguous")
+    expected.update(
+        dict.fromkeys(
+            (
+                "call",
+                "name_value",
+                "effect_value",
+                "fstring",
+                "spread",
+                "comprehension",
+                "concatenation",
+                "name_key",
+                "signed_key",
+                "wide_call_last",
+                "wide_call_first",
+                "unhashable_member",
+            ),
+            "not-literal",
+        )
+    )
+    expected.update(dict.fromkeys(("deep", "wide", "wide_unhashable"), "over-limit"))
+    if sys.version_info >= (3, 12):
+        cases["type_parameter"] = f"{head}def f[__manifest__]():\n    pass\n"
+        expected["type_parameter"] = "ambiguous"
     for name, source in cases.items():
         _write(sandbox / f"agents/{name}_agent.py", source.encode())
     literal_nodes: list[str] = []
     violations: list[str] = []
     with _execution_tripwires(literal_nodes, violations):
-        envelope = discover({"roots": [str(sandbox)]})
+        envelope = _discover(sandbox)
     assert violations == []
-    statuses = {
-        Path(record["path"]).name.removesuffix("_agent.py"): record["manifest_status"]
-        for record in _records(envelope)
-    }
-    assert statuses == {
-        "call": "not-literal",
-        "name_value": "not-literal",
-        "effect_value": "not-literal",
-        "fstring": "not-literal",
-        "spread": "not-literal",
-        "comprehension": "not-literal",
-        "concatenation": "not-literal",
-        "name_key": "not-literal",
-        "twice": "ambiguous",
-        "conditional": "ambiguous",
-        "mutated": "ambiguous",
-        "imported": "ambiguous",
-        "only_import": "ambiguous",
-        "chained": "ambiguous",
-        "loop": "ambiguous",
-        "deleted": "ambiguous",
-        "walrus": "ambiguous",
-        "function": "ambiguous",
-        "duplicate_key": "ambiguous",
-        "deep": "over-limit",
-        "wide": "over-limit",
-        "wide_call_last": "not-literal",
-        "wide_call_first": "not-literal",
-        "repeat_with_call": "ambiguous",
-        "unhashable_member": "not-literal",
-        "wide_unhashable": "over-limit",
-    }
-    assert all(record["manifest"] is None for record in _records(envelope))
+    records = _by_stem(envelope)
+    assert {name: record["syntax"] for name, record in records.items()} == dict.fromkeys(
+        cases, "parsed"
+    )
+    assert {name: record["manifest_status"] for name, record in records.items()} == expected
+    assert all(record["manifest"] is None for record in records.values())
     assert literal_nodes == ["Dict"]
     assert not sentinel.exists()
 
@@ -512,8 +600,7 @@ if __name__ == "__main__":
     trap_path = _write(sandbox / "agents/trap_agent.py", trap.encode())
     _write(sandbox / "agents/experimental/nested_trap_agent.py", trap.encode())
     before = set(sys.modules)
-    envelope = discover({"roots": [str(sandbox)]})
-    records = _by_path(envelope, sandbox)
+    records = _by_path(_discover(sandbox), sandbox)
     assert not sentinel.exists()
     assert environment_key not in os.environ
     added = set(sys.modules) - before
@@ -539,7 +626,7 @@ def test_tripwires_prove_no_import_compile_or_exec(sandbox: Path) -> None:
     literal_nodes: list[str] = []
     violations: list[str] = []
     with _execution_tripwires(literal_nodes, violations):
-        envelope = discover({"roots": [str(sandbox)]})
+        envelope = _discover(sandbox)
     assert violations == []
     records = _by_path(envelope, sandbox)
     literal = [record for record in records.values() if record["manifest_status"] == "literal"]
@@ -560,16 +647,14 @@ def test_invalid_and_unsupported_sources_are_recorded_without_parsing_trust(
         "bom_latin1": b"\xef\xbb\xbf# coding: latin-1\nx = 1\n",
         "utf8_cookie": b"# -*- coding: UTF_8 -*-\n" + manifest,
         "utf8_alias": b"# vim: set fileencoding=utf8 :\n" + manifest,
+        "utf8_sig_cookie": b"# coding: utf-8-sig\n" + manifest,
         "bom": b"\xef\xbb\xbf" + manifest,
-        "too_complex": b"x = " + b"-" * 20000 + b"1\n",
+        "unary_chain": b"x = " + b"-" * 20000 + b"1\n",
         "compile_only_error": b"return 1\n",
     }
     for name, data in sources.items():
         _write(sandbox / f"agents/{name}_agent.py", data)
-    records = {
-        Path(record["path"]).name.removesuffix("_agent.py"): record
-        for record in _records(discover({"roots": [str(sandbox)]}))
-    }
+    records = _by_stem(_discover(sandbox))
     assert {name: record["syntax"] for name, record in records.items()} == {
         "syntax": "invalid",
         "nul": "invalid",
@@ -580,8 +665,9 @@ def test_invalid_and_unsupported_sources_are_recorded_without_parsing_trust(
         "bom_latin1": "unsupported-encoding",
         "utf8_cookie": "parsed",
         "utf8_alias": "parsed",
+        "utf8_sig_cookie": "parsed",
         "bom": "parsed",
-        "too_complex": "invalid",
+        "unary_chain": "over-limit",
         "compile_only_error": "parsed",
     }
     for record in records.values():
@@ -593,12 +679,14 @@ def test_invalid_and_unsupported_sources_are_recorded_without_parsing_trust(
             )
     assert records["bom"]["manifest"]["name"] == "@example/bom_agent"
     assert records["utf8_cookie"]["manifest_status"] == "literal"
+    assert records["utf8_sig_cookie"]["manifest_status"] == "literal"
 
 
 def test_parser_verdict_follows_the_running_interpreter(sandbox: Path) -> None:
     sources = {
         "generic": b"class Generic[T]:\n    pass\n",
-        "huge_integer": b"x = " + b"9" * 5000 + b"\n",
+        "reused_quotes": b'x = f"{"a"}"\n',
+        "field_backslash": b'x = f"{chr(92) + \'\\n\'}"\n',
     }
     expected = {}
     for name, data in sources.items():
@@ -610,19 +698,42 @@ def test_parser_verdict_follows_the_running_interpreter(sandbox: Path) -> None:
             expected[name] = "parsed"
         except SyntaxError:
             expected[name] = "invalid"
-    records = _records(discover({"roots": [str(sandbox)]}))
-    assert {
-        Path(record["path"]).name.removesuffix("_agent.py"): record["syntax"] for record in records
-    } == expected
-    assert expected["generic"] == ("parsed" if sys.version_info >= (3, 12) else "invalid")
+    records = _by_stem(_discover(sandbox))
+    assert {name: record["syntax"] for name, record in records.items()} == expected
+    newer = "parsed" if sys.version_info >= (3, 12) else "invalid"
+    assert expected == dict.fromkeys(sources, newer)
 
 
 def test_host_warning_filters_do_not_change_the_verdict(sandbox: Path) -> None:
     _write(sandbox / "agents/warning_agent.py", b'x = "\\d"\ny = 1 if 1else 2\n')
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        (record,) = _records(discover({"roots": [str(sandbox)]}))
+        (record,) = _records(_discover(sandbox))
     assert record["syntax"] == "parsed"
+
+
+def test_concurrent_discover_calls_restore_the_host_warning_filters(sandbox: Path) -> None:
+    # Parses long enough for the interpreter to switch threads inside the suppressed region.
+    body = b"".join(f"value_{index} = [{index}, 'x', \"\\d\"]\n".encode() for index in range(6000))
+    for index in range(2):
+        _write(sandbox / f"agents/warn{index}_agent.py", body)
+    before = list(warnings.filters)
+    errors: list[BaseException] = []
+
+    def work() -> None:
+        try:
+            for _ in range(3):
+                assert {record["syntax"] for record in _records(_discover(sandbox))} == {"parsed"}
+        except BaseException as error:
+            errors.append(error)
+
+    threads = [threading.Thread(target=work) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert errors == []
+    assert warnings.filters == before
 
 
 def test_unsafe_agent_entries_are_refused_deterministically(sandbox: Path) -> None:
@@ -635,7 +746,7 @@ def test_unsafe_agent_entries_are_refused_deterministically(sandbox: Path) -> No
     hard = _write(agents / "hard_agent.py", DRAFT_SOURCE)
     os.link(hard, agents / "hardcopy_agent.py")
     _write(agents / "folder_agent.py/inner.txt", b"data\n")
-    envelope = discover({"roots": [str(sandbox)]})
+    envelope = _discover(sandbox)
     assert _refusals(envelope, sandbox) == {
         "agents/hard_agent.py": "REFUSE_PATH_TYPE",
         "agents/hardcopy_agent.py": "REFUSE_PATH_TYPE",
@@ -654,7 +765,7 @@ def test_unreadable_agent_is_refused(sandbox: Path) -> None:
     locked = _write(sandbox / "agents/locked_agent.py", DRAFT_SOURCE)
     locked.chmod(0)
     try:
-        envelope = discover({"roots": [str(sandbox)]})
+        envelope = _discover(sandbox)
     finally:
         locked.chmod(0o600)
     assert _refusals(envelope, sandbox) == {"agents/locked_agent.py": "REFUSE_PATH_UNSAFE"}
@@ -668,7 +779,7 @@ def test_undecodable_agent_name_is_refused_with_an_escaped_path(sandbox: Path) -
     except OSError:
         pytest.skip("filesystem requires UTF-8 file names")
     os.close(descriptor)
-    envelope = discover({"roots": [str(sandbox)]})
+    envelope = _discover(sandbox)
     (refusal,) = envelope["result"]["refusals"]
     assert refusal["code"] == "REFUSE_AGENT_NAME"
     assert refusal["path"].endswith("\\udcff_agent.py")
@@ -678,8 +789,8 @@ def test_undecodable_agent_name_is_refused_with_an_escaped_path(sandbox: Path) -
 
 def test_agent_records_are_closed_canonical_and_inert(sandbox: Path) -> None:
     build_agent_tree(sandbox)
-    records = _records(discover({"roots": [str(sandbox)]}))
-    assert len(records) == 6
+    records = _records(_discover(sandbox))
+    assert len(records) == 7
     for record in records:
         assert set(record) == RECORD_KEYS
         assert record["schema"] == "rapp-work-discovered-agent/1"
@@ -688,7 +799,7 @@ def test_agent_records_are_closed_canonical_and_inert(sandbox: Path) -> None:
         assert record["treatment"] == "inert-data"
         assert record["language"] == "python"
         assert record["role"] in {"agent", "base-class"}
-        assert record["syntax"] in {"parsed", "invalid", "unsupported-encoding"}
+        assert record["syntax"] in SYNTAX_VALUES
         assert record["manifest_status"] in {
             None,
             "absent",
@@ -711,9 +822,9 @@ def test_agent_discovery_is_sorted_and_deterministic(sandbox: Path) -> None:
         _write(first / "agents" / name, DRAFT_SOURCE)
     for name in ("beta_agent.py", "aardvark_agent.py"):
         _write(second / "agents" / name, DRAFT_SOURCE)
-    forward = discover({"roots": [str(first), str(second)]})
-    backward = discover({"roots": [str(second), str(first)]})
-    again = discover({"roots": [str(first), str(second)]})
+    forward = _discover(first, second)
+    backward = _discover(second, first)
+    again = _discover(first, second)
     assert canonical_text(forward) == canonical_text(backward) == canonical_text(again)
     paths = [record["path"] for record in _records(forward)]
     assert paths == sorted(paths)
@@ -728,19 +839,20 @@ def test_agent_discovery_is_sorted_and_deterministic(sandbox: Path) -> None:
 
 def test_agent_tree_output_matches_its_golden_vector(sandbox: Path) -> None:
     build_agent_tree(sandbox)
-    envelope = discover({"roots": [str(sandbox)]})
+    envelope = _discover(sandbox)
     records = _by_path(envelope, sandbox)
     assert {
         path: (record["role"], record["live"], record["syntax"]) for path, record in records.items()
     } == {
         "agents/basic_agent.py": ("base-class", True, "parsed"),
         "agents/broken_agent.py": ("agent", True, "invalid"),
+        "agents/deep_agent.py": ("agent", True, "over-limit"),
         "agents/experimental/draft_agent.py": ("agent", False, "parsed"),
         "agents/hello_agent.py": ("agent", True, "parsed"),
         "agents/latin_agent.py": ("agent", True, "unsupported-encoding"),
         "notes/copy_agent.py": ("agent", False, "parsed"),
     }
-    assert _normalized_sha256(envelope, sandbox) == AGENT_TREE_SHA256
+    assert _normalized_sha256(_without_api(envelope), sandbox) == AGENT_TREE_SHA256
 
 
 def test_agent_files_share_the_max_entries_bound(sandbox: Path) -> None:
@@ -749,42 +861,26 @@ def test_agent_files_share_the_max_entries_bound(sandbox: Path) -> None:
     for name in ("a_agent.py", "b_agent.py", "c_agent.py"):
         _write(first / "agents" / name, DRAFT_SOURCE)
     _write(second / "d_agent.py", DRAFT_SOURCE)
-    exact = discover({"roots": [str(first)], "max_entries": 4})
+    exact = _discover(first, max_entries=4)
     assert len(_records(exact)) == 3
-    refused = discover({"roots": [str(first)], "max_entries": 3})
+    refused = _discover(first, max_entries=3)
     assert refused["status"] == "refused"
     assert refused["refusal"]["code"] == "REFUSE_DISCOVERY_LIMIT"
-    shared = discover({"roots": [str(first), str(second)], "max_entries": 4})
+    shared = _discover(first, second, max_entries=4)
     assert shared["status"] == "refused"
     assert shared["refusal"]["code"] == "REFUSE_DISCOVERY_LIMIT"
-    assert len(_records(discover({"roots": [str(first), str(second)], "max_entries": 5}))) == 4
+    assert len(_records(_discover(first, second, max_entries=5))) == 4
 
 
-def test_trees_without_agent_files_keep_their_exact_output(sandbox: Path) -> None:
-    build_tree_without_agents(sandbox)
-    envelope = discover({"roots": [str(sandbox)]})
-    assert envelope["status"] == "ok"
-    assert "agents" not in envelope["result"]
-    assert sorted(envelope["result"]) == [
-        "api",
-        "executed",
-        "network",
-        "neurons",
-        "plugins",
-        "refusals",
-        "roots",
-        "skills",
-        "status",
-    ]
-    assert _normalized_sha256(envelope, sandbox) == LEGACY_TREE_SHA256
-
-
-def test_cli_discover_emits_canonical_agent_records(
+def test_cli_discover_emits_agent_records_only_with_the_flag(
     sandbox: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     _write(sandbox / "agents/hello_agent.py", HELLO_SOURCE)
     assert main(["discover", "--root", str(sandbox)]) == 0
+    plain = json.loads(capsys.readouterr().out)
+    assert "agents" not in plain["result"]
+    assert main(["discover", "--root", str(sandbox), "--agents"]) == 0
     output = capsys.readouterr().out
     value = json.loads(output)
     assert output == canonical_text(value) + "\n"

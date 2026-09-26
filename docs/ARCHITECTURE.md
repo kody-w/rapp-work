@@ -53,6 +53,7 @@ payloads. New product behavior belongs in `src/rapp_work`.
 | `rapp_work.discovery` | Bounded inert skill/plugin/neuron/agent metadata discovery |
 | `rapp_work.neuron` | Portable Neuron syntax/metadata inspection as data |
 | `rapp_work.agent_files` | Single-file agent (`*_agent.py`) syntax/metadata inspection as data |
+| `rapp_work._python_source` | Token-level bounds checked before any parse of discovered Python |
 | `rapp_work.transports` | Private filesystem and local private-Git CAS adapters |
 | `rapp_work.compat` | Explicit deprecated wrappers over historical implementations |
 
@@ -120,8 +121,14 @@ Discovery can read bounded regular files, parse closed plugin JSON, parse Python
 syntax, and extract literal metadata. It never imports, installs, enables, or
 executes discovered code. A copied Portable Neuron is mode-0600 data.
 
-Brainstem single-file agents (`*_agent.py`) are recorded the same way: hashes,
-a parser verdict, `BasicAgent` subclass names, and a bounded literal
-`__manifest__` subset. Their `live` flag records only whether a file sits at the
-top level of the scanned root's `agents/` directory, or of the root itself when
-it is named `agents`; the SDK never loads it.
+Brainstem single-file agents (`*_agent.py`) are recorded the same way when a
+`discover` request sets `agents: true`: hashes, a parser verdict, `BasicAgent`
+subclass names, and a bounded literal `__manifest__` subset. Their `live` flag
+records only whether a file sits at the top level of the scanned root's live
+`agents` directory; the SDK never loads it.
+
+Before any discovered Python reaches the parser, `rapp_work._python_source`
+reads its tokens and checks fixed nesting, cost, integer-literal, and
+replacement-field bounds, so that no file can overflow the C stack or take
+unbounded time or memory on any supported interpreter. Agent inspection also
+shares one parse budget per call, spent in path order.

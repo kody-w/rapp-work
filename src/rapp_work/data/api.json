@@ -34,6 +34,7 @@
         "roots"
       ],
       "optional_inputs": [
+        "agents",
         "max_entries"
       ]
     },
@@ -90,7 +91,7 @@
     "credential inheritance",
     "symlink or hardlink authority paths",
     "unreviewed plan hashes",
-    "plugin, skill, or neuron execution",
+    "plugin, skill, neuron, or agent execution",
     "parent authority mutation"
   ]
 }
