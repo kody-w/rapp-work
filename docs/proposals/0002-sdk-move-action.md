@@ -1,4 +1,20 @@
+For the owner
+- Decision: let SDK update plans move files with exact-hash undo, after G11.
+- You approve: the move-plan design only; no behavior activates here.
+- Hold condition: decide G11 first, then add `workspace-index` to the draft token.
+- If approved: agents can be loaded/unloaded by reviewed file moves.
+- If held: live-agent folder moves stay outside the SDK safety model.
+- Risk: accepting before G11 may force a second move-plan token.
+
 # Proposal 0002: SDK move plans (gap G2)
+
+## Proposal-only acceptance note
+
+Merging this proposal accepts the design only. It does **not** activate code,
+change SPEC bytes, move pins, or release a new SDK. The reference
+implementation stays on its experimental branch until the owner accepts this
+proposal; its implementation pull request is draft-only until reviewed.
+
 
 - **Status:** draft, not accepted. Every change here is a proposal on branch
   `experimental/gap-g2-move-action`; the owner decides what moves.
@@ -1011,10 +1027,11 @@ GitHub CI does not run for branch pushes in this repository.
 ## Owner actions needed
 
 1. Decide on the §2, §4, and §7 text, or on the `rapp-work-sdk/2`
-   alternative.
-2. If accepted, merge the branch. If it is merged together with other
-   `rapp-work-sdk/1` gap branches, follow "Related proposals" below: recompute
-   the SDK SPEC hash in `protocols/index.json` and
+   alternative, only after G11 is accepted and this proposal has been amended
+   to use the settled workspace-index name.
+2. If accepted, review the draft implementation PR. Only after it merges, and
+   after composing with any other accepted `rapp-work-sdk/1` gap branches,
+   recompute the SDK SPEC hash in `protocols/index.json` and
    `src/rapp_work/data/profiles.json` and run
    `python3 tools/release_inventory.py --write`.
 3. Release as 1.1.0: bump `pyproject.toml`, `SDK_VERSION`, and the version
@@ -1035,7 +1052,7 @@ edited here):
 | G4 | `experimental/gap-g4-migration-successors` | `api.py`, `cli.py`, `data/api.json` (other operations); the inventory |
 | G6 | `experimental/gap-g6-owner-succession` | SDK SPEC §5.1 and §12; the SPEC hash pins and inventory |
 | G7 | `experimental/gap-g7-instruction-inventory` | SDK SPEC §4 (its paragraph follows the first paragraph, before "Create-only means"; this proposal's insertion follows the second), §7.1 to §7.6 (after both §7 paragraphs; this proposal's §7 sentence ends the first), and §12; `api.py` (it rewrites the same `_update` planning lines, with `plan_update_with_review` and `instruction_review`), `cli.py`, `data/api.json` (the same refusal list), `workspace.py`, `_paths.py` (it refactors `read_regular`, which `moves.py` imports, into `read_regular_at` without changing its behavior), `README.md`, and `protocols/README.md`; the pins and inventory |
-| G11 | `experimental/gap-g11-workspace-index` | none in the SDK SPEC |
+| G11 | `experimental/gap-g11-workspace-index` | settles whether the closed move-plan `subject.kind` list also includes `workspace-index`, and whether `workspace-index.json` joins the protected root files |
 | G17 | `experimental/gap-g17-brainstem-sdk-agent` | consumes move plans to load and unload agents |
 
 Every SDK SPEC edit here is an insertion, so the drafts compose textually.
@@ -1048,7 +1065,7 @@ proposal's path first. Both G6 and G7 keep the words "source deletion" in
 §12, to which §4 refers. This proposal's protected set contains every G7
 instruction path, so a move can never change G7's instruction inventory.
 Recommended order: G7, then G2, then G17 (which calls move plans); G3, G4, G6,
-and G11 are independent of G2 and may land in any order. After each merge,
+is independent of G2. G11 must be decided before G2 is accepted; then add `workspace-index` to the move-plan subject kind list and protect `workspace-index.json` while the token is still draft. After each merge,
 recompute the SDK SPEC hash in `protocols/index.json` and
 `src/rapp_work/data/profiles.json`, regenerate `RELEASE-INVENTORY.json`, and
 resolve the `api.py`, `cli.py`, and `data/api.json` hunks by keeping every
