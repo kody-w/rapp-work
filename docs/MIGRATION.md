@@ -136,8 +136,10 @@ recognized control files that are present. For a checkout of a historical
 Private Hive publication, naming `refs/current.json` is enough: when it is a
 Private Hive current pointer, its Mother chain index and the Hive's genesis
 declaration frame are bound too. A source that is, or is inside, a Git
-directory is refused, and Git internals are never read. The successor contains
-exactly:
+directory is refused, a bound file inside a Git directory of any name below
+the source is refused, and Git internals are never read. A target that is the
+source, or lies inside it, under another spelling of its path is refused. The
+successor contains exactly:
 
 ```text
 .rapp-work/pointer-successor.json   # rapp-work-pointer-successor/1

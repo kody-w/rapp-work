@@ -1176,6 +1176,65 @@ def test_authority_path_rules(sandbox: Path) -> None:
     assert not (sandbox / "bad").exists()
 
 
+def bare_repository(path: Path, sandbox: Path) -> None:
+    subprocess.run(
+        ["git", "init", "--bare", "--quiet", "--template=", str(path)],
+        check=True,
+        capture_output=True,
+        env={
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "HOME": str(sandbox),
+            "LC_ALL": "C",
+            "PATH": os.environ.get("PATH", ""),
+        },
+    )
+
+
+def test_git_directories_inside_the_source_are_never_read(sandbox: Path) -> None:
+    source = sandbox / "seeded"
+    hive = seeded_hive(source)
+    bare_repository(source / "backup" / "hive-mirror", sandbox)
+    bare_repository(source / ".hivegit", sandbox)
+    (source / "backup" / "hive-mirror" / "config").write_text(
+        "[remote \"origin\"]\n\turl = https://token@example.invalid/hive.git\n",
+        encoding="utf-8",
+    )
+    for named in (
+        ["backup/hive-mirror/HEAD", "backup/hive-mirror/config"],
+        ["backup/hive-mirror/refs/heads/.keep"],
+        [".hivegit/HEAD", ".hivegit/config"],
+    ):
+        if named == ["backup/hive-mirror/refs/heads/.keep"]:
+            (source / "backup" / "hive-mirror" / "refs" / "heads").mkdir(parents=True, exist_ok=True)
+            (source / named[0]).write_bytes(b"")
+        refusal = plan(source, sandbox / "bad", {**hive, "authority_paths": named})
+        refused(refusal, "REFUSE_POINTER_AUTHORITY")
+        assert refusal["refusal"]["message"] == (
+            "Git internals are never source authority and are never read"
+        ), named
+    # A folder that holds only some of Git's entries is ordinary content.
+    (source / "logs").mkdir(mode=0o700)
+    (source / "logs" / "HEAD").write_bytes(b"not a repository\n")
+    (source / "logs" / "refs").mkdir(mode=0o700)
+    planned = plan(source, sandbox / "ok", {**hive, "authority_paths": ["POLICY.md", "logs/HEAD"]})
+    assert planned["status"] == "planned", planned
+    assert not (sandbox / "bad").exists()
+    assert not (sandbox / "ok").exists()
+
+
+def test_a_target_inside_the_source_under_another_spelling_is_refused(sandbox: Path) -> None:
+    source = sandbox / "seeded"
+    hive = seeded_hive(source)
+    if not (sandbox / "SEEDED").exists():
+        pytest.skip("this file system keeps other case spellings apart")
+    before = snapshot(source)
+    for target in (sandbox / "SEEDED" / "successor", sandbox / "SEEDED"):
+        refusal = plan(source, target, hive)
+        refused(refusal, "REFUSE_MIGRATION_OVERLAP")
+    assert snapshot(source) == before
+
+
 def test_git_directories_are_never_pointer_sources(sandbox: Path) -> None:
     source = sandbox / "seeded"
     hive = seeded_hive(source)

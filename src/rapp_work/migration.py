@@ -583,6 +583,20 @@ def _looks_like_git_directory(path: Path) -> bool:
     return all(os.path.lexists(path / name) for name in ("HEAD", "objects", "refs"))
 
 
+def _require_outside_git_directories(root: Path, relative: str) -> None:
+    """Refuse a file inside any Git directory below the source root, whatever its name."""
+
+    parent = PurePosixPath(relative).parent
+    while parent != PurePosixPath("."):
+        require(
+            not _looks_like_git_directory(root / parent),
+            "REFUSE_POINTER_AUTHORITY",
+            "Git internals are never source authority and are never read",
+            path=relative,
+        )
+        parent = parent.parent
+
+
 def _pointer_source_root(source: Path) -> Path:
     root = assert_no_symlinks(absolute_path(source))
     require(
@@ -748,6 +762,7 @@ def _read_authority(
                 "a file that the Private Hive current pointer names is missing",
                 path=relative,
             )
+            _require_outside_git_directories(root, relative)
             contents[relative] = read_regular(path, limit=POINTER_MAX_FILE_BYTES)
             require(
                 sum(map(len, contents.values())) <= POINTER_MAX_AUTHORITY_BYTES,
@@ -1172,6 +1187,34 @@ class PointerSuccessorPlan:
 MigrationLike: TypeAlias = MigrationPlan | PointerSuccessorPlan
 
 
+def _require_disjoint_directories(source: Path, target: Path) -> None:
+    """Refuse a target that is the source, or lies inside it, under another spelling of its path.
+
+    The lexical check in the plan cannot see a case- or normalization-insensitive file system
+    or a firmlink resolving two spellings to one directory; device and inode can.
+    """
+
+    def identity(path: Path) -> tuple[int, int]:
+        info = os.stat(path, follow_symlinks=False)
+        return info.st_dev, info.st_ino
+
+    source_identity = identity(source)
+    for candidate in (target, *target.parents):
+        if os.path.lexists(candidate):
+            require(
+                identity(candidate) != source_identity,
+                "REFUSE_MIGRATION_OVERLAP",
+                "migration source and target must be disjoint",
+            )
+    if os.path.lexists(target):
+        target_identity = identity(target)
+        require(
+            all(identity(candidate) != target_identity for candidate in source.parents),
+            "REFUSE_MIGRATION_OVERLAP",
+            "migration source and target must be disjoint",
+        )
+
+
 def plan_pointer_successor(source: Path, target: Path, *, hive: Any = None) -> PointerSuccessorPlan:
     source = assert_no_symlinks(absolute_path(source))
     target = absolute_path(target)
@@ -1179,6 +1222,7 @@ def plan_pointer_successor(source: Path, target: Path, *, hive: Any = None) -> P
         assert_no_symlinks(target)
     else:
         assert_no_symlinks(target.parent)
+    _require_disjoint_directories(source, target)
     binding = pointer_source_binding(source, hive)
     record = validate_pointer_record(pointer_record(binding))
     return PointerSuccessorPlan(

@@ -8,7 +8,7 @@
 | Blocks | Workspaces. |
 | Intended release | `rapp-work` **1.1.0** (a minor release: an additive, opt-in API). The package version and `SDK_VERSION` are unchanged on this branch. |
 | Reference implementation | Yes, opt-in only (section 10). Without the new input, the SDK 1.0.0 code runs; section 9.3 lists every observable difference. |
-| Revision | Round 2, after independent review G4-r1. The round-1 default enforcement of a 64-character world id outside the pointer path is withdrawn and reported as pre-existing drift (section 13). |
+| Revision | Round 3, after independent reviews G4-r1 and G4-r2. Round 2 withdrew the round-1 default enforcement of a 64-character world id outside the pointer path and reported it as pre-existing drift (section 13). Round 3 refuses bound files inside Git directories of any name, refuses a target inside the source under another spelling, documents the CLI abbreviation differences, and corrects the related-proposals rows (section 16). |
 
 ## 1. Summary
 
@@ -36,8 +36,9 @@ keep exactly the grammar and enforcement they have in SDK 1.0.0.
 Without the new `successor` input, `migrate`, `update` and `verify` behave
 exactly as on `main`. `status` and `discover` differ only in the static API
 metadata they return, which now lists the two optional `migrate` inputs, and
-the CLI differs only in the message it gives for `--hive` without
-`--successor` (section 9.3).
+the CLI differs only in its help text, the message it gives for `--hive`
+without `--successor`, and two option abbreviations that the new options make
+ambiguous (section 9.3).
 
 ## 2. Context: what is true today
 
@@ -340,7 +341,15 @@ therefore fails closed, never open, where the database is older.
   as `{bytes, path, sha256}`; together they hold at most 64 MiB. No bound path
   has a component that names `.git`: letter case, HFS+ ignorable code points,
   compatibility forms, NTFS trailing dots and spaces, NTFS stream suffixes and
-  `GIT~<n>` short names are all folded first. Git internals are never read.
+  `GIT~<n>` short names are all folded first. No bound file lies inside a
+  directory below the source root that holds entries named `HEAD`, `objects`
+  and `refs`, whatever that directory is called (a bare mirror such as
+  `backup/hive-mirror`, or a `--separate-git-dir` such as `.hivegit`; round-2
+  review finding 1). Git internals are never read.
+- **Distinct directories.** A target that is the source, or lies inside it,
+  under another spelling of its path (a case- or normalization-insensitive
+  file system, or a firmlink) is refused by device and inode, not only
+  lexically (round-2 review finding 4).
 - **Successor bytes.** Exactly three owner-only files (section 4.2). No
   `rappid.json`, no template, no instruction file.
 - **Unchanged machinery.** The same exact-hash gate, the same rebinding before
@@ -452,7 +461,11 @@ by this proposal. Section 13 reports the underlying mismatch for the owner.
 > fixed ranges of the legacy world grammar (which include every code point that
 > HFS+ ignores), applying NFKC and full case folding, cutting at the first `:`,
 > and removing trailing `.` and space characters, it is `.git`, or `git~`
-> followed by digits. Git internals are never read.
+> followed by digits. No bound file may lie inside a directory below the
+> source root that contains entries named `HEAD`, `objects` and `refs`. Git
+> internals are never read. The target MUST NOT be the source or lie inside
+> it, and the source MUST NOT lie inside the target, compared by the device
+> and inode of existing directories as well as lexically.
 >
 > A description MUST agree with every bound authority file whose path ends in
 > `.json` and whose bytes parse as a RAPP I-JSON object that is a
@@ -802,8 +815,9 @@ Compatibility:
   and replays exactly as before; SDK workspaces and Organizations with any
   world id load, update and verify exactly as before.
 - **Observable differences without the opt-in.** Exactly those of section
-  9.3: the static API metadata in `status` and `discover` results, and the
-  CLI message for `--hive` without `--successor`.
+  9.3: the static API metadata in `status` and `discover` results, the CLI
+  message for `--hive` without `--successor`, the CLI help text, and the two
+  option abbreviations (`--s`, `--h`) that the new options make ambiguous.
 - **Pins.** `protocols/rapp-work-sdk/1/SPEC.md` and `schema.json`,
   `protocols/index.json`, `src/rapp_work/data/profiles.json`, `RAPP1_PIN.json`,
   `RAPP_WORK_PIN.json`, the signed `registry.json`, root `SPEC.md`, and the
@@ -815,9 +829,9 @@ Compatibility:
 | Threat | Control |
 |---|---|
 | Copying Hive state, GODD or keys into the successor | The plan has exactly one create action (the record), checked when the plan is parsed and again by re-derivation at apply. Tests assert the exact file set and that no source byte string (content, private sentinel, signatures, keys, Git objects) appears in the successor or the plan. |
-| Writing to the source | No source write exists. Tests compare the full source tree (inode, mtime, mode, SHA-256, including `.git`) before and after plan, apply and replay. |
+| Writing to the source | No source write exists, and a target that is the source or lies inside it under another spelling of its path is refused by device and inode. Tests compare the full source tree (inode, mtime, mode, SHA-256, including `.git`) before and after plan, apply and replay. The default §10 path keeps `main`'s lexical overlap check (section 13). |
 | Credentials in locators | Locators refuse user information, queries, fragments, whitespace and quoting characters in two layers (a forbidden-character check with an explicit message, and three closed locator forms). Only syntax can be checked: a secret inside a path segment cannot be detected, which is why the operator reviews the plan. |
-| Reading Git internals | Before anything is read, a source path with a component that names `.git`, and a source that is or is inside a directory holding `HEAD`, `objects` and `refs`, are refused. Every bound path is checked for a `.git` component under Git's HFS+ and NTFS equivalences (ignorable code points, case, trailing dots and spaces, stream suffixes, `GIT~<n>`) and NFKC. A Git directory that lacks one of those three entries is not recognized as one; the operator reviews the bound paths in the plan. |
+| Reading Git internals | Before anything is read, a source path with a component that names `.git`, and a source that is or is inside a directory holding `HEAD`, `objects` and `refs`, are refused. Every bound path is checked for a `.git` component under Git's HFS+ and NTFS equivalences (ignorable code points, case, trailing dots and spaces, stream suffixes, `GIT~<n>`) and NFKC, and before each bound file is read, every directory between the source root and that file is checked for `HEAD`, `objects` and `refs`, so a Git directory with any other name (a nested bare mirror, a `--separate-git-dir`) is never read. A Git directory that lacks one of those three entries is not recognized as one; the operator reviews the bound paths in the plan. |
 | Link, hardlink and traversal attacks | Authority files are read by descriptor-relative `O_NOFOLLOW` opens and must be regular single-link files; paths are safe relative POSIX paths; publication references are 64-hex addresses before they become paths. |
 | Prompt injection through a long world id | The legacy world id is written only into canonical JSON. A pointer-only successor has no `CLAUDE.md`, README or other instruction file. |
 | A spoofed world in a reviewed plan | Control, format, separator, bidirectional and default-ignorable code points, and unassigned code points, are refused, and NFC is required. Look-alike characters from other scripts are not refused (section 3.4); world ids compare by exact code points. |
@@ -862,7 +876,7 @@ No existing artifact needs to be rewritten.
 ### 9.1 Vectors
 
 New module [`tests/test_sdk_migration_pointer.py`](../../tests/test_sdk_migration_pointer.py):
-33 test functions, 116 test cases with parametrization, all on synthetic data
+35 test functions, 118 test cases with parametrization, all on synthetic data
 (minted test keys, `example` names, local sandboxes).
 
 | Area | Vectors |
@@ -880,7 +894,7 @@ New module [`tests/test_sdk_migration_pointer.py`](../../tests/test_sdk_migratio
 | World boundaries end to end | Lengths 1, 64, 65, 128, 129 through both source classes; the default path accepts only up to 64. |
 | Not a Workspace; other labels stay 64 | `scaffold` refuses 65; a pointer successor is a `directory` for `status`, `REFUSE_VERIFY_TARGET` for `verify`, refused by `update` and `Workspace.load`; the `rapp-work-sdk/1`, `rapp-hive/1` and canonical schemas still say 64. |
 | Channels and paths | Credential-free locators accepted (https, opaque, relative); user information, queries, fragments, `http`, `ftp`, `file`, `ssh` and `git` in URL or opaque form, scp-style (including `rapp-hive/1`'s conformance locator), `file:/…`, drive letters, absolute, traversal, whitespace, non-ASCII, empty and overlong locators refused; channel ids. Paths: `.git` in any case or depth, HFS+ ignorables, bidirectional controls, trailing dots and spaces, `GIT~1`, `git~2`, fullwidth `.git`, NTFS streams, traversal, absolute, colon, symlinked file or directory, hardlink; `.github`, `.gitignore`, `git/` and `.git.d` are ordinary paths. |
-| Git directories | A `.git` directory and a directory inside it; a workspace inside `.git`; a bare repository and a directory inside it; a `.git.` alias directory. |
+| Git directories | A `.git` directory and a directory inside it; a workspace inside `.git`; a bare repository and a directory inside it; a `.git.` alias directory; bound files inside a nested bare mirror (`backup/hive-mirror`, including a file in its `refs/`) and inside a renamed Git directory (`.hivegit`), while a folder holding only `HEAD` and `refs` stays ordinary content; a target inside the source under another letter case (on a case-insensitive file system). |
 | Corroboration | Matching `rapp-hive/1-declaration` accepted; mismatched RAPPID, world or channel refused; `rapp-private-hive-owner-anchor/1` mismatch refused. |
 | Private Hive publications | A synthetic publication: current pointer, chain index and genesis bound; a description differing in Hive, world, channel id or channel kind refused at the genesis frame; a current pointer for another Hive refused at `refs/current.json`; a pointer without a Mother frame, a missing chain index, a chain index for another stream, with another tip or without frames, a missing genesis frame, and a genesis frame that is not a declaration are each refused at the named file; an unrecognized `refs/current.json` stays opaque bytes. |
 | Historical skill | Through `rapp_work.compat`: a prepared repository checkout still plans a workspace successor; a member's materialized copy and the deployed publication checkout refuse by default; the checkout **without an owner anchor**, naming only `refs/current.json`, refuses the review's unrelated description and every single-field contradiction (at the genesis frame), and applies a pointer-only successor binding the current pointer, chain index and genesis frame; with the anchor added it is also bound. |
@@ -889,14 +903,14 @@ New module [`tests/test_sdk_migration_pointer.py`](../../tests/test_sdk_migratio
 
 ### 9.2 Results
 
-- `main`'s `src/` (`29ead23`) with this test module: **114 failed, 2
+- `main`'s `src/` (`29ead23`) with this test module: **116 failed, 2
   passed**. The two passes are the regression vectors
   (`test_seeded_hive_default_migration_refusal_is_unchanged` and
   `test_long_world_default_behavior_matches_sdk_1_0_0`). With the change:
-  **116 passed** on Python 3.13 and on Python 3.10.
+  **118 passed** on Python 3.13 and on Python 3.10.
 - `main`'s own 169 tests (this branch changes no existing test file) on this
   branch: **169 passed** on Python 3.13 and on Python 3.10.
-- Full suite with the change: **285 passed, 69 subtests passed** on Python
+- Full suite with the change: **287 passed, 69 subtests passed** on Python
   3.13 and on Python 3.10.
 
 ### 9.3 Default behavior compared with `main`
@@ -936,11 +950,20 @@ Result, identical on both Pythons: 99 comparisons.
      is "--hive is accepted only with --successor pointer-only" instead of
      argparse's "unrecognized arguments: --hive …".
 
+The probe did not cover two more CLI differences, which the round-2 review
+found: argparse accepts unambiguous prefixes of option names, and the new
+options make two prefixes ambiguous. `rapp-work migrate --s …` means
+`--source` on `main` but is refused here (`REFUSE_CLI_ARGUMENTS`, "ambiguous
+option: --s could match --source, --successor"), and `migrate --h` prints help
+on `main` but is refused here ("--h could match --help, --hive"). The `-h`
+help text also lists the two new options. Full option names behave exactly as
+on `main`.
+
 ### 9.4 Mutation proof
 
 Each mutation was applied alone, the named tests were run, and the file was
 restored and checked by SHA-256. Every mutation turned its tests red on Python
-3.13 and on Python 3.10; after restoring every file, all 116 cases pass on
+3.13 and on Python 3.10; after restoring every file, all 118 cases pass on
 both.
 
 | Mutation | Result |
@@ -985,6 +1008,8 @@ both.
 | M17c drop the commitment count cap | red |
 | M18 CLI reads `--hive` without `--successor` | red |
 | M19 accept unsorted described paths in a binding | red |
+| M20 read bound files inside a renamed or nested Git directory (drop the per-file Git-directory check) | red |
+| M21 compare source and target only lexically (drop the device-and-inode check) | red |
 | After restoring every file | green |
 
 ## 10. Reference implementation and gating
@@ -1080,8 +1105,10 @@ branch.
    implementation's Unicode database is refused by that implementation
    (section 3.4).
 6. **Git directory detection.** A Git directory is recognized by a `.git`
-   path component or by the presence of `HEAD`, `objects` and `refs`; one
-   missing an entry is not, and the operator reviews the bound paths.
+   path component or by the presence of `HEAD`, `objects` and `refs` in the
+   source, one of its parents, or any directory between the source and a
+   bound file; one missing an entry is not, and the operator reviews the
+   bound paths.
 
 ## 12. Owner actions needed
 
@@ -1138,6 +1165,13 @@ branch.
   the difference deserves an explicit statement in `rapp-work-sdk/1` §10.
 - A completed-migration receipt is compared semantically, so extra whitespace
   in the receipt file does not refuse replay (its hash is still reported).
+- **D2. The default §10 path compares source and target only lexically.** On
+  a case-insensitive file system (macOS's default APFS), `migrate` of a
+  workspace at `<w>/seeded` to the target `<w>/SEEDED/successor` plans and
+  applies, and the successor lands inside the source (`MigrationPlan`,
+  `migration.py`, the overlap check shared with `main`). A firmlink has the
+  same effect. The pointer-only path of this proposal refuses it by device and
+  inode (section 3.5); the default path is left as on `main` and reported.
 
 ## 14. Related proposals and merge order
 
@@ -1148,8 +1182,8 @@ sections. This branch does not edit them.
 |---|---|---|
 | 0002 (G2, `experimental/gap-g2-move-action`) | `api.py` imports (it edits the `.plans` import directly below the `.migration` import that this branch expands) and `_update`; `cli.py` (`update` arguments); `data/api.json` (`update` inputs); the `docs/API.md` operations table; `CHANGELOG.md`; `RELEASE-INVENTORY.json` | Textual only; moves are `update` plans and pointer successors are `migrate` plans. Resolve the adjacent import lines and table rows by keeping both, merge the changelog entries, and regenerate the inventory. |
 | 0003 (G3, `experimental/gap-g3-agent-discovery`) | SPEC §11 (and a new §11.1), `discovery.py`, `docs/API.md`, `CHANGELOG.md`, inventory | No semantic overlap. |
-| 0006 (G6, `experimental/gap-g6-owner-succession`) | Replaces the SPEC §12 paragraph; adds §5.1; `docs/API.md`, `CHANGELOG.md`, inventory | Composes: section 4.3 inserts a sentence after the §12 paragraph instead of replacing it. |
-| 0007 (G7, `experimental/gap-g7-instruction-inventory`) | Replaces the SPEC §12 paragraph; adds §7.1–§7.6; edits `workspace.py`, `api.py` (`_verify`, `_update`), `_paths.py`; appends to `docs/MIGRATION.md` after the same paragraph this branch appends after | Composes: §12 is an insertion here; `workspace.py` and `_paths.py` are untouched here; different `api.py` functions; keep both `docs/MIGRATION.md` sections. A pointer successor is not a Workspace, so 0007's instruction inventory never applies to it. |
+| 0006 (G6, `experimental/gap-g6-owner-succession`) | Inserts SPEC §5.1 and a §12 paragraph; `docs/API.md`, `CHANGELOG.md`, inventory | Composes: section 4.3 inserts a sentence after the §12 paragraph, and 0006 inserts its own paragraph; neither replaces text. |
+| 0007 (G7, `experimental/gap-g7-instruction-inventory`) | Inserts SPEC §4 and §12 paragraphs and §7.1–§7.6; edits `workspace.py`, `api.py` (`_verify`, `_update`), `_paths.py`, `cli.py` (`_inputs`, next to this branch's `migrate` arguments), `data/api.json` (`verify` inputs), and `docs/API.md` (the operations table's `verify` row, and a `### Instruction files` section inserted after the same "For effectful operations" paragraph that this branch's migrate paragraph follows); appends to `docs/MIGRATION.md` after the same paragraph this branch appends after | Composes: every SPEC edit is an insertion; `workspace.py` and `_paths.py` are untouched here; different `api.py` functions and `cli.py` branches; in `docs/API.md` and `data/api.json` keep both rows and both inserted sections (this branch's paragraph, then 0007's section); keep both `docs/MIGRATION.md` sections. A pointer successor is not a Workspace, so 0007's instruction inventory never applies to it. |
 | 0011 (G11, `experimental/gap-g11-workspace-index`) | Proposes renaming the pointer-only Organization to "workspace index" (`kind: "workspace-index"`, new records) and replacing §7, the first §10 paragraph and §12 | This proposal's closed enums (`source_kind`, binding `kind`: `hive`, `organization`, `workspace`) and its accepted identity kinds would need `workspace-index`, and the bound allowlist `workspace-index.json`. Add them before either is accepted, while these tokens are drafts, so no token moves; if this proposal were accepted first, a workspace index source would need a new pointer token (Art. 2). Section 4.2 appends §10.1 and composes with 0011's §10 replacement. |
 | 0017 (G17, `experimental/gap-g17-brainstem-sdk-agent`) | Its Brainstem agent calls `migrate` with only `source` and `target` | No conflict; the agent never requests a pointer-only successor. Offering one would be a later change to that agent. |
 
@@ -1205,3 +1239,25 @@ its current pointer. World ids up to 128 characters exist only inside the new
 tokens; no existing token is widened. Without `successor`, `migrate`, `update`
 and `verify` are unchanged; the static API metadata lists the two new optional
 inputs. See `docs/proposals/0004-sdk-migration-successors.md`.
+
+## 16. Review disposition
+
+- **Round 1** (`ff1d27b`, review G4-r1, 1 high, 4 medium, 4 low): answered in
+  round 2 (`a26fa71`); see its commit message and section 2.5.
+- **Round 2** (`a26fa71`, review G4-r2, 0 high, 1 medium, 3 low): answered in
+  round 3 (this revision).
+  1. (medium) Git directories of any name: before each bound file is read,
+     every directory between the source root and that file is checked for
+     `HEAD`, `objects` and `refs` (section 3.5, the section 4.2 text, section
+     6, limit 6); a nested bare mirror and a renamed Git directory are refused
+     (test `test_git_directories_inside_the_source_are_never_read`, mutation
+     M20).
+  2. (low) CLI abbreviations: the two ambiguous prefixes and the help text are
+     listed in sections 1, 5 and 9.3.
+  3. (low) Related proposals: the 0007 row names every shared file and how the
+     `docs/API.md`, `cli.py` and `data/api.json` hunks compose; the 0006 and
+     0007 rows no longer say "replaces".
+  4. (low) Case-variant targets: the pointer path compares source and target
+     by device and inode (test
+     `test_a_target_inside_the_source_under_another_spelling_is_refused`,
+     mutation M21); the default path is reported as D2 in section 13.

@@ -10,7 +10,9 @@
   `rapp-work-pointer-successor/1` plus the existing receipt and recovery
   marker. A description is corroborated against the source's recognized Hive
   records, including a Private Hive publication's genesis declaration found
-  through its current pointer; Git directories and Git internals are refused.
+  through its current pointer; Git directories of any name and Git internals
+  are refused, and so is a target inside the source under another spelling of
+  its path.
   New tokens: `rapp-work-pointer-successor/1`,
   `rapp-work-pointer-successor-plan/1`, and
   `rapp-work-pointer-successor-source/1`. World ids of up to 128 characters
