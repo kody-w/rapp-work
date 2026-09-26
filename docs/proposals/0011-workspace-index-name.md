@@ -1,4 +1,20 @@
+For the owner
+- Decision: rename the pointer-only object to workspace index and pick D1.
+- You approve: the name plus D1 total migration; code lands later.
+- D1 default: stop writing old Organizations, then sunset reads in a named release.
+- After approval: G4 can use the settled workspace-index name.
+- If held: G4 stays blocked and migration wording remains ambiguous.
+- Risk: old Organization users need the write/read sunset path the proposal names.
+
 # Proposal 0011 — The SDK's pointer-only "Organization" is a workspace index
+
+## Proposal-only acceptance note
+
+Merging this proposal accepts the design only. It does **not** activate code,
+change SPEC bytes, move pins, or release a new SDK. No implementation PR is opened in this proposal batch. Acceptance commits to
+the later migration PRs named below: rename text, stop writing old
+Organizations, and sunset old reads in the owner-named release.
+
 
 ## Status
 
@@ -313,8 +329,10 @@ Organization is this profile's earlier name for the same object. Its records
 `rapp-work-organization/1`, and `workspaces.json` with schema
 `rapp-work-organization-pointers/1`, both keyed by `organization_rappid`) keep
 their exact shape and meaning, and an Organization that an earlier
-implementation of this profile verifies MUST continue to verify unless its root
-also holds a workspace index descriptor. An implementation MUST read each record only under
+implementation of this profile verifies MUST continue to verify under this
+profile's other accepted verification rules unless its root also holds a
+workspace index descriptor. Other accepted rules, such as instruction-inventory drift or
+strict-inventory mode, may still refuse it. An implementation MUST read each record only under
 its own identity kind and schema, and MUST NOT read an Organization record as a
 workspace index record or the reverse.
 
@@ -363,8 +381,7 @@ Organization, and registering a Workspace in one, are also explicit
 refusals."
 
 **Step 7 (read sunset).** In §7, replace "and an Organization that an earlier
-implementation of this profile verifies MUST continue to verify unless its root
-also holds a workspace index descriptor" with "and an implementation reads an
+implementation of this profile verifies MUST continue to verify under this profile's other accepted verification rules unless its root also holds a workspace index descriptor" with "and an implementation reads an
 Organization only as a migration source (§10): `status` reports it as a
 retired form, and `verify` and `update` MUST refuse it and name migration".
 
@@ -730,6 +747,11 @@ hash-applied `migrate`; each sunset lands only in a release the owner names;
 and every refusal stays fail-closed. No step lands before the owner accepts
 the matching text. The pre-existing apply-path gap (Context) is reported
 separately; this branch does not change `main`'s code.
+
+
+## rapp-workspace #10 naming note
+
+A separate `rapp-workspace` draft uses `rapp-work-organization/1` for a CEO/orchestration profile and `rapp-work-index/1` for a public index. Those labels are not this SDK object. If that workspace draft proceeds, its labels should be settled before Option A is treated as final public vocabulary; this proposal's recommended D1 total migration keeps the SDK's existing `rapp-work-organization/1` descriptor readable through the owner-named migration window and uses `workspace index` as the human name for the pointer-only SDK object.
 
 ## Related proposals
 
