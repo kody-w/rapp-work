@@ -1,0 +1,13 @@
+---
+name: Health words
+---
+- **in force:** normative, pinned, and actually used. Only in-force parts are in RAPP/1 (LTS).
+- **specified:** normative, but no estate activates it yet.
+- **experimental:** built and being tried, not normative yet.
+- **candidate:** a normative draft that no estate has accepted yet.
+- **planned:** decided, not built yet.
+- **gap:** no specification allows it yet.
+- **idea:** a fix not yet proposed to the spec that owns it.
+- **open:** a known gap with no fix under way.
+- **proposed:** a fix proposed to the specification or code that owns it, in the draft Constitution or its owner's own process (a proposal, or a pull request), not accepted yet.
+- **own shape:** outside knowledge that is never converted, and never part of a release.

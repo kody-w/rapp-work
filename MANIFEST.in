@@ -2,6 +2,8 @@ include .gitignore
 include .rapp/member.md
 include AGENTS.md
 include CLAUDE.md
+include CONSTITUTION.md
+include ECOSYSTEM.md
 include CHANGELOG.md
 include CONTRIBUTING.md
 include LICENSE
@@ -18,6 +20,7 @@ include rappid.json
 include registry.json
 recursive-include .github *
 recursive-include docs *
+recursive-include organism *
 recursive-include protocols *
 recursive-include src *
 recursive-include tests *

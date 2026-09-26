@@ -1,0 +1,102 @@
+THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
+
+                              ┌────────────────────────────────────────────┐
+                              │ 6 · YOU                                    │
+                              │ Talk to your Brainstem. A Hive change is   │
+                              │ shown to you in plain words first.         │
+                              │ Nothing in a Hive applies until you        │
+                              │ confirm the exact plan in a later turn.    │
+                              │ “Give me my Brainstem.”                    │
+                              └────────────────────────────────────────────┘
+                                  ▲ ask · answer · confirm Hive plans
+                                  ▼
+┌─────────────────┐           ┌────────────────────────────────────────────┐
+│ RAR             │           │ 5 · BRAINSTEM              [5 to graduate] │
+│ one-file agents │           │ the one surface you talk to                │
+│ you add one to  │           ├─────────────────────────────┬──────────────┤
+│ agents/         │─copy in──►│ BRAINSTEM                   │ BRAINSTEM    │
+│ [specified]     │           │ Your own AI: frozen Grail   │ APP          │
+│ newest          │           │ kernel · hot-loaded         │ drag agents  │
+└─────────────────┘           │ agents · soul · memory      │ in and out   │
+                              │ kernel: LTS                 │ of the top   │
+                              │ brainstem-v0.6.9 (RAPP's    │ of agents/   │
+                              │ pin) · newest tag           │ agent and    │
+                              │ brainstem-v0.6.16           │ memory cards │
+                              │ Its Hive agent proposes;    │ your         │
+                              │ you decide. A Hive is never │ Brainstem's  │
+                              │ its agents folder or soul.  │ chat         │
+                              │ [in force]                  │ [exp] newest │
+                              └───┬──────────────┬──────────┴──────────────┘
+                                  ▲ SDK          │ operates your Hive copies and references
+                                  │ operations   │
+                                  │ (not wired   │
+                                  ▼ yet, G17)    ▼
+┌─────────────────┐           ┌────────────────────────────────────────────┐
+│ OUTSIDE         │           │ 4 · YOUR DEVICE            [8 to graduate] │
+│ KNOWLEDGE       │           ├──────────────┬──────────────┬──────────────┤
+│ old Hives ·     │           │ WORKSPACES   │ REFERENCES   │ HIVE COPY    │
+│ second brains · │           │ private GODD │ read-only    │ your copy of │
+│ wikis           │           │ local-first  │ pointers     │ each Hive    │
+│ vaults · docs · │─pinned───►│ SDK plans    │ never run    │ your space   │
+│ other AI tools  │           │ [specified]  │ read as data │ is shared    │
+│ [own shape]     │           │ newest       │ [exp] newest │ one key per  │
+│                 │           │              │              │ device       │
+│                 │           │              │              │ [exp] newest │
+│                 │           └──────────────┴───┬──────────┴───┬──────────┘
+│                 │                              │ bring: one   ▲ commits, verified before checkout
+│         carried │                              │ signed copy  │
+│        requests │                              ▼ + provenance ▼
+│  (folder Hives) │           ┌────────────────────────────────────────────┐  ┌───────────────────┐
+│                 │──────────►│ 3 · HIVE                   [6 to graduate] │  │ PUBLIC COPY       │
+└─────────────────┘           │ where the members share work               │─►│ ► approved files  │
+                              ├──────────────┬─────────────────────────────┤  │ exactly the       │
+                              │ PRIVATE HIVE │ FOLDER HIVE                 │  │ approved files    │
+                              │ rapp-hive/1  │ HIVE.md · members/ ·        │  │ PUBLISHED.md ·    │
+                              │ one owner    │ requests/ · shared/ ·       │  │ check-public      │
+                              │ bound by     │ former/ · no owner inside   │  │ [exp] newest      │
+                              │ hive_rappid  │ new Hives start at 2        │  └───────────────────┘
+                              │ [in force]   │ approvals · not bindable    │  ┌───────────────────┐
+                              │              │ yet (G10)                   │  │ HIVE MIND         │
+                              │              │ [exp] newest                │◄►│ ◄► agreements     │
+                              └───┬──────────┴───┬─────────────────────────┘  │ other             │
+                                  │ work.vector: ┊ gap: G5 and G10 proposed   │ organizations'    │
+                                  │ the accepted ┊                            │ Hives, by         │
+                                  ▼ checkpoint   ▼                            │ agreement only    │
+                              ┌────────────────────────────────────────────┐  │ rapp-federation/1 │
+                              │ 2 · ORGANIZATION           [5 to graduate] │  │ · Hive Hub cards  │
+                              │ the accountable body                       │  │ [candidate]       │
+                              │ One owner · one world · one policy · one   │  │ newest            │
+                              │ release scope · exactly one Hive           │  └───────────────────┘
+                              │ Body stream: catalog · vector ·            │
+                              │ migration · receipt · observation ·        │  ┌───────────────────┐
+                              │ rollback                                   │  │ RELEASE RINGS     │
+                              │ [specified] newest                         │◄─│ ◄ release         │
+                              └────────────────────────────────────────────┘  │ evidence          │
+                                                     ▲ authorizes the owner   │ canary → nightly  │
+                                                     │ (estate registry)      │ → alpha → beta    │
+                              ┌────────────────────────────────────────────┐  │ → preprod →       │
+                              │ 1 · ESTATE                 [2 to graduate] │  │ grail ·           │
+                              │ an owner's signed registry                 │  │ rapp-cicd/1 ·     │
+                              │ Who may sign as whom · which protocols are │  │ rapp-deploy/1     │
+                              │ pinned · which Grail kernel each release   │  │ [specified]       │
+                              │ scope pins                                 │  │ newest            │
+                              │ Append-only · rappid.json · a signed       │  └───────────────────┘
+                              │ registry · an owner anchor out of band     │
+                              │ [in force]                                 │  ┌───────────────────┐
+                              │                                            │─►│ DISTRIBUTED HIVE  │
+                              └────────────────────────────────────────────┘  │ ► pins its root   │
+                                                     ▲ RAPP/1 frames ·        │ the RAPP/1        │
+                                                     │ RAPPIDs · registry     │ network as one    │
+                                                     │ entries                │ Hive              │
+                              ┌────────────────────────────────────────────┐  │ each repo's       │
+                              │ 0 · RAPP/1, bytes and identity [in RAPP/1] │  │ .rapp/ · found    │
+                              │ RAPPIDs · the eleven-key frame · hashes ·  │  │ from RAPP's seed  │
+                              │ Ed25519 (or ES256) signatures · eggs ·     │  │ [exp] newest      │
+                              │ registries                                 │  └───────────────────┘
+                              │ Frozen forms                               │
+                              │ [in force]                                 │
+                              └────────────────────────────────────────────┘
+
+health: [in force] [specified] [exp] [candidate] [own shape]
+[exp] = experimental   ┊ gap: no specification allows it   words: health.md
+[in force] = RAPP/1 (LTS) · newest = not in RAPP/1 yet · [N to graduate] = the gaps and parts left
