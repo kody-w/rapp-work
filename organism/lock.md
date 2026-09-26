@@ -39,7 +39,7 @@ steps:
   - "4: sign the remaining protocol pins; that switches on the Workspaces and RAR"
   - "4: activate `rapp-work/1` (G16), so the Organization is in force"
   - "4: authorize the network pulse signer: pulses (experimental) version the map and the network's health"
-  - "4: switch on the Distributed Hive: accept RAPP proposal 0020, then merge beacon 1.1, `estate.json` and the operator's acceptance in RAPP's seed (drafts in `kody-w/rapp-estate`)"
+  - "4: switch on the Distributed Hive: accept RAPP proposal 0020, then merge the drafts of beacon 1.1, `estate.json` and the operator's acceptance in RAPP's seed"
   - "5: graduate each newest part through the rings: Folder Hive, Hive copy and the Hive agent (G14), References (G13), Hub cards (G12), Public copy, the Brainstem app (G20), the Brainstem's SDK agent (G17), the Distributed Hive"
   - "5: then Hive Mind, once an estate accepts `rapp-federation/1`, and the Release rings, once a graduation uses them"
   - "5: merge what graduated; the rest stays out of what people pull"
