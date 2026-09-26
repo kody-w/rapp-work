@@ -1,4 +1,5 @@
 include .gitignore
+include .rapp/member.md
 include AGENTS.md
 include CLAUDE.md
 include CONSTITUTION.md
