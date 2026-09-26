@@ -1,67 +1,52 @@
 """RappWork: reach your private RAPP Work workspaces by talking to your Brainstem.
 
-A single-file Brainstem agent. It drives the RAPP Work SDK (Python package
-`rapp_work`, profile `rapp-work-sdk/1`) through its six public operations only,
-and it applies only a plan whose exact SHA-256 the person confirmed.
+A single-file agent for the newest Brainstem channel (`brainstem-v0.6.16`; not in
+the LTS `brainstem-v0.6.9` release scope; RAR Frontier tier). It calls only the
+six public operations of the RAPP Work SDK (`rapp_work`, `rapp-work-sdk/1`) and
+applies only a plan confirmed by its exact full SHA-256 in a later request.
 
-Channel: newest. This agent ships in the newest Brainstem channel
-(`brainstem-v0.6.16`). It is not part of the LTS `brainstem-v0.6.9` release
-scope. In RAR it is a Frontier agent (`quality_tier: "experimental"`).
+Verbs (`action`)
+  status    read-only: a folder's SDK status (`root`), one stored plan
+            (`plan_sha256`), or an overview naming open plans by hash prefix only
+  verify    read-only: the SDK's verification of a folder (`root`)
+  discover  read-only and inert: skills, plugins and Portable Neurons under
+            `roots`; nothing found is imported or run
+  propose   scaffold, update or migrate (`operation`): stores the SDK's plan and
+            returns an exact summary with the plan's full SHA-256; nothing changes
+  confirm   the exact full hash, accepted only in a later request (below)
+  apply     sends the stored plan and the confirmed hash to the SDK, which
+            re-checks the hash and every precondition before its first write
+  undo      withdraws a plan before apply; after apply it refuses and explains
 
-Verbs (the `action` argument)
-  status    Read-only. With `root`: the SDK's status of that folder. With
-            `plan_sha256`: this agent's record of that plan. With neither: the
-            plans this agent holds and whether the SDK can be found.
-  verify    Read-only. The SDK's verification of a Workspace or Organization.
-  discover  Read-only. The SDK's inert inventory of skills, plugins and Portable
-            Neurons under `roots`. Nothing it finds is imported or run.
-  propose   `operation` is scaffold, update or migrate. Asks the SDK for a plan
-            (a plan only: nothing is written to any workspace), stores the SDK's
-            complete plan in this agent's private state, and returns a short,
-            exact summary plus the plan's full SHA-256.
-  confirm   `plan_sha256` is the exact full hash, given in a LATER turn than the
-            proposal. Records the person's yes. A confirmation in the same turn,
-            a prefix, another spelling or an unknown hash is refused.
-  apply     `plan_sha256` is the confirmed hash. Hands the complete stored plan
-            and that exact hash to the SDK, which recomputes the hash and replays
-            every precondition before its first write.
-  undo      `plan_sha256`. Before apply: withdraws the proposal or confirmation.
-            After apply: refused, with exactly what was created and why.
+Later requests: the newest Brainstem builds fresh agent instances for every
+request and may run requests at once. Every event this agent records raises a
+counter in its state, under the state lock; each instance reads the counter when
+it is built. confirm is recorded only by an instance whose reading is at least
+the number of the plan's latest event: a request that began after that event.
+This proves order, not consent; the agent never sees the person's words.
 
-Undo after apply
-  RAPP Work SDK 1.0.0 effects are create-only writes or exact-hash replacements
-  of SDK-owned files. It has no delete operation and it refuses source deletion,
-  so no SDK plan can express the inverse of a scaffold, update or migrate. This
-  agent therefore refuses undo after apply, lists what was created, and never
-  deletes anything. Gap G2 proposes a `move` plan action whose undo is the
-  inverse move. Once rapp-work-sdk/1 accepts it, undo of a plan made only of
-  moves can go through the same propose, confirm and apply gate.
+Undo after apply is refused: RAPP Work SDK 1.0.0 effects are create-only writes
+or exact-hash replacements of SDK-owned files, with no delete, so no SDK plan is
+the inverse of a scaffold, update or migrate. This agent never deletes anything.
 
-Safety
-  * Only the SDK's six public operations are called: status, verify, discover,
-    scaffold, update and migrate. The model can name a plan hash; it can never
-    supply a plan, a state folder or a hash the person did not confirm.
-  * Other people's code never runs: no discovered agent, skill, plugin, neuron
-    or workspace file is imported or executed, and nothing is ever installed.
-  * At load time this file imports only the standard library and BasicAgent.
-    The SDK is imported inside the verb that needs it, so a missing SDK never
-    reaches the Brainstem's load-time dependency auto-install. A `rapp_work`
-    found inside the Brainstem's own folders is refused and never imported.
-  * No network, no credentials, and no secrets in the state.
+Safety: the model names a plan only by its hash and can never supply a plan or
+a state folder. Nothing discovered is imported or run, and nothing is installed.
+The top level imports only the standard library and BasicAgent; the SDK is
+imported lazily, never from the Brainstem's own folders, so a missing SDK never
+triggers the Brainstem's load-time auto-install. No network, credentials or
+secrets. Outputs go to the Brainstem's model, so they name no home-folder path
+or RAPPID and show found files relative to the folder searched.
 
-Install the SDK into the Brainstem's own Python, from pinned source (never by a
-package index name), then copy this one file to the top of `agents/`:
-  <brainstem python> -m pip install \\
+Install the SDK into the Python that runs the Brainstem (for the installer,
+`.brainstem/venv/bin/python` in the home folder), from its pinned source:
+  <that python> -m pip install \\
     "rapp-work @ git+https://github.com/kody-w/rapp-work@29ead23b21645f8d7682ee00414930ffa9ce0ca6"
-The Brainstem installer's Python is `.brainstem/venv/bin/python` in the home
-folder.
+then copy this one file to the top of the Brainstem's `agents/` folder.
 
-State
-  `.brainstem/rapp_work/` in the home folder; override the location with the
-  BRAINSTEM_RAPP_WORK_PATH environment variable. Folders are 0700 and files
-  0600, owner-only, opened without following symlinks, and bounded. There is
-  one record per plan hash. Delete this file to remove the agent; its state
-  folder is plain data you can keep or remove.
+State: `.brainstem/rapp_work/` in the home folder, or BRAINSTEM_RAPP_WORK_PATH.
+Folders 0700 and files 0600, owner-only, opened without following symlinks, and
+bounded: one record per plan hash, a `lock` and a `clock`. Delete this file to
+remove the agent; the state folder is plain data you can keep or remove.
 """
 
 from __future__ import annotations
@@ -75,7 +60,6 @@ import os
 import re
 import secrets
 import stat
-import sys
 import time
 import unicodedata
 from collections.abc import Iterable, Iterator
@@ -123,12 +107,12 @@ except Exception:
 __manifest__ = {
     "schema": "rapp-agent/1.0",
     "name": "@kody-w/rapp_work_agent",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "display_name": "RappWork",
     "description": (
         "Reaches your private RAPP Work workspaces through the RAPP Work SDK: read-only "
         "status, verify and discover, plus scaffold, update and migrate plans that apply "
-        "only after you confirm their exact SHA-256 in a later turn."
+        "only after a later message confirms their exact SHA-256."
     ),
     "author": "kody-w",
     "tags": [
@@ -146,12 +130,12 @@ __manifest__ = {
     "dependencies": ["@rapp/basic_agent"],
 }
 
-AGENT_VERSION = "0.1.0"
+AGENT_VERSION = "0.2.0"
 SDK_SOURCE = "https://github.com/kody-w/rapp-work"
 SDK_SOURCE_COMMIT = "29ead23b21645f8d7682ee00414930ffa9ce0ca6"
 SDK_REQUIREMENT = f"rapp-work @ git+{SDK_SOURCE}@{SDK_SOURCE_COMMIT}"
 STATE_ENV = "BRAINSTEM_RAPP_WORK_PATH"
-RECORD_SCHEMA = "rapp-work-brainstem-agent-record/1"
+RECORD_SCHEMA = "rapp-work-brainstem-agent-record/2"
 
 SDK_OPERATIONS = ("status", "verify", "discover", "scaffold", "update", "migrate")
 PLAN_OPERATIONS = ("scaffold", "update", "migrate")
@@ -167,31 +151,35 @@ MAX_INPUT_CHARS = 4096
 MAX_RECORD_BYTES = 4 * 1024 * 1024
 MAX_RECORDS = 256
 MAX_OPEN_PLANS = 16
-MAX_EVENTS = 32
 MAX_APPLY_ATTEMPTS = 8
+MAX_EVENTS = MAX_APPLY_ATTEMPTS + 3
 MAX_STATE_ENTRIES = 1024
 MAX_DISCOVER_ROOTS = 32
 MAX_LISTED = 12
 LOCK_WAIT_SECONDS = 10.0
 
 _HEX64 = re.compile(r"[0-9a-f]{64}")
-_TURN = re.compile(r"[0-9a-f]{32}")
+_CLOCK = re.compile(rb"(0|[1-9][0-9]{0,14})\n")
 _RECORD_NAME = re.compile(r"([0-9a-f]{64})\.json")
 _HIDDEN_CATEGORIES = frozenset({"Cc", "Cf", "Cn", "Co", "Cs", "Zl", "Zp"})
+# A record's history: its latest proposal, at most one confirmation, the refused applies since
+# that confirmation, then at most one final event. Proposing again keeps nothing before the new
+# proposal, and confirming again keeps only the proposal.
 _EVENT_KEYS = {
-    "proposed": {"event", "turn", "utc"},
-    "confirmed": {"event", "plan_sha256", "turn", "utc"},
-    "apply-refused": {"code", "event", "message", "turn", "utc"},
-    "applied": {"event", "result", "turn", "utc"},
-    "withdrawn": {"event", "turn", "utc"},
+    "proposed": {"event", "seq", "utc"},
+    "confirmed": {"event", "plan_sha256", "refused", "seq", "utc"},
+    "apply-refused": {"code", "event", "message", "seq", "utc"},
+    "applied": {"event", "result", "seq", "utc"},
+    "withdrawn": {"event", "seq", "utc"},
 }
 _EVENT_AFTER = {
-    "proposed": {"", "proposed", "confirmed", "withdrawn"},
+    "proposed": {""},
     "confirmed": {"proposed"},
     "apply-refused": {"confirmed"},
     "applied": {"confirmed"},
     "withdrawn": {"proposed", "confirmed"},
 }
+RETRY_CODES = frozenset({"REFUSE_RUNTIME", "REFUSE_WRITE_VERIFY"})
 _RECORD_KEYS = {
     "agent_version",
     "events",
@@ -304,9 +292,9 @@ def _usage() -> str:
             "the RAPP Work SDK.",
             "Read-only: status (root, or plan_sha256, or nothing for an overview), verify "
             "(root), discover (roots).",
-            "Changes: propose with operation scaffold, update or migrate. The person reads "
-            "the summary and replies in a later message with the full plan hash; then "
-            "confirm and apply with exactly that hash. undo withdraws a plan before apply.",
+            "Changes: propose with operation scaffold, update or migrate, and show the person "
+            "the summary. Only when the person replies in a later message with the full plan "
+            "hash, confirm and apply exactly that hash. undo withdraws a plan before apply.",
             "Nothing changes until a confirmed plan is applied.",
         ]
     )
@@ -351,6 +339,7 @@ def _visible_text(value: Any, where: str) -> str:
 
 
 def _path_input(value: Any, where: str) -> str:
+    """An absolute path input; every verb refuses one inside this agent's own state folder."""
     text = os.path.expanduser(_visible_text(value, where))
     parts = text.replace("\\", "/").split("/")
     if not os.path.isabs(text) or ".." in parts:
@@ -360,7 +349,16 @@ def _path_input(value: Any, where: str) -> str:
             "a folder from the Brainstem's working directory)",
             {where: _clean(value)},
         )
-    return os.path.abspath(text)
+    path = os.path.abspath(text)
+    base = _state_base()
+    for spelling in {path, os.path.realpath(path)}:
+        if any(_is_within(spelling, state) for state in {base, os.path.realpath(base)}):
+            raise _Refusal(
+                "AGENT_REFUSE_PATH",
+                f"{where} lies inside this agent's own state folder",
+                {where: _clean(value)},
+            )
+    return path
 
 
 def _hash_input(value: Any) -> str:
@@ -375,8 +373,8 @@ def _hash_input(value: Any) -> str:
 
 
 def _is_within(path: str, root: str) -> bool:
-    path = os.path.normcase(os.path.normpath(path))
-    root = os.path.normcase(os.path.normpath(root))
+    """Case-insensitively, so a differently cased spelling on such a filesystem is caught."""
+    path, root = (os.path.normcase(os.path.normpath(value)).casefold() for value in (path, root))
     return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
 
 
@@ -397,6 +395,13 @@ def _state_base() -> str:
             {"path": _clean(candidate)},
         )
     return os.path.normpath(candidate)
+
+
+def _state_label() -> str:
+    """Where the state is, without a home-folder path (outputs go to the model)."""
+    if os.environ.get(STATE_ENV):
+        return f"the folder named by {STATE_ENV}"
+    return ".brainstem/rapp_work in your home folder"
 
 
 def _require_platform() -> None:
@@ -504,15 +509,15 @@ def _check_private_file(descriptor: int, what: str) -> os.stat_result:
     return info
 
 
-def _read_private_file(directory: int, name: str, limit: int) -> bytes:
+def _read_private_file(directory: int, name: str, limit: int, what: str = "stored record") -> bytes:
     flags = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_NONBLOCK", 0)
     descriptor = os.open(name, flags, dir_fd=directory)
     try:
-        info = _check_private_file(descriptor, "stored record")
+        info = _check_private_file(descriptor, what)
         if info.st_size > limit:
             raise _Refusal(
                 "AGENT_REFUSE_STATE_BOUND",
-                "a stored record exceeds the size bound",
+                f"the {what} exceeds the size bound",
                 {"limit_bytes": limit},
             )
         chunks: list[bytes] = []
@@ -525,7 +530,7 @@ def _read_private_file(directory: int, name: str, limit: int) -> bytes:
             remaining -= len(chunk)
         data = b"".join(chunks)
         if len(data) > limit:
-            raise _Refusal("AGENT_REFUSE_STATE_BOUND", "a stored record exceeds the size bound")
+            raise _Refusal("AGENT_REFUSE_STATE_BOUND", f"the {what} exceeds the size bound")
         return data
     finally:
         os.close(descriptor)
@@ -608,7 +613,7 @@ def _unsafe_state(where: str, error: OSError) -> _Refusal:
         "AGENT_REFUSE_STATE",
         "the state folder path is unsafe: every component must be a real directory, and "
         "symlinks are never followed",
-        {"path": _clean(where), "error": errno.errorcode.get(error.errno or 0, str(error.errno))},
+        {"folder": where, "error": errno.errorcode.get(error.errno or 0, str(error.errno))},
     )
 
 
@@ -619,7 +624,6 @@ def _state(*, create: bool, lock: bool) -> Iterator[tuple[int, int] | None]:
     Callers that only read pass create=False and lock=False and never create anything.
     """
     base = _state_base()
-    records_path = os.path.join(base, "records")
     base_fd = lock_fd = records_fd = -1
     created = False
     value: tuple[int, int] | None = None
@@ -630,14 +634,14 @@ def _state(*, create: bool, lock: bool) -> Iterator[tuple[int, int] | None]:
             if create:
                 raise _Refusal("AGENT_REFUSE_STATE", "the state folder could not be created") from None
         except OSError as error:
-            raise _unsafe_state(base, error) from None
+            raise _unsafe_state("state", error) from None
         if base_fd >= 0:
-            _make_private(base_fd, created, base)
+            _make_private(base_fd, created, "state")
             if lock:
                 lock_fd = _acquire_lock(base_fd)
             try:
                 records_fd = _open_child_directory(
-                    base_fd, "records", create=create, where=records_path
+                    base_fd, "records", create=create, where="records"
                 )
             except FileNotFoundError:
                 if create:
@@ -645,7 +649,7 @@ def _state(*, create: bool, lock: bool) -> Iterator[tuple[int, int] | None]:
                         "AGENT_REFUSE_STATE", "the records folder could not be created"
                     ) from None
             except OSError as error:
-                raise _unsafe_state(records_path, error) from None
+                raise _unsafe_state("records", error) from None
             if records_fd >= 0:
                 value = (base_fd, records_fd)
         yield value
@@ -757,6 +761,7 @@ def _record_state(record: dict[str, Any]) -> str:
     if not isinstance(events, list) or not 1 <= len(events) <= MAX_EVENTS:
         raise _Refusal("AGENT_REFUSE_STORED_PLAN", "the record history is missing or unbounded")
     state = ""
+    seq = 0
     for event in events:
         kind = event.get("event") if isinstance(event, dict) else None
         if (
@@ -765,16 +770,22 @@ def _record_state(record: dict[str, Any]) -> str:
             or kind not in _EVENT_KEYS
             or set(event) != _EVENT_KEYS[kind]
             or not isinstance(event.get("utc"), str)
-            or not isinstance(event.get("turn"), str)
-            or not _TURN.fullmatch(event["turn"])
+            or type(event.get("seq")) is not int
+            or not seq < event["seq"] < 10**15
         ):
             raise _Refusal("AGENT_REFUSE_STORED_PLAN", "the record history has a malformed event")
         if state not in _EVENT_AFTER[kind]:
             raise _Refusal("AGENT_REFUSE_STORED_PLAN", "the record history is out of order")
-        if kind == "confirmed" and event["plan_sha256"] != record.get("plan_sha256"):
+        if kind == "confirmed" and (
+            event["plan_sha256"] != record.get("plan_sha256")
+            or type(event["refused"]) is not int
+            or event["refused"] < 0
+        ):
             raise _Refusal(
-                "AGENT_REFUSE_STORED_PLAN", "the confirmation names a different plan hash"
+                "AGENT_REFUSE_STORED_PLAN",
+                "the record's confirmation is malformed or names a different plan hash",
             )
+        seq = event["seq"]
         if kind != "apply-refused":
             state = kind
     return state
@@ -848,14 +859,65 @@ def _save_record(records: int, record: dict[str, Any]) -> None:
         ) from None
 
 
-def _append_event(record: dict[str, Any], event: dict[str, Any]) -> None:
-    if len(record["events"]) >= MAX_EVENTS:
+def _read_clock(base: int) -> int:
+    """The state's logical clock: the sequence number of the latest recorded event."""
+    try:
+        raw = _read_private_file(base, "clock", 32, "state clock")
+    except FileNotFoundError:
+        return 0
+    except OSError as error:
+        raise _unsafe_state("clock", error) from None
+    match = _CLOCK.fullmatch(raw)
+    if match is None:
+        raise _Refusal("AGENT_REFUSE_STATE", "the state clock is not a decimal counter")
+    return int(match.group(1))
+
+
+def _clock_now() -> int | None:
+    """The clock as an instance is built, read without the lock; None if it is unreadable."""
+    try:
+        with _state(create=False, lock=False) as handles:
+            clock = 0 if handles is None else _read_clock(handles[0])
+    except Exception:
+        return None
+    return clock
+
+
+def _commit(
+    handles: tuple[int, int],
+    record: dict[str, Any],
+    kind: str,
+    keep: int | None = None,
+    **fields: Any,
+) -> None:
+    """Under the state lock: record one event, then advance the clock to its number.
+
+    The record is written first, so an instance that reads the new clock value was
+    built after the event was stored. `keep` drops the events after the first `keep`.
+    """
+    base, records = handles
+    seq = max([_read_clock(base), *(event["seq"] for event in record["events"])]) + 1
+    record["events"] = [
+        *record["events"][:keep],
+        {"event": kind, "seq": seq, "utc": _now(), **fields},
+    ]
+    _save_record(records, record)
+    try:
+        _write_private_file(base, "clock", b"%d\n" % seq)
+    except OSError as error:
         raise _Refusal(
-            "AGENT_REFUSE_STATE_BOUND",
-            "this plan's history is full; propose a new plan instead",
-            {"limit": MAX_EVENTS},
-        )
-    record["events"].append(event)
+            "AGENT_REFUSE_STATE",
+            "the state clock could not be written safely",
+            {"error": errno.errorcode.get(error.errno or 0, str(error.errno))},
+            outcome="The plan's record was updated but the state clock was not; check it with "
+            "status before trying again.",
+        ) from None
+
+
+def _refused_count(record: dict[str, Any]) -> tuple[int, int]:
+    """Refused applies since the latest confirmation, and since the latest proposal."""
+    recent = sum(1 for event in record["events"] if event["event"] == "apply-refused")
+    return recent, recent + int(_last_event(record, "confirmed").get("refused", 0))
 
 
 def _last_event(record: dict[str, Any], kind: str) -> dict[str, Any]:
@@ -870,10 +932,11 @@ def _last_event(record: dict[str, Any], kind: str) -> dict[str, Any]:
 
 def _install_text() -> str:
     return (
-        "Install it into this Brainstem's Python from its source at a pinned commit (never "
-        f'from a package index name): "{sys.executable}" -m pip install "{SDK_REQUIREMENT}". '
-        "The Brainstem reloads agents on every message, so no restart is needed. This agent "
-        "never installs anything itself."
+        "Install it into the Python that runs this Brainstem (for the Brainstem installer, "
+        ".brainstem/venv/bin/python in your home folder), from its source at a pinned commit "
+        f'and never from a package index name: <that python> -m pip install "{SDK_REQUIREMENT}". '
+        "The Brainstem loads agents again for every message, so no restart is needed. This "
+        "agent never installs anything itself."
     )
 
 
@@ -896,31 +959,29 @@ def _shadow_reason(spec: Any) -> str | None:
             locations.append(entry)
     if not locations:
         return "the name rapp_work resolves to a namespace folder or a built-in, not the SDK"
-    trees: list[str] = []
+    trees: list[tuple[str, str]] = []
     roots: list[str] = []
     for variant in {os.path.abspath(__file__), os.path.realpath(__file__)}:
         agents_folder = os.path.dirname(variant)
-        trees.append(agents_folder)
-        roots.append(os.path.dirname(agents_folder))
+        trees.append((agents_folder, "this Brainstem's agents folder"))
+        roots.append(os.path.normcase(os.path.dirname(agents_folder)))
     with contextlib.suppress(OSError):
-        roots.append(os.path.realpath(os.getcwd()))
+        roots.append(os.path.normcase(os.path.realpath(os.getcwd())))
     with contextlib.suppress(_Refusal):
-        trees.append(_state_base())
+        trees.append((_state_base(), "this agent's state folder"))
     for location in locations:
         for variant in {os.path.abspath(location), os.path.realpath(location)}:
-            for tree in trees:
+            for tree, label in trees:
                 if _is_within(variant, tree):
                     return (
-                        f"a module named rapp_work was found inside {_clean(tree)}, where "
-                        "folders are organization or agent state, never live code"
+                        f"a module named rapp_work was found inside {label}, where folders are "
+                        "organization or agent state, never live code"
                     )
-            import_root = os.path.normcase(os.path.normpath(_import_root(variant)))
-            for root in roots:
-                if import_root == os.path.normcase(os.path.normpath(root)):
-                    return (
-                        f"a module named rapp_work was found directly in {_clean(root)}, next "
-                        "to the Brainstem or in its working folder"
-                    )
+            if os.path.normcase(os.path.normpath(_import_root(variant))) in roots:
+                return (
+                    "a module named rapp_work was found directly in the Brainstem folder or "
+                    "its working folder"
+                )
     return None
 
 
@@ -990,7 +1051,9 @@ def _mapping(value: Any) -> dict[str, Any]:
 
 
 def _subject_line(subject: Any) -> str:
-    items = sorted(_mapping(subject).items())
+    items = sorted(
+        (key, value) for key, value in _mapping(subject).items() if key not in {"rappid", "root"}
+    )
     return "Subject: " + ", ".join(f"{_clean(key, 40)} {_clean(value, 200)}" for key, value in items)
 
 
@@ -1032,7 +1095,6 @@ def _plan_lines(operation: str, plan: dict[str, Any]) -> list[str]:
             f"'{_clean(subject.get('owner_label'), 60)}', world "
             f"'{_clean(subject.get('world_id'), 80)}', mode '{_clean(subject.get('mode'), 20)}')."
         )
-        lines.append(f"New RAPPID: {_clean(subject.get('rappid'), 200)}")
         lines.append(
             f"Target folder: {_clean(plan.get('target'), 400)} (must not exist; the SDK creates "
             "it in one atomic step)"
@@ -1041,9 +1103,8 @@ def _plan_lines(operation: str, plan: dict[str, Any]) -> list[str]:
         subject = _mapping(plan.get("subject"))
         lines.append(
             "Operation: update - adopt or refresh the RAPP Work SDK "
-            f"{_clean(subject.get('sdk_version'), 20)} integration files of "
-            f"{_clean(subject.get('kind'), 40)} {_clean(subject.get('rappid'), 200)} "
-            f"(world '{_clean(subject.get('world_id'), 80)}')."
+            f"{_clean(subject.get('sdk_version'), 20)} integration files of the "
+            f"{_clean(subject.get('kind'), 40)} in world '{_clean(subject.get('world_id'), 80)}'."
         )
         lines.append(
             f"Folder: {_clean(plan.get('target'), 400)} (only SDK-owned files are ever replaced, "
@@ -1054,8 +1115,8 @@ def _plan_lines(operation: str, plan: dict[str, Any]) -> list[str]:
         authority = binding.get("authority_files")
         count = len(authority) if isinstance(authority, list) else 0
         lines.append(
-            f"Operation: migrate - create a successor of {_clean(binding.get('kind'), 40)} "
-            f"{_clean(binding.get('rappid'), 200)} (world '{_clean(binding.get('world_id'), 80)}')."
+            f"Operation: migrate - create a successor of the {_clean(binding.get('kind'), 40)} "
+            f"in world '{_clean(binding.get('world_id'), 80)}'."
         )
         lines.append(
             f"Source: {_clean(plan.get('source'), 400)} (preserved byte for byte; {count} "
@@ -1077,12 +1138,39 @@ def _undo_note(operation: str) -> str:
     )
 
 
+def _after_refused_apply(code: str, digest: str) -> str:
+    """After an SDK apply refusal, which may have stopped part-way: what to do next."""
+    if code in RETRY_CODES:
+        step = (
+            f"fix the cause (for example free space or permissions), then apply {digest} "
+            "again: the SDK finishes this same plan. Do not withdraw it, because only this plan "
+            "can finish a partly applied update or migration."
+        )
+    elif code == "REFUSE_RECOVERY_BINDING":
+        step = (
+            "an earlier plan's apply stopped part-way in this folder, and the SDK lets only that "
+            "plan finish: apply it again with the full hash from its proposal. This plan stays "
+            "confirmed."
+        )
+    else:
+        step = (
+            "check the folder with verify. If it changed on purpose after the proposal, withdraw "
+            "this plan with undo and propose again; if not, put it back as it was and apply "
+            f"{digest} again."
+        )
+    return (
+        "The SDK stopped this apply. An apply can stop part-way, so part of the plan may already "
+        "be in the folder. Next: " + step
+    )
+
+
 def _record_line(digest: str, record: dict[str, Any]) -> str:
+    """One open plan, named by a hash prefix: only a proposal shows a full hash."""
     inputs = record["inputs"]
     where = inputs.get("root") or f"{inputs.get('source')} -> {inputs.get('target')}"
     return (
-        f"  {digest} {_record_state(record)} {record['operation']} {_clean(where, 200)} "
-        f"(proposed {_clean(record['events'][0].get('utc'), 30)})"
+        f"  {_short(digest)}... {_record_state(record)} {record['operation']} "
+        f"{_clean(where, 200)} (proposed {_clean(record['events'][0].get('utc'), 30)})"
     )
 
 
@@ -1111,9 +1199,9 @@ def _verify_line(root: Any) -> str:
     result = envelope["result"]
     subject = _mapping(result.get("subject"))
     return (
-        f"SDK verify (read-only): {_clean(result.get('status'), 40)} - "
-        f"{_clean(subject.get('kind'), 40)} {_clean(subject.get('rappid'), 200)}, "
-        f"{_clean(subject.get('managed_files'), 20)} managed file(s)."
+        f"SDK verify (read-only): {_clean(subject.get('status') or result.get('status'), 60)} - "
+        f"{_clean(subject.get('kind'), 40)}, {_clean(subject.get('managed_files'), 20)} "
+        "managed file(s)."
     )
 
 
@@ -1155,6 +1243,17 @@ def _format_verify(envelope: dict[str, Any], root: str) -> str:
     return "\n".join(lines)
 
 
+def _found(path: Any, roots: list[Any]) -> str:
+    """A discovered path under the name of the folder searched, not the whole device path."""
+    if isinstance(path, str):
+        for root in roots:
+            prefix = root.rstrip(os.sep) + os.sep if isinstance(root, str) else None
+            if prefix and path.startswith(prefix):
+                name = os.path.basename(prefix[:-1]) or os.sep
+                return _clean(os.path.join(name, path[len(prefix) :]), 300)
+    return _clean(path, 300)
+
+
 def _format_discover(envelope: dict[str, Any]) -> str:
     if envelope["status"] == "refused":
         return _sdk_refusal_text(envelope, "This was a read-only request; nothing was changed.")
@@ -1179,20 +1278,22 @@ def _format_discover(envelope: dict[str, Any]) -> str:
         entries = groups[name]
         for entry in entries[:shown]:
             item = _mapping(entry)
-            where = item.get("manifest") or item.get("path")
+            where = _found(item.get("manifest") or item.get("path"), roots)
             digest = item.get("sha256") or item.get("manifest_sha256")
             lines.append(
-                f"  {label}: {_clean(item.get(key), 100)} at {_clean(where, 300)} "
+                f"  {label}: {_clean(item.get(key), 100)} at {where} "
                 f"(sha256 {_short(digest)}..., never run)"
             )
         if len(entries) > shown:
             lines.append(f"  ... and {len(entries) - shown} more {name}")
     for entry in groups["refusals"][:shown]:
         item = _mapping(entry)
-        lines.append(f"  Ignored: [{_clean(item.get('code'), 60)}] {_clean(item.get('path'), 300)}")
+        lines.append(
+            f"  Ignored: [{_clean(item.get('code'), 60)}] {_found(item.get('path'), roots)}"
+        )
     lines.append(
-        "Note: SDK 1.0.0 discovery does not list single-file *_agent.py agents (gap G3); this "
-        "agent never opens or runs them either."
+        "Paths are shown under the name of the folder searched. Single-file *_agent.py agents "
+        "are not listed, and this agent never opens or runs them."
     )
     return "\n".join(lines)
 
@@ -1222,9 +1323,9 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                         "enum": list(ACTIONS),
                         "description": (
                             "status, verify and discover only read. propose asks the SDK for "
-                            "a plan. confirm records the person's yes to one exact plan hash. "
-                            "apply runs a confirmed plan. undo withdraws a plan that was not "
-                            "applied."
+                            "a plan. confirm records a yes to one exact plan hash, given by the "
+                            "person in a later message. apply runs a confirmed plan. undo "
+                            "withdraws a plan that was not applied."
                         ),
                     },
                     "operation": {
@@ -1296,7 +1397,8 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                 "required": ["action"],
             },
         }
-        self._turn = secrets.token_hex(16)
+        # When this request began, in the state's own event order (see "Later requests").
+        self._clock = _clock_now()
         super().__init__(name=self.name, metadata=self.metadata)
 
     def perform(self, **kwargs: Any) -> str:
@@ -1385,13 +1487,13 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
         lines = [f"RappWork agent {AGENT_VERSION} (newest Brainstem channel). RAPP Work SDK: {found}."]
         if found == "not found":
             lines.append(_install_text())
-        base = _state_base()
+        where = _state_label()
         counts: dict[str, int] = {}
         open_lines: list[str] = []
         unreadable = others = 0
         with _state(create=False, lock=False) as handles:
             if handles is None:
-                lines.append(f"State: {_clean(base, 400)} (nothing stored yet).")
+                lines.append(f"State: {where} (nothing stored yet).")
                 return "\n".join(lines)
             names, others = _record_names(handles[1])
             for digest in names:
@@ -1407,11 +1509,14 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                 if state in {"proposed", "confirmed"} and len(open_lines) < MAX_LISTED:
                     open_lines.append(_record_line(digest, record))
         summary = ", ".join(f"{count} {state}" for state, count in sorted(counts.items()))
-        lines.append(f"State: {_clean(base, 400)} - plans: {summary or 'none'}.")
+        lines.append(f"State: {where} - plans: {summary or 'none'}.")
         if unreadable or others:
             lines.append(f"Also ignored: {unreadable} unreadable record(s), {others} other entr(ies).")
         if open_lines:
-            lines.append("Open plans (not applied):")
+            lines.append(
+                "Open plans (not applied), by hash prefix only; a plan's full hash is shown only "
+                "in its proposal:"
+            )
             lines.extend(open_lines)
         return "\n".join(lines)
 
@@ -1444,7 +1549,6 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
             inputs["mode"] = _visible_text(arguments.get("mode", "solo"), "mode")
             for key in ("owner_label", "slug", "world_id"):
                 inputs[key] = _visible_text(arguments[key], key)
-        state_base = _state_base()
         for key in PLAN_PATH_KEYS[operation]:
             if key not in arguments:
                 raise _Refusal(
@@ -1452,12 +1556,6 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                     f"propose {operation} needs {' and '.join(PLAN_PATH_KEYS[operation])}",
                 )
             inputs[key] = _path_input(arguments[key], key)
-            if _is_within(inputs[key], state_base):
-                raise _Refusal(
-                    "AGENT_REFUSE_PATH",
-                    f"{key} lies inside this agent's own state folder",
-                    {key: _clean(inputs[key])},
-                )
         return inputs
 
     def _propose(self, arguments: dict[str, Any]) -> str:
@@ -1488,7 +1586,6 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                 "RAPP Work: nothing to propose. The SDK planned no file changes for "
                 f"{_clean(where, 400)} (plan {digest}); nothing was stored or changed."
             )
-        event = {"event": "proposed", "turn": self._turn, "utc": _now()}
         with _state(create=True, lock=True) as handles:
             if handles is None:
                 raise _Refusal("AGENT_REFUSE_STATE", "the state folder could not be opened")
@@ -1504,7 +1601,7 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                 self._check_bounds(records)
                 record = {
                     "agent_version": AGENT_VERSION,
-                    "events": [event],
+                    "events": [],
                     "inputs": inputs,
                     "operation": operation,
                     "plan": plan,
@@ -1512,9 +1609,7 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                     "plan_storage_sha256": _plan_storage_sha256(plan),
                     "schema": RECORD_SCHEMA,
                 }
-            else:
-                _append_event(record, event)
-            _save_record(records, record)
+            _commit(handles, record, "proposed", keep=0)
         lines = ["RAPP Work: plan proposed by the RAPP Work SDK. Nothing has changed yet."]
         lines.extend(_plan_lines(operation, plan))
         lines.append(f"Plan SHA-256 (full): {digest}")
@@ -1535,7 +1630,8 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
         if len(names) >= MAX_RECORDS:
             raise _Refusal(
                 "AGENT_REFUSE_STATE_BOUND",
-                "this agent already keeps the maximum number of plan records",
+                "this agent already keeps the maximum number of plan records; records of applied "
+                "or withdrawn plans are plain data you may delete from its state folder",
                 {"limit": MAX_RECORDS},
             )
         open_plans = 0
@@ -1549,7 +1645,8 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
         if open_plans >= MAX_OPEN_PLANS:
             raise _Refusal(
                 "AGENT_REFUSE_STATE_BOUND",
-                "too many plans are open; apply or undo some first",
+                "too many plans are open; apply or withdraw some first (undo takes the full hash "
+                "from a plan's proposal, and proposing an update or migration again shows it)",
                 {"limit": MAX_OPEN_PLANS},
             )
 
@@ -1567,21 +1664,28 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                 raise _Refusal(
                     "AGENT_REFUSE_WITHDRAWN", "this plan was withdrawn; propose it again first"
                 )
-            if state == "confirmed":
+            recent, total = _refused_count(record)
+            if state == "confirmed" and not recent:
                 return f"RAPP Work: plan {digest} is already confirmed. Next: apply {digest}"
-            if _last_event(record, "proposed").get("turn") == self._turn:
+            if self._clock is None:
                 raise _Refusal(
-                    "AGENT_REFUSE_SAME_TURN",
-                    "a plan cannot be confirmed in the same turn it was proposed; the person "
-                    "must read it and reply in a new message with the full hash",
+                    "AGENT_REFUSE_STATE",
+                    "this request could not read the state clock safely when it began, so it "
+                    "cannot order a confirmation; check the state folder, then reply in a new "
+                    "message",
                 )
-            _append_event(
-                record,
-                {"event": "confirmed", "plan_sha256": digest, "turn": self._turn, "utc": _now()},
-            )
-            _save_record(handles[1], record)
+            if self._clock < record["events"][-1]["seq"]:
+                latest = "refused apply" if recent else "proposal"
+                raise _Refusal(
+                    "AGENT_REFUSE_NOT_LATER_TURN",
+                    f"this request began before the plan's latest {latest} was recorded, so it "
+                    "cannot confirm it; the person must read the plan and reply in a new message "
+                    "with the full hash",
+                )
+            _commit(handles, record, "confirmed", keep=1, plan_sha256=digest, refused=total)
+        again = f" again ({recent} refused apply attempt(s) no longer count)" if recent else ""
         return (
-            f"RAPP Work: plan {digest} confirmed. Nothing has changed yet.\n"
+            f"RAPP Work: plan {digest} confirmed{again}. Nothing has changed yet.\n"
             f"Next: apply {digest}. The SDK re-checks the whole plan, its exact hash and every "
             "precondition before its first write."
         )
@@ -1594,7 +1698,6 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
             record = None if handles is None else _load_record(handles[1], digest)
             if handles is None or record is None:
                 raise _Refusal("AGENT_REFUSE_UNKNOWN_PLAN", "no stored plan has exactly this hash")
-            records = handles[1]
             state = _record_state(record)
             if state == "applied":
                 raise _Refusal(
@@ -1615,11 +1718,14 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
                 or record["plan_sha256"] != digest
             ):
                 raise _Refusal("AGENT_REFUSE_NOT_CONFIRMED", "the confirmation names another hash")
-            attempts = sum(1 for event in record["events"] if event["event"] == "apply-refused")
-            if attempts >= MAX_APPLY_ATTEMPTS:
+            recent, _ = _refused_count(record)
+            if recent >= MAX_APPLY_ATTEMPTS:
                 raise _Refusal(
                     "AGENT_REFUSE_ATTEMPTS",
-                    "the SDK refused this plan too many times; undo it and propose again",
+                    f"the SDK refused this plan {recent} times since it was last confirmed. Check "
+                    "the folder with status or verify and fix the cause; the person can then "
+                    "confirm it again in a new message, which allows more attempts, or withdraw "
+                    "it with undo",
                     {"limit": MAX_APPLY_ATTEMPTS},
                 )
             operation = record["operation"]
@@ -1632,39 +1738,28 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
             envelope = _call_sdk(operation, request)
             if envelope["status"] == "refused":
                 refusal = _sdk_refusal(envelope)
-                _append_event(
-                    record,
-                    {
-                        "code": _clean(refusal.get("code"), 80),
-                        "event": "apply-refused",
-                        "message": _clean(refusal.get("message"), 300),
-                        "turn": self._turn,
-                        "utc": _now(),
-                    },
-                )
-                _save_record(records, record)
-                return _sdk_refusal_text(
-                    envelope,
-                    "The SDK re-checked the stored plan and refused it; this agent wrote nothing "
-                    "to your workspaces. If the folder changed after the proposal, undo this "
-                    "plan and propose again.",
-                )
+                code = _clean(refusal.get("code"), 80)
+                try:
+                    _commit(
+                        handles,
+                        record,
+                        "apply-refused",
+                        code=code,
+                        message=_clean(refusal.get("message"), 300),
+                    )
+                except _Refusal as error:
+                    warning = (
+                        "\nWarning: this agent's record of the refusal may be incomplete "
+                        f"({error.code})."
+                    )
+                return _sdk_refusal_text(envelope, _after_refused_apply(code, digest)) + warning
             result = envelope["result"]
             try:
-                _append_event(
-                    record,
-                    {
-                        "event": "applied",
-                        "result": _result_summary(result),
-                        "turn": self._turn,
-                        "utc": _now(),
-                    },
-                )
-                _save_record(records, record)
+                _commit(handles, record, "applied", result=_result_summary(result))
             except _Refusal as refusal:
                 warning = (
-                    "\nWarning: the SDK applied the plan, but this agent could not record it "
-                    f"({refusal.code}); check the folder with verify."
+                    "\nWarning: the SDK applied the plan, but this agent's record of it may be "
+                    f"incomplete ({refusal.code}); check the folder with verify."
                 )
         root = result.get("root") or result.get("target")
         lines = [
@@ -1693,12 +1788,19 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
             if state == "withdrawn":
                 return f"RAPP Work: plan {digest} was already withdrawn; nothing was changed."
             if state in {"proposed", "confirmed"}:
-                _append_event(current, {"event": "withdrawn", "turn": self._turn, "utc": _now()})
-                _save_record(handles[1], current)
-                return (
-                    f"RAPP Work: plan {digest} withdrawn before apply. Nothing was applied, and it "
-                    "can no longer be confirmed or applied. Its record is kept as history."
+                _, total = _refused_count(current)
+                _commit(handles, current, "withdrawn")
+                text = (
+                    f"RAPP Work: plan {digest} withdrawn. It can no longer be confirmed or "
+                    "applied, and its record is kept."
                 )
+                if total:
+                    text += (
+                        f" The SDK refused {total} apply attempt(s) of it since its latest "
+                        "proposal, and a refused apply can stop part-way; check the folder with "
+                        "verify."
+                    )
+                return text
         return self._undo_refusal(digest, current)
 
     @staticmethod
@@ -1746,13 +1848,6 @@ class RappWorkAgent(BasicAgent):  # type: ignore[misc]
         lines.append(
             "Nothing was changed by this undo request. Removing created files is a decision for "
             "you to make outside this agent; it never removes files."
-        )
-        lines.append(
-            "Later: gap G2 proposes a 'move' plan action whose undo is the inverse move (branch "
-            "experimental/gap-g2-move-action, not accepted). Once rapp-work-sdk/1 accepts it, "
-            "undo of an applied plan made only of moves can be proposed as the SDK's inverse "
-            "plan, confirmed by its full hash in a later turn, and applied through this same "
-            "gate. Plans that create or replace files would still be refused."
         )
         lines.append(_verify_line(plan.get("target")))
         return "\n".join(lines)

@@ -4,8 +4,9 @@ Written from the Brainstem's documented behavior; no kernel bytes are copied:
 
 * only top-level ``agents/*_agent.py`` files are live (a flat glob, sorted);
 * each load runs ``importlib.util.spec_from_file_location`` and ``exec_module``
-  under a fresh module name, and the Brainstem loads again on every message, so
-  an agent instance lives for exactly one turn;
+  under a fresh module name, and the Brainstem loads again on every request, so
+  an agent instance lives for exactly one request; the newest Brainstem runs
+  requests on threads, so several ``Turn`` objects can be in flight at once;
 * ``agents.basic_agent`` resolves to a shim registered in ``sys.modules``;
 * every class defined in the file that has ``perform``, is not ``BasicAgent`` and
   does not start with ``_`` is instantiated and must pass the hot-load boundary:

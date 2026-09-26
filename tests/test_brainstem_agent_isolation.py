@@ -147,6 +147,7 @@ if not config.get("calls"):
     instances[0] = module.RappWorkAgent()
 active[0] = False
 result["base"] = [base.__name__ for base in type(instances[min(instances)]).__mro__]
+result["clock"] = getattr(instances[min(instances)], "_clock", "missing")
 result["rapp_work_modules"] = sorted(n for n in sys.modules if n.split(".")[0] == "rapp_work")
 print(json.dumps(result))
 '''
@@ -310,6 +311,8 @@ def test_a_missing_sdk_is_reported_with_its_pinned_source_and_no_side_effects(
     for output in outputs[1:5]:
         assert "AGENT_REFUSE_SDK_MISSING" in output and PINNED in output
         assert "never installs anything itself" in output
+    for output in outputs:
+        assert sys.executable not in output and str(sandbox) + "/state" not in output
     for output in outputs[5:]:
         assert "AGENT_REFUSE_UNKNOWN_PLAN" in output
     assert set(result["lookups"]) == {"rapp_work"}
@@ -320,18 +323,28 @@ def test_a_missing_sdk_is_reported_with_its_pinned_source_and_no_side_effects(
 
 def test_the_constructor_and_the_load_have_no_side_effects(sandbox: Path) -> None:
     agent = brainstem_copy(sandbox / "brainstem")
-    result = run_child(
-        {
-            "agent": str(agent),
-            "shim": BASIC_AGENT_SHIM,
-            "audit_load": True,
-            "block": True,
-            "env": {STATE_ENV: str(sandbox / "state")},
-        },
-        sandbox,
-    )
+    config = {
+        "agent": str(agent),
+        "shim": BASIC_AGENT_SHIM,
+        "audit_load": True,
+        "block": True,
+        "env": {STATE_ENV: str(sandbox / "state")},
+    }
+    result = run_child(config, sandbox)
     assert result["load_error"] is None
     assert result["events"] == [] and result["lookups"] == []
+    assert result["clock"] == 0 and not (sandbox / "state").exists()
+    state = sandbox / "state"
+    (state / "records").mkdir(parents=True, mode=0o700)
+    state.chmod(0o700)
+    (state / "clock").write_bytes(b"7\n")
+    (state / "clock").chmod(0o600)
+    before = sorted(path.name for path in state.iterdir())
+    result = run_child(config, sandbox)
+    assert result["events"] == [] and result["clock"] == 7
+    assert sorted(path.name for path in state.iterdir()) == before
+    (state / "clock").chmod(0o644)
+    assert run_child(config, sandbox)["clock"] is None
 
 
 @pytest.mark.parametrize("isolated", [True, False])
@@ -430,7 +443,7 @@ def test_a_full_flow_in_a_clean_interpreter_never_touches_network_or_processes(
     )
     outputs = result["outputs"]
     assert "plan proposed by the RAPP Work SDK" in outputs[0]
-    assert "AGENT_REFUSE_SAME_TURN" in outputs[1]
+    assert "AGENT_REFUSE_NOT_LATER_TURN" in outputs[1]
     assert "confirmed" in outputs[2]
     assert "(status created)" in outputs[3] and "verified" in outputs[3]
     assert ": verified" in outputs[4]

@@ -2,13 +2,18 @@
 
 ## Unreleased (proposal, not accepted)
 
-- Proposal 0017 (gap G17): added `integrations/brainstem/agents/rapp_work_agent.py`,
-  a single-file Brainstem agent for the newest Brainstem channel
-  (`brainstem-v0.6.16`) that calls only the six public SDK operations and applies
-  only a plan whose exact SHA-256 the person confirmed in a later turn. It is
-  source-distribution only: the `rapp_work` package, the wheel, the public API and
-  `SDK_VERSION` are unchanged.
-- Added hot-load, isolation and end-to-end tests
+- Proposal 0017 (gap G17): added `integrations/brainstem/agents/rapp_work_agent.py`
+  (agent version 0.2.0), a single-file Brainstem agent for the newest Brainstem
+  channel (`brainstem-v0.6.16`) that calls only the six public SDK operations
+  and applies only a plan confirmed by its exact full SHA-256 in a later request
+  than the plan's latest proposal, ordered by a counter in the agent's private
+  state, so neither the proposing request nor a request that began before the
+  proposal was recorded can confirm it.
+  Its status overview names open plans by hash prefix only; its outputs, which
+  go to the Brainstem's model, name no home-folder path or RAPPID. It is
+  source-distribution only: the `rapp_work` package, the wheel, the public API
+  and `SDK_VERSION` are unchanged.
+- Added hot-load, isolation, concurrency and end-to-end tests
   (`tests/test_brainstem_agent.py`, `tests/test_brainstem_agent_isolation.py`,
   `tests/brainstem_harness.py`) and brought the agent under ruff and mypy.
 
