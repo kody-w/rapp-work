@@ -335,6 +335,13 @@ def test_ambiguous_predecessor_is_refused() -> None:
     assert "more than one predecessor" in refusal_reason(error)
 
 
+@pytest.mark.parametrize("entry_type", [["estate_owner"], {"estate_owner": True}], ids=["array", "object"])
+def test_malformed_registry_entry_is_a_refusal_not_a_raw_error(entry_type: Any) -> None:
+    estate = Estate()
+    with refused("REFUSE_REGISTRY_ENTRY", "section 13.3 entry refused"):
+        estate.verify(estate.registry(1, lifecycle=[{"type": entry_type}]))
+
+
 def test_renamed_alias_cannot_revive_a_retired_key() -> None:
     estate = Estate(device=True)
     with refused("REFUSE_REGISTRY_ENTRY") as error:

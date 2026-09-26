@@ -140,7 +140,7 @@ class SuccessionEstate(Estate):
         gate.accept_convergence(frame["frame_hash"])
         return frame
 
-    def receipt(self, gate, *, signer="alice", seconds=250):
+    def receipt(self, gate, *, signer="alice", seconds=250, previous=None):
         manifest = gate.artifact_manifest()
         payload = {
             "schema": H.PROJECTION_SCHEMA, "hive_rappid": self.hive,
@@ -150,7 +150,7 @@ class SuccessionEstate(Estate):
             "artifact_manifest_hash": particle_hash(manifest), "status": "current",
         }
         frame = self.frame("hive.projection", self.receipt_genesis["stream_id"], payload,
-                           previous=self.receipt_genesis, signer=signer)
+                           previous=previous or self.receipt_genesis, signer=signer)
         return frame, manifest
 
     def reanchor(self, old, new, *, case="rotation", seconds=BOUNDARY, signer=None, continuity=None):
@@ -183,6 +183,24 @@ class SuccessionEstate(Estate):
     def succeeded(self, *lifecycle, sequence=9, **kwargs):
         """alice hands the estate to heir at the boundary by a signed, continuous rotation."""
         return self.registry(sequence, owner="heir", lifecycle=[self.reanchor("alice", "heir"), *lifecycle], **kwargs)
+
+    def compromised_history(self):
+        """Direct-owner history alice signed before her key leaked: Mother heads at 100 and 130, a receipt at 135."""
+        a, b = self.object("alice", 10, ["alice/key"]), self.object("bob", 11, ["bob/key"])
+        direct = self.gate(self.registry(), succession=None)
+        first = self.commit(direct, self.proposal(direct, a, b, seconds=100))
+        head = self.commit(direct, self.proposal(direct, self.object("bob", 125, ["bob/second"], previous=b),
+                                                 seconds=130))
+        artifacts = self.projection_artifacts(direct)
+        receipt, manifest = self.receipt(direct, signer="alice", seconds=135)
+        direct.accept_projection(receipt["frame_hash"], manifest_bytes=octets(manifest),
+                                 artifact_resolver=lambda space, value: artifacts[(space, value)])
+        return direct, a, first, head, receipt
+
+    def recovery(self, revoked):
+        """The owner-compromise registry: alice's key revoked from `revoked`, heir the new out-of-band anchor."""
+        burned = self.tombstone("alice", revoked=revoked, issued=BOUNDARY, signer="heir")
+        return self.registry(9, owner="heir", lifecycle=[self.reanchor("alice", "heir", case="compromise"), burned])
 
 
 def unsigned(frame):
@@ -404,6 +422,83 @@ class OwnerSuccessionVectors(unittest.TestCase):
         self.assertEqual(gate.catalog, direct.catalog)
         fresh = estate.gate(document, anchor="heir", retained_registry=retained_from(gate.checkpoint()))
         self.assertEqual(fresh.restore(final["frame_hash"]), gate.checkpoint())
+
+    def test_compromise_cutoff_after_the_last_trusted_heads_restores_and_the_heir_advances_them(self):
+        estate = SuccessionEstate()
+        direct, a, _, head, trusted = estate.compromised_history()
+        # The successor still trusts everything alice signed through 135, so her cutoff is later than that.
+        document = estate.recovery(140)
+        gate = estate.gate(document, anchor="heir", retained_registry=direct.registry.retained_registry)
+        self.assertEqual(gate.restore(head["frame_hash"])["mother_head_frame_hash"], head["frame_hash"])
+        self.assertEqual(gate.catalog, direct.catalog)
+        with self.assertRaisesRegex(ValueError, "kid tombstoned"):
+            gate.accept_convergence(estate.convergence(gate, estate.proposal(gate, a, seconds=145),
+                                                       signer="alice")["frame_hash"])
+        # Below its cutoff the compromised key can still append until the heir advances (RAPP/1 section 14) ...
+        residual = estate.convergence(gate, estate.proposal(gate, a, seconds=139), signer="alice")
+        probe = estate.gate(document, anchor="heir", retained_registry=direct.registry.retained_registry)
+        probe.restore(head["frame_hash"])
+        self.assertEqual(probe.accept_convergence(residual["frame_hash"])["mother_head_frame_hash"],
+                         residual["frame_hash"])
+        advanced = estate.commit(gate, estate.proposal(gate, a, seconds=BOUNDARY), signer="heir")
+        # ... and then the advanced head is later than anything it may still sign.
+        with self.assertRaisesRegex(ValueError, "utc < head utc"):
+            gate.accept_convergence(estate.convergence(gate, estate.proposal(gate, a, seconds=139),
+                                                       signer="alice")["frame_hash"])
+        artifacts = estate.projection_artifacts(gate)
+        receipt, manifest = estate.receipt(gate, signer="heir", seconds=BOUNDARY + 10, previous=trusted)
+        result = gate.accept_projection(receipt["frame_hash"], manifest_bytes=octets(manifest),
+                                        artifact_resolver=lambda space, value: artifacts[(space, value)])
+        self.assertEqual((result["status"], result["mother_head_frame_hash"]), ("current", advanced["frame_hash"]))
+        fresh = estate.gate(document, anchor="heir", retained_registry=retained_from(gate.checkpoint()))
+        self.assertEqual(fresh.restore(advanced["frame_hash"]), gate.checkpoint())
+
+    def test_compromise_cutoff_at_or_before_an_accepted_frame_of_the_compromised_key_fails_closed(self):
+        estate = SuccessionEstate()
+        direct, a, first, head, trusted = estate.compromised_history()
+        retained = direct.registry.retained_registry
+        extension = estate.convergence(direct, estate.proposal(direct, a, seconds=200), signer="heir")
+        # Before alice's accepted Mother head at 130, and exactly at it (RAPP/1 section 10: utc >= revoked_utc).
+        for revoked in (120, 130):
+            with self.subTest(revoked=revoked):
+                document = estate.recovery(revoked)
+                gate = estate.gate(document, anchor="heir", retained_registry=retained)
+                with self.assertRaisesRegex(ValueError, "kid tombstoned"):
+                    gate.restore(head["frame_hash"])
+                for call in (gate.checkpoint, gate.artifact_manifest, lambda: gate.restore(first["frame_hash"]),
+                             lambda: gate.accept_convergence(extension["frame_hash"])):
+                    with self.assertRaisesRegex(ValueError, "failed history recovery"):
+                        call()
+                # No verifier that holds the tombstone can extend that head: its chain carries the refused frame.
+                with self.assertRaisesRegex(ValueError, "kid tombstoned"):
+                    estate.gate(document, anchor="heir", retained_registry=retained).accept_convergence(
+                        extension["frame_hash"])
+        # After the Mother head but before alice's accepted receipt: the Mother restores and advances, and that
+        # receipt stream can no longer be extended.
+        gate = estate.gate(estate.recovery(132), anchor="heir", retained_registry=retained)
+        gate.restore(head["frame_hash"])
+        estate.commit(gate, estate.proposal(gate, a, seconds=BOUNDARY), signer="heir")
+        artifacts = estate.projection_artifacts(gate)
+        stranded, manifest = estate.receipt(gate, signer="heir", seconds=BOUNDARY + 10, previous=trusted)
+        before = gate.checkpoint()
+        with self.assertRaisesRegex(ValueError, "kid tombstoned"):
+            gate.accept_projection(stranded["frame_hash"], manifest_bytes=octets(manifest),
+                                   artifact_resolver=lambda space, value: artifacts[(space, value)])
+        self.assertEqual(gate.checkpoint(), before)
+        # A member key is no different: a cutoff before bob's accepted frame at 125 voids the convergence that
+        # accepted it (its decisions no longer re-evaluate), and a cutoff after that frame keeps the history.
+        for revoked, reason in ((120, "decisions differ from authenticated evaluation"), (126, None)):
+            with self.subTest(member_revoked=revoked):
+                compromise = estate.reanchor("bob", "bob-next", case="compromise", seconds=140, signer="alice")
+                burned = estate.tombstone("bob", revoked=revoked, issued=140, signer="alice")
+                gate = estate.gate(estate.registry(9, lifecycle=[compromise, burned]), retained_registry=retained)
+                if reason is None:
+                    self.assertEqual(gate.restore(head["frame_hash"])["mother_head_frame_hash"], head["frame_hash"])
+                else:
+                    with self.assertRaisesRegex(ValueError, reason):
+                        gate.restore(head["frame_hash"])
+                    with self.assertRaisesRegex(ValueError, "failed history recovery"):
+                        gate.checkpoint()
 
     def test_missing_or_untrusted_issuance_is_refused_never_guessed(self):
         estate = SuccessionEstate()
@@ -642,9 +737,9 @@ class OwnerSuccessionVectors(unittest.TestCase):
         gate.restore(first["frame_hash"])
         artifacts = estate.projection_artifacts(gate)
         resolve = {"artifact_resolver": lambda space, value: artifacts[(space, value)]}
-        # alice's own head, alice's tenure, but the named registry records her retirement at the boundary.
+        # alice's own head, alice's tenure, but the named registry's current owner (heir) took over at the boundary.
         stale, manifest = estate.receipt(gate, signer="alice", seconds=BOUNDARY - 1)
-        with self.assertRaisesRegex(ValueError, "receipt predates the latest succession"):
+        with self.assertRaisesRegex(ValueError, "receipt predates the current estate owner's tenure"):
             gate.accept_projection(stale["frame_hash"], manifest_bytes=octets(manifest), **resolve)
         receipt, manifest = estate.receipt(gate, signer="heir", seconds=BOUNDARY)
         self.assertEqual(gate.accept_projection(receipt["frame_hash"], manifest_bytes=octets(manifest),
@@ -660,6 +755,21 @@ class OwnerSuccessionVectors(unittest.TestCase):
             with self.subTest(signer=signer), self.assertRaisesRegex(ValueError, "earlier than its convergence"):
                 converged.accept_projection(receipt["frame_hash"], manifest_bytes=octets(manifest),
                                             artifact_resolver=lambda space, value: artifacts[(space, value)])
+
+    def test_later_member_lifecycle_records_do_not_delay_the_current_owner_receipt(self):
+        estate = SuccessionEstate()
+        a = estate.object("alice", 10, ["alice/key"])
+        # Recorded after the owner boundary, but neither retires the owner who signs current receipts.
+        member_rotation = estate.reanchor("bob", "bob-next", seconds=BOUNDARY + 20, signer="heir", continuity="bob")
+        burned = estate.tombstone("carol", revoked=40, issued=BOUNDARY + 30, signer="heir")
+        gate = estate.gate(estate.succeeded(member_rotation, burned), retained_registry=estate.retained())
+        self.assertEqual(gate.registry.epoch, stamp(BOUNDARY))
+        estate.commit(gate, estate.proposal(gate, a, seconds=BOUNDARY + 5), signer="heir")
+        artifacts = estate.projection_artifacts(gate)
+        receipt, manifest = estate.receipt(gate, signer="heir", seconds=BOUNDARY + 10)
+        self.assertEqual(gate.accept_projection(receipt["frame_hash"], manifest_bytes=octets(manifest),
+                                                artifact_resolver=lambda space, value: artifacts[(space, value)]
+                                                )["status"], "current")
 
     def test_compromise_and_its_tombstone_share_one_observed_append(self):
         estate = SuccessionEstate()

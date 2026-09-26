@@ -123,7 +123,7 @@
     },
     {
       "path": "vendor/hive/reference/hive_acceptance.py",
-      "sha256": "4ef87e44e6a176d7148d5e8b3c6ca3183539687eec8d3be5d227f9bde272d6fe"
+      "sha256": "e8488e2f8c9b05ace7543a0c598d7be94dbd140d46defe49fc9ab83778598c93"
     },
     {
       "path": "vendor/hive/reference/rapp.py",

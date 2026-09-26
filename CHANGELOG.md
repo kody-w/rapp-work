@@ -17,9 +17,12 @@ Proposal 0006 (gap G6), intended for `1.1.0`; see
   succession: retained registry state (owner lineage and lifecycle entries,
   carried in `checkpoint()`) is required for a predecessor anchor or any
   persisted floor, so no later registry can undo a succession or revocation;
-  causal bounds stop back-dated owner acts over later state; and a compromise
-  re-anchor must share one observed append with its tombstone. Added check H21
-  (pinned reference parity) and H22 (30 succession vectors).
+  causal bounds stop back-dated owner acts over later state; a current receipt
+  is bounded by the named registry's current-owner tenure; and a compromise
+  re-anchor must share one observed append with its tombstone. The proposed
+  text requires a compromise cutoff later than every accepted frame of that
+  key still trusted; an earlier cutoff fails closed, and the vectors show it.
+  Added check H21 (pinned reference parity) and H22 (34 succession vectors).
 - Added the read-only `rapp_work.registry` submodule: registry, owner
   succession, compromise re-anchor, and lineage verification through the
   pinned reference, with a `retained` input for the caller's last verified

@@ -331,7 +331,8 @@ def verify_registry(
     )
     try:
         reference = _REG.Registry(value.get(entries_member))
-    except ValueError as error:
+    except (ValueError, TypeError, KeyError) as error:
+        # The pinned reference raises TypeError for an unhashable entry `type`; refuse, never crash.
         raise Refusal(
             "REFUSE_REGISTRY_ENTRY",
             "RAPP/1 section 13.3 entry refused",

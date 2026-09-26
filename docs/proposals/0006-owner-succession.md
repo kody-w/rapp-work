@@ -3,9 +3,9 @@
 ## Status
 
 Draft, not accepted. Branch `experimental/gap-g6-owner-succession`, revised
-after independent review round 1. The owner decides what moves. Intended
-release: `rapp-work` `1.1.0` (additive; the package version and `SDK_VERSION`
-are unchanged on this branch).
+after independent review rounds 1 and 2 (see Review disposition). The owner
+decides what moves. Intended release: `rapp-work` `1.1.0` (additive; the
+package version and `SDK_VERSION` are unchanged on this branch).
 
 ## Gap
 
@@ -18,7 +18,7 @@ no owner and are out of scope. G6 blocks the Private Hive part.
 ## Home specification and section
 
 - `rapp-hive/1` (`protocols/rapp-hive/1/SPEC.md`) section 8.1 items 1 and 2
-  and a new paragraph after item 5, a new paragraph in section 9.1, and
+  and two new paragraphs after item 5, a new paragraph in section 9.1, and
   section 14.2. That file is pinned by the frozen signed `registry.json`, so
   its text is proposed here only.
 - `rapp-work-sdk/1` (`protocols/rapp-work-sdk/1/SPEC.md`) a new section 5.1
@@ -188,12 +188,16 @@ no owner and are out of scope. G6 blocks the Private Hive part.
    than the Mother head it extends and not earlier than any candidate it lists
    (by summary and by authenticated bytes); that a reconciliation not be
    earlier than the Mother head it resolves; and that a current receipt not be
-   earlier than its convergence or than the latest `re-anchor` `utc` or trusted
-   tombstone issuance in the registry it names. With those bounds, and with
-   each key's tenure half-open, a retired, superseded, or compromised key can
-   only sign acts over state that existed inside its own tenure; the successor
-   closes even that window by advancing the Mother stream and every receipt
-   stream past the boundary (Migration).
+   earlier than its convergence and be dated inside the tenure of the current
+   estate owner of the registry it names, so only that owner attests currency
+   under it. With those bounds, and with each key's tenure half-open, a
+   retired, superseded, or compromised key can only sign acts over state that
+   existed inside its own tenure; the successor closes even that window by
+   advancing the Mother stream and every receipt stream past the boundary
+   (Migration). Later member re-anchors and tombstone issuance times do not
+   bound receipts: at or after the current owner's tenure start only that
+   owner, whose key must be live, can sign a current receipt, so a later bound
+   would only delay the same key and would protect no verifier.
 9. **Same-append provenance: enforce where observable, fail closed across
    gaps.** RAPP/1 section 6.3 requires a compromise re-anchor's tombstone "in
    the same append", which one snapshot cannot show. Given retained state, a
@@ -223,6 +227,34 @@ no owner and are out of scope. G6 blocks the Private Hive part.
     `verify_source_estate` and `HiveVector.from_verified_bundle` are unchanged:
     the first verifies this repository's frozen evidence, which has no
     succession; the second consumes legacy bundles, which cannot contain one.
+12. **A compromise cutoff marks where trusted history ends.** A tombstone
+    refuses every signature by its key dated at or after `revoked_utc`,
+    including frames already accepted: RAPP/1 section 7.5 step 6 is the one
+    check that may flip pass to fail. A cutoff at or before an accepted Mother
+    frame of a compromised owner key therefore makes that frame, and every
+    Mother head after it, unrestorable for every verifier that holds the
+    tombstone: `restore()` refuses and the gate latches, and no successor can
+    extend that head, because its chain carries the refused frame. A receipt
+    stream through a refused receipt can likewise no longer be extended. A
+    member key is no different: a cutoff before an accepted member frame voids
+    the convergence that accepted it, whose decisions no longer re-evaluate
+    (this already holds for a direct-owner tombstone on `main`). The proposed
+    text therefore requires every compromise cutoff to be later than every
+    accepted frame, receipt, and signed egg of the compromised key that the
+    owner still trusts. Under the causal bounds every frame reachable from an
+    accepted Mother head is no later than that head, so for an owner key the
+    trusted Mother and receipt heads are what the cutoff must clear, and for a
+    member key its accepted frames; a signed egg carries its own
+    `created_utc`. History the successor does not trust has one remedy here:
+    RAPP/1 section 14's re-genesis, which for a Hive means a new Hive, since
+    `rapp-hive/1` registers its declaration as the Mother genesis and defines
+    no Mother re-genesis. The reference does let a fresh verifier restore the
+    last trusted Mother frame and accept a successor-signed convergence at the
+    next `seq` (review round 2). That is a fork of the Mother stream: RAPP/1
+    section 7.6 refuses it for every consumer that persisted the later head,
+    and only a registry-published re-genesis resets a persisted head. This
+    proposal therefore neither specifies nor claims that recovery (open
+    question 14).
 
 ## Proposed change
 
@@ -280,11 +312,31 @@ with:
 > after the boundary; RAPP/1 section 7.5 step 4 then refuses any earlier-dated
 > successor on those streams.
 
+**Section 8.1, second new paragraph after item 5.** Insert:
+
+> A tombstone refuses its key at and after `revoked_utc`, including frames
+> already accepted (RAPP/1 sections 7.5 step 6 and 10). The `revoked_utc` of
+> a compromise tombstone MUST therefore be later than the time of every
+> accepted frame, receipt, and signed egg of the compromised key that the
+> owner still trusts. For an estate owner's `compromise` re-anchor this
+> includes, when that key signed them, the Mother head and every
+> receipt-stream head the successor will extend; for a member key, every
+> frame of that member that a convergence accepted. A cutoff at or before
+> such a frame makes that frame unverifiable for every verifier that holds
+> the tombstone: restoring a Mother head whose history contains or accepted
+> it fails closed, so no owner can extend that head, and a receipt stream
+> through such a receipt can no longer be extended. This profile defines no
+> in-place repair of that history. It is recovered only by a new Hive, a new
+> declaration and `hive_rappid` at a newly registered genesis, because the
+> Mother genesis of this profile is its declaration and this profile defines
+> no Mother re-genesis (RAPP/1 sections 12.1 and 14).
+
 **Section 9.1, new paragraph after the numbered list.** Insert:
 
 > Under owner succession a `current` receipt is not earlier than the
-> convergence it names, nor than the latest `re-anchor` `utc` or trusted
-> tombstone issuance time in the registry whose `registry_seq` it names.
+> convergence it names, and it is dated inside the tenure of the current
+> estate owner of the registry whose `registry_seq` it names, so only that
+> owner attests currency under that registry.
 
 **Section 14.2, third paragraph.** Replace:
 
@@ -332,8 +384,12 @@ with:
 >   only in the registry one sequence later and only together with a new
 >   tombstone for its `old_rappid` (RAPP/1 section 6.3); a first
 >   verification, which no retained state precedes, relies on the trusted
->   issuance context for that provenance; and
-> - the causal bounds of sections 8.1 and 9.1 hold.
+>   issuance context for that provenance;
+> - the causal bounds of sections 8.1 and 9.1 hold; and
+> - a compromise cutoff at or before an accepted frame of the compromised key
+>   fails closed (section 8.1): `restore()` refuses that Mother head and the
+>   gate stays failed, and a receipt stream through such a receipt is not
+>   extended.
 >
 > A production adapter must supply fresh registry retrieval, persistent
 > high-water marks with their retained registry state, append provenance for a
@@ -421,17 +477,19 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   are as on `main`; every new check is guarded by `succession`; and the
   default no longer needs `rapp_registry.py` importable (vector
   `test_default_path_runs_without_the_registry_reference`). The existing
-  H1–H20, including all 64 authenticated vectors, pass unmodified. New
+  H1–H20, including the 64 vectors of `authenticated_conformance.py` (56
+  `AuthenticatedVectors` and 8 `ScalarParityVectors`), pass unmodified. New
   keyword arguments default to `None`; `owner_at()`, `anchor`,
   `owner_lineage`, `lifecycle`, `retained_registry`, `epoch` (succession
-  only), and `succession` are additive attributes.
+  only: the current owner's tenure start, or `None` for a one-owner lineage),
+  and `succession` are additive attributes.
 - **Under succession:** `checkpoint()` (and the `accept_convergence`,
   `restore`, and `accept_projection` results built from it) gains
   `owner_lineage` and `registry_lifecycle`. This is an in-process Python value
   of the reference gate, not a versioned wire record; the default mode's value
-  is unchanged. A differential run of the 56 direct-owner authenticated test
-  methods with succession forced on (same single owner) gives identical
-  results except one refusal whose message wording differs.
+  is unchanged. A differential run of the 56 `AuthenticatedVectors` methods
+  with succession forced on (same single owner) gives identical results
+  except one refusal whose message wording differs.
 - **New token `rapp-work-parent-registry-pin/1`:** a new closed record
   (`schema`, `protocol`, `repository`, `commit`, `reference_path`,
   `reference_sha256`) rather than widening `rapp-work-parent-pin/1` (Art. 2).
@@ -456,7 +514,7 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
 - **Downstream pins:** a consumer that pins `hive_acceptance.py` or the
   `rapp-work-sdk/1` SPEC by SHA-256 at `main` keeps working at that commit; if
   it adopts this branch it must re-pin both (`hive_acceptance.py`
-  `88184a7e…` → `4ef87e44…`; SDK SPEC `cf64a90f…` → `19802755…`). The
+  `88184a7e…` → `e8488e2f…`; SDK SPEC `cf64a90f…` → `19802755…`). The
   five-file default deployment of context item 5 keeps working without
   `rapp_registry.py`. See Owner actions for the estate-lead items.
 - **Python:** the 3.10 floor and 3.13 are verified. `cryptography` stays the
@@ -489,12 +547,30 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   mean a retired, superseded, or compromised owner key can only sign owner acts
   over state that existed inside its own tenure: it cannot converge a later
   frame (even behind a false candidate summary), resolve a conflict recorded
-  by a later Mother head, attest a later convergence, attest any registry that
-  records its own retirement, or append at the instant of the head it extends
-  (review experiments E1, E2 and the compromise variant, now vectors). Inside
-  its tenure it can still act until the successor advances the Mother stream
-  and every receipt stream past the boundary (vector: the residual, then
-  refused after the heir's advancing convergence).
+  by a later Mother head, attest a later convergence, attest currency under a
+  registry whose current owner is another key (which includes every registry
+  that records its own retirement), or append at the instant of the head it
+  extends (review experiments E1, E2 and the compromise variant, now vectors).
+  Inside its tenure, and under compromise below its cutoff, it can still act
+  until the successor advances the Mother stream and every receipt stream
+  past the boundary (vectors: the residual, then refused after the heir's
+  advancing convergence, for rotation and for compromise).
+- **Compromise cutoff (RAPP/1 sections 7.5 step 6, 7.6, and 14).** A tombstone
+  also refuses frames that were already accepted, so its cutoff decides which
+  history survives. A cutoff later than every trusted Mother head and receipt
+  head keeps that history restorable, and the successor extends it (vector).
+  A cutoff at or before an accepted frame of the compromised key fails closed
+  for every verifier that holds the tombstone. If that frame is one of the
+  owner's Mother frames, or a member frame that a convergence accepted, the
+  Mother history is unrestorable: `restore()` refuses, the gate latches, and
+  no successor can extend that head. If it is an accepted receipt, its
+  receipt stream is stranded: no later receipt can extend it (vectors; the
+  member case already holds for direct-owner tombstones on `main`).
+  Nothing untrusted is accepted. The one remedy specified is a new Hive. The
+  reference would let a fresh verifier restore the last trusted Mother frame
+  and accept a successor-signed convergence competing at the next `seq`, but
+  a consumer that persisted the later head refuses that as a reorg (RAPP/1
+  section 7.6), so it is not claimed as a recovery (open question 14).
 - **Residual risks that remain (documented, not claimed closed).** (1) A
   predecessor that is also a declared member can still sign member frames
   dated inside its tenure; they reach the catalog only if an owner in tenure
@@ -516,8 +592,9 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
 - **Denial of service:** lineage walks are bounded by the number of re-anchor
   records; registry documents stay within the RAPP/1 one-MiB I-JSON bound;
   retained-state arrays are capped at 65536 items; an SDK lineage is capped at
-  4096 snapshots. The receipt bound makes a future-dated lifecycle record block
-  current receipts until its time (fail closed; open question 4).
+  4096 snapshots. A future-dated owner re-anchor blocks current receipts until
+  its time (fail closed; open question 4); member re-anchors and tombstone
+  issuance times never delay a receipt.
 - **Loading the pinned reference:** the SDK reads the bytes once, checks their
   SHA-256 against the pin, and executes exactly those bytes with their single
   `import rapp` bound to the already verified parent module, as
@@ -538,8 +615,9 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   `RegistryAuthority(..., succession="rapp1-13.2", tombstone_issued_at=...,
   retained_registry=state)` and persist `checkpoint()` from then on; pass its
   `RETAINED_REGISTRY_KEYS` members back each time. Existing history that meets
-  the causal bounds (all 56 direct-owner test methods do) restores unchanged
-  across the boundary; history that violates them is refused, fail closed.
+  the causal bounds (every history in the 56 `AuthenticatedVectors` methods
+  does) restores unchanged across the boundary; history that violates them is
+  refused, fail closed.
 - **Planned rotation (owner process, outside the SDK):** register the
   successor `spki`; append `re-anchor {case:"rotation"}` signed by the outgoing
   owner (`sig` and `old_key_sig`); name the successor in the single
@@ -548,14 +626,33 @@ Section 12, insert before its existing paragraph, which stays byte-identical:
   appends a Mother convergence (re-offering a settled frame is enough) and a
   receipt on every receipt stream, at or after the boundary. Consumers keep
   their original anchor and their retained state.
-- **Owner compromise:** append `re-anchor {case:"compromise"}` and a tombstone
-  with the compromise cutoff in one registry revision (one `registry_seq`
-  step), redistribute the new anchor out of band, and have the successor
-  advance the same heads at or after the re-anchor `utc`. Consumers re-anchor
-  to the new owner and keep their retained state; one that skipped that
-  revision verifies each intermediate registry in order.
+- **Owner compromise:** first choose the cutoff. The tombstone's
+  `revoked_utc` must be later than every Mother frame, receipt, and signed egg
+  of the compromised key that you still trust, in particular the Mother head
+  and every receipt-stream head the successor will extend, and it should be
+  as close after them as you can place it, because below the cutoff the
+  compromised key stays valid until the successor advances past it (RAPP/1
+  section 14). Then append `re-anchor {case:"compromise"}` and that tombstone
+  in one registry revision (one `registry_seq` step), redistribute the new
+  anchor out of band, and have the successor advance the Mother head and
+  every receipt head at or after the re-anchor `utc`. Consumers re-anchor to
+  the new owner and keep their retained state; one that skipped that revision
+  verifies each intermediate registry in order.
+- **Owner compromise over history you do not trust:** if the compromised key
+  signed an accepted Mother frame or receipt that you do not trust, no cutoff
+  keeps the history after it. A cutoff at or before that frame makes the
+  Mother head (or that receipt stream) unrestorable for every consumer that
+  holds the tombstone: `restore()` refuses and latches, which fails closed.
+  Start a new Hive (a new declaration and `hive_rappid` at a newly registered
+  genesis) and have members re-publish what they still trust there; frames
+  before the untrusted one keep verifying as history. Do not fork the old
+  Mother stream from its last trusted frame: consumers that persisted the
+  later head refuse it (RAPP/1 section 7.6; open question 14).
 - **Member rotation or compromise:** the same registry steps, signed by the
-  owner in tenure; the same-append rule applies to a member compromise.
+  owner in tenure; the same-append rule applies to a member compromise, and
+  its cutoff must be later than every frame of that member that a
+  convergence accepted and you still trust. An earlier cutoff voids the
+  convergence that accepted the frame, with the same consequence.
 - **This repository's own estate:** `registry.json` and root `SPEC.md` stay
   frozen. Adopting succession for it is the estate owner's signing decision.
 
@@ -574,7 +671,7 @@ All identities are real Ed25519 keys from published fixture seeds.
 
 **Hive (`python3 protocols/rapp-hive/1/reference/hive_conformance.py`, 22
 checks):** H21 requires the reference's `rapp.py` and `rapp_registry.py` to
-equal their pins; H22 runs `succession_conformance.py` (31 vectors):
+equal their pins; H22 runs `succession_conformance.py` (34 vectors):
 
 | Vector | Result |
 |---|---|
@@ -597,12 +694,17 @@ equal their pins; H22 runs `succession_conformance.py` (31 vectors):
 | anchor outside the lineage (outsider, member); anchor SPKI not bound; anchor key not registered | refused |
 | owner compromise with tombstone and resolver: old anchor; without tombstone; new anchor | refused; refused; accepted |
 | under compromise: history before the cutoff; object and convergence by A after it; B before the re-anchor; B after it; fresh `restore()` | accepted; refused; refused; accepted; identical |
+| compromise cutoff (140) later than A's last trusted Mother head (130) and receipt (135): restore; A after the cutoff; A below the cutoff before B advances (the residual); B advances the Mother head; A below the cutoff after that; B's receipt extending A's; fresh `restore()` | accepted; refused (tombstoned); accepted; accepted; refused (time order); current; identical |
+| compromise cutoff before (120) or exactly at (130) A's accepted Mother head: restore of that head; then checkpoint, manifest, restore of an earlier head, convergence; a fresh verifier extending that head | refused (tombstoned); refused ×4 (latched); refused (tombstoned) |
+| compromise cutoff (132) after the Mother head but before A's accepted receipt: B advances the Mother head; B's receipt extending that receipt | accepted; refused (tombstoned), state unchanged |
+| member compromise cutoff before (120) or after (126) a member frame that a convergence accepted (125) | restore refused (decisions differ) and latched; restores |
 | back-dated convergence by retired A over a post-boundary frame (E1): live gate; fresh `restore()`; behind a false candidate summary | refused ×3; state unchanged |
 | back-dated convergence by A over pre-boundary state (the residual); after B's convergence at the boundary, A dated before it, A at it | accepted; refused (time order), refused (superseded) |
 | compromised A back-dated below its cutoff over a frame from after the cutoff | refused |
 | convergence at the instant of its base head: direct-owner default; under succession; B one instant later | accepted; refused; accepted |
 | reconciliation by retired A dated before the Mother head it resolves; by B after it | quarantined, conflict kept; accepted, parents superseded |
 | current receipt by A inside A's tenure, for A's head, naming the registry that retires A; by B at the boundary | refused; current |
+| member re-anchor and tombstone issuance recorded after the owner boundary; B's receipt dated before both | current (the bound is the current owner's tenure start) |
 | receipt by A or by B dated before B's convergence it attests (E2) | refused ×2 |
 | new compromise record across a skipped sequence; one sequence later with its tombstone; reusing a tombstone from an earlier append | refused; accepted; refused |
 | succession registry with a wrong profile spec hash; with a deprecated Hive kind | refused ×2 |
@@ -618,8 +720,8 @@ equal their pins; H22 runs `succession_conformance.py` (31 vectors):
 | predecessor SPKI deprecated after rotation | history still restores |
 | rollback and same-sequence fork through retained state; identical same-sequence; tampered sequence | refused; accepted; refused |
 
-**SDK (`python3 -m pytest -q tests/test_registry_succession.py`, 22 test
-functions, 32 tests):** the pinned-reference hash and `rapp` binding;
+**SDK (`python3 -m pytest -q tests/test_registry_succession.py`, 23 test
+functions, 34 tests):** the pinned-reference hash and `rapp` binding;
 tampered reference bytes and a wrong pin refused before use; rotation from
 the original anchor with retained state (as a `VerifiedRegistry` or its
 `to_dict()` record) and from the current anchor, and without retained state
@@ -629,37 +731,40 @@ records not signed by the outgoing owner; empty and backwards tenure; owner
 compromise (old anchor, missing resolver, missing entry, missing tombstone
 refused; new anchor accepted; A acceptable before the cutoff and refused
 after); member compromise and stale-owner tombstones; ambiguous predecessor;
-renamed-alias revival; anchor lineage, SPKI binding, and an unregistered
-anchor key; a live owner key; rollback and same-sequence fork through
-retained state; a non-record and 11 malformed retained records refused; a
-leaked retired anchor key's rollback registry (E7) refused for both retained
-forms, a moved boundary (E9) refused by `verify_registry` and
-`verify_registry_lineage`, and the same rollback accepted only by a consumer
-with no state; same-append (E8) refused across one step, accepted together,
-and refused across a skipped sequence; `upgrade` and `tag-migrate` owner
-transitions refused; a lineage across the boundary feeding `HiveVector`
-high-water; lineage gaps, dropped revocations, and rewritten owner history
-refused; a lineage continued under a new anchor after compromise; and
-performing rotation still refused (`execute("rotate-owner")` and the legacy
-`rotate-owner` command).
+an entry whose `type` is an array or an object refused as
+`REFUSE_REGISTRY_ENTRY`, not a raw `TypeError`; renamed-alias revival; anchor
+lineage, SPKI binding, and an unregistered anchor key; a live owner key;
+rollback and same-sequence fork through retained state; a non-record and 11
+malformed retained records refused; a leaked retired anchor key's rollback
+registry (E7) refused for both retained forms, a moved boundary (E9) refused
+by `verify_registry` and `verify_registry_lineage`, and the same rollback
+accepted only by a consumer with no state; same-append (E8) refused across
+one step, accepted together, and refused across a skipped sequence; `upgrade`
+and `tag-migrate` owner transitions refused; a lineage across the boundary
+feeding `HiveVector` high-water; lineage gaps, dropped revocations, and
+rewritten owner history refused; a lineage continued under a new anchor after
+compromise; and performing rotation still refused (`execute("rotate-owner")`
+and the legacy `rotate-owner` command).
 
-**Differential against the default suite.** The 56 direct-owner authenticated
-test methods (64 with subtests) were also run with succession forced on for
-the same single owner (a trivial issuance resolver and an HTTPS profile
-locator, which the pinned reference requires): 55 give identical results and
-one refusal differs only in its message. The causal bounds refuse none of that
-lawful history.
+**Differential against the default suite.** The 56 `AuthenticatedVectors`
+test methods of `authenticated_conformance.py` (the file's other 8 tests are
+the `ScalarParityVectors`) were also run with succession forced on for the
+same single owner (a trivial issuance resolver and an HTTPS profile locator,
+which the pinned reference requires): 55 give identical results and one
+refusal differs only in its message. The causal bounds refuse none of that
+lawful history. Rerun for this revision with the same result.
 
 **Controlled mutations.** Each mutation was applied to a scratch copy (the
 clone was never modified), the targeted suite run, and the copy discarded.
-The SDK suite ran against the copy's `src` (checked by printing the imported
-module path). All 45 turned the suite red:
+The SDK suite ran from inside the copy against the copy's `src` (checked by
+printing the imported module path). Round 3 reran the whole set against this
+revision; all 50 turned the suite red:
 
 | Mutation | Killed by |
 |---|---|
 | H-M1 Hive retirement by exact RAPPID, not SPKI tail | `test_renamed_alias_cannot_become_a_fresh_owner_or_revive_a_retired_key` |
 | H-M2 old anchor may walk through an owner compromise | `test_owner_compromise_recovers_only_through_a_new_anchor` |
-| H-M3 owner checks use the current owner, not the owner in tenure | 12 vectors, including the declaration, back-dating, receipt, egg, and compromise vectors |
+| H-M3 owner checks use the current owner, not the owner in tenure | 15 vectors, including the declaration, back-dating, receipt, egg, and compromise vectors |
 | H-M4 default authority skips `re-anchor` | `test_default_authority_still_fails_closed_on_reanchor` |
 | H-M5 succession mode without a resolver | `test_succession_mode_is_explicit_closed_and_needs_trusted_issuance` |
 | H-M6 anchor need not descend to the current owner | `test_anchor_must_be_in_the_owner_lineage_and_bind_its_key` |
@@ -672,7 +777,7 @@ module path). All 45 turned the suite red:
 | H-M11c convergence may share the instant of its base head | `test_convergence_is_strictly_later_than_the_head_it_extends` |
 | H-M12 receipt may predate its convergence | `test_current_receipt_cannot_predate_its_convergence_or_registry` |
 | H-M13 reconciliation may predate the Mother head it resolves | `test_backdated_reconciliation_cannot_resolve_a_later_mother_head` |
-| H-M14 current receipt may predate its registry's latest lifecycle record | `test_current_receipt_cannot_predate_its_convergence_or_registry` |
+| H-M14 current receipt may predate its registry's current-owner tenure | `test_current_receipt_cannot_predate_its_convergence_or_registry` |
 | H-M15 a retained re-anchor or tombstone may be dropped | `test_retained_registry_state_refuses_rollback_of_succession_and_revocation` |
 | H-M16 a predecessor anchor needs no retained state | `test_retained_registry_state_is_required_closed_and_checkpointed` |
 | H-M17 a bare floor accepted under succession | same test, and the rollback test |
@@ -682,8 +787,12 @@ module path). All 45 turned the suite red:
 | H-M21 succession index ignores the Hive profile spec hash | `test_succession_index_keeps_the_profile_pin_and_live_kinds` |
 | H-M22 succession index keeps deprecated kinds | same test |
 | H-M23 signed egg checked against the current owner | `test_signed_invite_egg_is_checked_against_the_owner_at_its_creation` |
-| H-M24 checkpoint omits the retained registry state | four vectors that restore from a persisted checkpoint |
+| H-M24 checkpoint omits the retained registry state | five vectors: four restore from a persisted checkpoint, one checks its members |
 | H-M25 retained registry state not shape-checked | `test_retained_registry_state_is_required_closed_and_checkpointed` |
+| H-M26 the receipt bound also waits for trusted tombstone issuance (the round-2 clause, now dropped) | `test_later_member_lifecycle_records_do_not_delay_the_current_owner_receipt` |
+| H-M27 the receipt bound is the latest re-anchor of any identity (the round-2 form) | same test |
+| H-M28 a failed restore does not latch the gate | `test_compromise_cutoff_at_or_before_an_accepted_frame_of_the_compromised_key_fails_closed` |
+| H-M29 under succession a tombstoned key still signs (supersession still refused) | that test, `test_compromise_cutoff_after_the_last_trusted_heads_restores_and_the_heir_advances_them`, and three earlier compromise and revocation vectors |
 | S-M1 SDK loads `rapp_registry.py` without its pinned hash | `test_tampered_registry_reference_or_pin_is_refused_before_use` |
 | S-M2 SDK retirement by exact RAPPID | `test_renamed_alias_cannot_revive_a_retired_key` |
 | S-M3 SDK old anchor may walk through a compromise | `test_owner_compromise_needs_a_new_anchor_and_trusted_issuance`, `test_lineage_continues_under_a_new_anchor_after_owner_compromise` |
@@ -701,10 +810,12 @@ module path). All 45 turned the suite red:
 | S-M15 SDK retained record not shape-checked | `test_malformed_retained_state_is_refused` |
 | S-M16 SDK registry rollback accepted | `test_registry_high_water_and_same_sequence_fork` |
 | S-M17 SDK anchor SPKI need not be the registered anchor key | `test_anchor_must_descend_and_bind_its_key` |
+| S-M18 SDK lets a raw `TypeError` or `KeyError` escape for a malformed entry | `test_malformed_registry_entry_is_a_refusal_not_a_raw_error` (both cases) |
 | P-M1 the Hive reference's `rapp_registry.py` altered | `tools/check.py` ("pinned rapp_registry.py copy differs") |
 
-Unchanged suites: H1–H20 (including the 64 authenticated vectors), the
-Federation conformance, the legacy skill suites, and every existing SDK test.
+Unchanged suites: H1–H20 (including the 64 vectors of
+`authenticated_conformance.py`), the Federation conformance, the legacy skill
+suites, and every existing SDK test.
 
 ## Reference implementation and gating
 
@@ -733,20 +844,38 @@ operation reaches it. Neither path signs or writes.
 ## Related proposals
 
 Sibling draft branches in `kody-w/rapp-work` touch some of the same files.
-Nothing here edits them. A trial `git merge-tree` of this branch with each
-sibling (against `main` at `29ead23`) reports:
+Nothing here edits them. For this revision each was fetched and read
+read-only (`git show origin/<branch>:<path>`) at the commit below; all are
+based on `main` at `29ead23`, as this branch is. A trial `git merge-tree` of
+this branch with each reports:
 
-| Branch (proposal) | Conflicting files | How to resolve |
-|---|---|---|
-| `experimental/gap-g1-roster-declaration` (0001) | `protocols/rapp-hive/1/reference/hive_acceptance.py`, its vendored skill copy and `rapp/agent.lock.json`, `hive_conformance.py`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | code overlap in `HiveAcceptance._authorized` and the constructor, and both branches add a check named H21 (see below) |
-| `experimental/gap-g2-move-action` (0002) | `protocols/index.json`, `src/rapp_work/data/profiles.json`, `protocols/README.md`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | recompute the `rapp-work-sdk/1` SPEC hash after both SPEC insertions; union the conformance test lists; keep both changelog entries; regenerate the inventory |
-| `experimental/gap-g3-agent-discovery` (0003) | `protocols/index.json`, `src/rapp_work/data/profiles.json`, `docs/API.md`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | as for G2; keep both `docs/API.md` sections |
-| `experimental/gap-g7-instruction-inventory` (0007) | `protocols/index.json`, `src/rapp_work/data/profiles.json`, `protocols/README.md`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | as for G2 |
-| `experimental/gap-g4-migration-successors` (0004), `experimental/gap-g11-workspace-index` (0011), `experimental/gap-g17-brainstem-sdk-agent` (0017) | `CHANGELOG.md`, `RELEASE-INVENTORY.json` | keep both entries; regenerate the inventory |
+| Branch (proposal) | Commit read | Conflicting files | How to resolve |
+|---|---|---|---|
+| `experimental/gap-g1-roster-declaration` (0001) | `1899e52` | `protocols/rapp-hive/1/reference/hive_acceptance.py`, its vendored skill copy and `rapp/agent.lock.json`, `hive_conformance.py`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | code overlap in `HiveAcceptance._authorized` and the constructor, and both branches add a check named H21 (see below) |
+| `experimental/gap-g2-move-action` (0002) | `8b3c361` | `protocols/index.json`, `src/rapp_work/data/profiles.json`, `protocols/README.md`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | recompute the `rapp-work-sdk/1` SPEC hash in both pin files after both SPEC insertions; union the conformance test lists; keep both changelog entries; regenerate the inventory |
+| `experimental/gap-g3-agent-discovery` (0003) | `be72a23` | `protocols/index.json`, `src/rapp_work/data/profiles.json`, `docs/API.md`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | as for G2; keep both `docs/API.md` sections |
+| `experimental/gap-g7-instruction-inventory` (0007) | `68b549c` | `protocols/rapp-work-sdk/1/SPEC.md`, `protocols/index.json`, `src/rapp_work/data/profiles.json`, `protocols/README.md`, `CHANGELOG.md`, `RELEASE-INVENTORY.json` | keep both section 12 paragraphs (below); otherwise as for G2 |
+| `experimental/gap-g4-migration-successors` (0004) | `be1772b` | `CHANGELOG.md`, `RELEASE-INVENTORY.json` | keep both entries; regenerate the inventory |
+| `experimental/gap-g11-workspace-index` (0011) | `e3909b3` | `CHANGELOG.md`, `RELEASE-INVENTORY.json` | as for G4 |
+| `experimental/gap-g17-brainstem-sdk-agent` (0017) | `c75b4d7` | `CHANGELOG.md`, `RELEASE-INVENTORY.json` | as for G4 |
 
-`protocols/rapp-work-sdk/1/SPEC.md` itself merges cleanly with G2, G3, and
-G7: this branch's section 12 change is now an insertion before the paragraph
-that G7 edits.
+**The SDK SPEC section 12 conflict with G7.** At `68b549c`, G7 inserts its
+own paragraph ("Unreviewed instruction-file changes in a Workspace or
+Organization ...") before the unchanged section 12 paragraph, at the same
+place as this branch's insertion, so `protocols/rapp-work-sdk/1/SPEC.md`
+conflicts there. Resolve it by keeping both paragraphs: G7's first, then this
+branch's ("In the list below, owner rotation means performing it ..."),
+directly above the list it qualifies; the existing paragraph stays
+byte-identical. Then recompute `spec_sha256` in `protocols/index.json` and
+`src/rapp_work/data/profiles.json`. G2 and G3 edit other SPEC sections and
+merge with this branch's SPEC text cleanly. G7's proposal still describes
+this branch as rewriting the section 12 paragraph; since round 2 it only
+inserts one, and the two insertions compose.
+
+**`main` has moved.** `main` is now `0da52a6` (the RAPP/1 network header:
+`README.md` and `RELEASE-INVENTORY.json`). A trial merge of this branch with
+it conflicts only in `RELEASE-INVENTORY.json`, which is regenerated with
+`python3 tools/release_inventory.py --write` after the merge.
 
 **G1 interaction.** G1 lets the owner sign later roster declarations and keeps
 the owner RAPPID immutable across them ("an owner change is succession (gap
@@ -758,12 +887,18 @@ later declaration whose owner is the owner in effect at its `utc`, a successor
 holds Mother authority but cannot re-declare the roster (design decision 10);
 and (3) G1 already makes later declarations strictly later than the Mother
 head, which matches this branch's rule for convergences under succession.
+G1 at `1899e52` agrees: its section 13.1 recommends G6 first, keeps this
+branch's `owner == owner_at(utc) == signer` check with its own invariants
+before it, and renumbers its own check from H21 to H23. It also notes that
+without succession a tombstoned owner key freezes the Mother stream; this
+branch's compromise re-anchor lets a successor continue it, within the limits
+of design decision 12. G1 moves the legacy skill lock to `3.2.1`; this branch
+keeps `3.2.0`, so a combined merge picks one version (open question 11).
 Recommended order: merge G6 first (the registry authority layer), then rebase
-G1 onto it: adopt `tenured` in its declaration check, renumber one of the two
-H21 checks, and regenerate the vendored copy, the lock, and the inventory;
-relax the owner invariant for succession in that rebase or a follow-up. The
-other siblings can merge in any order relative to G6, recomputing the SDK SPEC
-pins and the inventory after each.
+G1 onto it as G1 describes, regenerating the vendored copy, the lock, and the
+inventory. For the SDK SPEC, the siblings' own recommendations agree on G6,
+G3, G7, G2, G4, then G17, with G11 whenever it is accepted; recompute the SDK
+SPEC pins and the inventory after each merge.
 
 ## Open questions for the owner
 
@@ -784,10 +919,12 @@ pins and the inventory after each.
    after a routine rotation cannot be revoked for its own tenure without
    invalidating the whole registry. Should a later-issued tombstone be allowed
    to cut into a predecessor's tenure without voiding its continuity proof?
-4. **Receipt bound on the registry.** A current receipt must not predate the
-   latest `re-anchor` `utc` or trusted tombstone issuance in the registry it
-   names. A future-dated lifecycle record therefore blocks current receipts
-   until its time. Keep this fail-closed bound?
+4. **Receipt bound on the registry.** A current receipt must be dated inside
+   the tenure of the current estate owner of the registry it names, so only
+   that owner attests currency under it. A future-dated owner re-anchor
+   therefore blocks current receipts until its time; later member re-anchors
+   and tombstone issuance times do not (round 2 also bounded receipts by
+   those, which protected nothing). Keep this fail-closed bound?
 5. **Strict convergence order under succession.** A convergence must be
    strictly later than its base head (RAPP/1 section 7.5 step 4 allows equal
    `utc`; G1 uses the same strict rule for later declarations). Keep it?
@@ -810,11 +947,23 @@ pins and the inventory after each.
     to be signed by the outgoing, compromised key (section 6.3). Is that
     intended for root-key compromise?
 11. Bump the legacy skill lock `version` (`3.2.0`) because vendored bytes
-    changed?
+    changed? (G1 moves it to `3.2.1`; see Related proposals.)
 12. The `rapp-federation/1` reference also fails closed on succession
     (`RegistryAuthority` in `reference/rapp_federation.py`). Follow-up gap?
 13. Should the `verify` JSON operation later accept registry lineages? That
     needs a closed input extension and a data form of the issuance resolver.
+14. **Continuing a Hive past untrusted history.** When a compromised key
+    signed an accepted Mother frame or receipt that the successor does not
+    trust, this proposal specifies only a new Hive (section 8.1 text, design
+    decision 12). The reference would let a fresh verifier restore the last
+    trusted Mother frame and accept a successor-signed convergence competing
+    at the next `seq`; a consumer that persisted the later head refuses that
+    as a reorg (RAPP/1 section 7.6), and only a registry-published re-genesis
+    resets a persisted head. Should `rapp-hive/1` define a lawful continuation
+    under the same `hive_rappid`, for example a RAPP/1 section 12.1
+    re-genesis of the Mother stream (which this profile does not yet admit as
+    a Mother genesis) or a replacement receipt stream for a channel, or is a
+    new Hive the only remedy?
 
 ## Owner actions needed
 
@@ -827,8 +976,8 @@ pins and the inventory after each.
    Activation owner-blocked: the signed registry pins the SPEC hash; the owner
    must accept the text and re-sign.
 3. Decide the `1.1.0` release, the merge order with G1 (Related proposals),
-   and whether to raise open questions 1, 3, and 7–10 in `kody-w/rapp-1`
-   (draft below).
+   open question 14 (continuing a Hive past untrusted history), and whether
+   to raise open questions 1, 3, and 7–10 in `kody-w/rapp-1` (draft below).
 
 **Estate-lead actions (relayed; nothing here edits estate material).**
 
@@ -838,7 +987,7 @@ pins and the inventory after each.
    `rapp_profile.py`, and the `rapp-hive/1` `SPEC.md`, and imports
    `hive_acceptance`. It keeps working at `29ead23`, and with this branch's
    lazy import that five-file set also runs this branch's default gate. If the
-   kit adopts this branch it re-pins `hive_acceptance.py` (`4ef87e44…`) and the
+   kit adopts this branch it re-pins `hive_acceptance.py` (`e8488e2f…`) and the
    SDK SPEC (`19802755…`); it needs `rapp_registry.py` (`eec22844…`) only to
    enable succession.
 2. The G16 registry entry pins the `rapp-hive/1` spec hash (`79aeef7b…`).
@@ -872,10 +1021,72 @@ pins and the inventory after each.
 > signed by the compromised key. Is that intended when the anchor must be
 > redistributed anyway?
 
+## Review disposition
+
+**Round 1** (review of `1e98cb7`: 4 medium, 2 low), answered in `8e5e44e`:
+back-dated owner acts (causal bounds), a leaked retired anchor key (retained
+registry state required for a predecessor anchor or any floor), the Hive
+retained-lineage overclaim (lifecycle entry hashes retained), missing refusal
+vectors and surviving mutations, SDK same-append, and the eager
+`rapp_registry` import. All six were fixed, with vectors and mutations.
+
+**Round 2** (review of `8e5e44e`: 1 medium, 4 low), answered in this
+revision:
+
+1. *Medium: owner-compromise recovery worked only when no accepted frame was
+   dated at or after the cutoff.* Reproduced exactly: with direct-owner
+   convergences at 100 and 130, the recovery registry (compromise at 150,
+   alice tombstoned from 120, heir anchor, retained state) refuses
+   `restore(head)` with "kid tombstoned" and latches. This is RAPP/1 section
+   7.5 step 6 working as specified, so the fix is in the text: proposed
+   section 8.1 now requires every compromise cutoff to be later than every
+   accepted frame, receipt, and signed egg of the key that the owner still
+   trusts, states that an earlier cutoff makes that history unrestorable for
+   every verifier holding the tombstone (fails closed, latches), and names a
+   new Hive as the remedy. The fork from the last trusted frame that the
+   review found is not claimed: a consumer that persisted the later head
+   refuses it (RAPP/1 section 7.6), so it is open question 14. The same trap
+   exists for a member key's cutoff before an accepted member frame (already
+   true for direct-owner tombstones on `main`), so the text covers members
+   too. Design decision 12, section 14.2, the security analysis, Migration
+   ("Owner compromise", a new "over history you do not trust" entry, and the
+   member entry), and the conformance rows are updated. New vectors:
+   `test_compromise_cutoff_after_the_last_trusted_heads_restores_and_the_heir_advances_them`
+   (restores, the heir advances the Mother and receipt heads, and the
+   compromised key's residual below the cutoff closes once it does) and
+   `test_compromise_cutoff_at_or_before_an_accepted_frame_of_the_compromised_key_fails_closed`
+   (cutoffs before and exactly at the head refuse and latch; a stranded
+   receipt stream; the member case). Mutations H-M28 and H-M29 prove them.
+2. *Low: the tombstone issuance clause of the receipt bound was untested.* It
+   protected nothing and is dropped from the code and the section 9.1 text.
+   At or after the current owner's tenure start the only lawful signer of a
+   current receipt is that owner, whose key the authority requires to be
+   live, so waiting for a later lifecycle time only delays that same key. The
+   same reasoning covers later member re-anchors, so the bound is now exactly
+   the current estate owner's tenure in the named registry (`epoch`). The
+   refusal that matters is unchanged and still proven (H-M14). The new vector
+   `test_later_member_lifecycle_records_do_not_delay_the_current_owner_receipt`
+   kills both the dropped clause (H-M26) and the round-2 any-re-anchor form
+   (H-M27).
+3. *Low: the SDK raised a raw `TypeError` for a malformed entry.* Fixed:
+   `verify_registry` now catches `TypeError` and `KeyError` as the Hive path
+   does and refuses with `REFUSE_REGISTRY_ENTRY`; vector
+   `test_malformed_registry_entry_is_a_refusal_not_a_raw_error` (an array
+   `type` and an object `type`); mutation S-M18.
+4. *Low: wrong counts.* Corrected and recounted: H22 runs 34 vectors (31 at
+   round 2); `authenticated_conformance.py` has 64 tests, 56
+   `AuthenticatedVectors` and 8 `ScalarParityVectors`, and the differential
+   covers the 56; the SDK file has 23 test functions and 34 tests; 50
+   mutations. `CHANGELOG.md` is corrected too.
+5. *Low: the Related proposals section was out of date for G7.* Every
+   sibling was re-read at a recorded commit and the trial merges rerun; the
+   G7 section 12 conflict is listed with its resolution (keep both
+   paragraphs), and the move of `main` to `0da52a6` is noted.
+
 ## References
 
 - RAPP/1 `SPEC.md` (pinned, `vendor/rapp-1/SPEC.md`): sections 6.2, 6.3, 7.4,
-  7.5, 10, 12.1, 13.1, 13.2, 13.3, 14.
+  7.5, 7.6, 10, 12.1, 13.1, 13.2, 13.3, 14.
 - RAPP/1 `CONSTITUTION.md` Articles 2, 4, 5, 6, 8, 10, 18.
 - `kody-w/rapp-1@591e014`: `rapp_registry.py`, `test_registry_lifecycle.py`,
   `EXTENDING.md` ("The rules that keep the wire shared", "The reference will
@@ -888,4 +1099,5 @@ pins and the inventory after each.
 - Gap G6: `kody-w/rapp-work` branch `experimental/rapp-work-constitution`,
   `organism/gaps/G06.md`; related G1 (`organism/gaps/G01.md`) and G16
   (`organism/gaps/G16.md`).
-- Proposal 0001 (`experimental/gap-g1-roster-declaration`).
+- Sibling proposals read at the commits in Related proposals: 0001, 0002,
+  0003, 0004, 0007, 0011, and 0017.

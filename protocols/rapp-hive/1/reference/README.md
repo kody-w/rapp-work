@@ -33,10 +33,17 @@ artifact's `utc`, matching retired keys by SPKI tail.
 - Causal bounds stop a retired key from back-dating an owner act over later
   state: a convergence is not earlier than any candidate it lists, a
   reconciliation is not earlier than the Mother head it resolves, and a
-  receipt is not earlier than its convergence or than the latest re-anchor or
-  tombstone issuance in the registry it names. After a succession, the
-  successor should promptly advance the Mother stream and every receipt
-  stream past the boundary.
+  receipt is not earlier than its convergence and is dated inside the tenure
+  of the current owner of the registry it names (`epoch`). After a
+  succession, the successor should promptly advance the Mother stream and
+  every receipt stream past the boundary.
+- A tombstone also refuses frames that were already accepted. Choose a
+  compromise cutoff later than every accepted frame, receipt, and signed egg
+  of that key that you still trust, in particular the Mother head and every
+  receipt-stream head the successor will extend. An earlier cutoff fails
+  closed: `restore()` refuses that Mother head and latches, and a receipt
+  stream through a refused receipt cannot be extended. Such history is
+  recovered by a new Hive, not by forking the Mother stream.
 - Under succession, `checkpoint()` also carries `owner_lineage` and
   `registry_lifecycle`. Pass the registry members of the last persisted
   checkpoint back as `retained_registry` (`RETAINED_REGISTRY_KEYS`); it

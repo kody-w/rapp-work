@@ -102,8 +102,8 @@ class RegistryAuthority:
             ok, why = R.verify_detached_jws(unsigned, document.get("sig"), owner_spki_der, owner_rappid)
             require(ok, f"registry: signature refused: {why}")
         else:
-            reference, lineage, issued = self._verify_succession(document, owner_rappid, owner_spki_der,
-                                                                 minimum_registry_seq, tombstone_issued_at)
+            reference, lineage = self._verify_succession(document, owner_rappid, owner_spki_der,
+                                                         minimum_registry_seq, tombstone_issued_at)
         self.commitment = particle_hash(unsigned)
         if self.sequence == minimum_registry_seq:
             require(minimum_registry_seq == 0 or same_sequence_hash is not None,
@@ -122,7 +122,7 @@ class RegistryAuthority:
         entries = document.get("entries")
         require(isinstance(entries, list), "registry.entries: expected array")
         if succession is not None:
-            self._index_succession(reference, lineage, issued, retained)
+            self._index_succession(reference, lineage, retained)
             return
         owners, profiles = [], []
         for entry in entries:
@@ -211,14 +211,12 @@ class RegistryAuthority:
                 "compromise recovery requires a new out-of-band anchor")
         require(reference.spki_der(anchor) == anchor_spki_der,
                 "registry: out-of-band anchor SPKI is not the registered anchor key")
-        issued = {}
 
         def issued_at(entry_hash):
             try:
-                issued[entry_hash] = tombstone_issued_at(entry_hash)
+                return tombstone_issued_at(entry_hash)
             except (LookupError, OSError, TypeError, ValueError) as error:
                 raise ValueError(f"trusted issuance resolver refused: {error}") from error
-            return issued[entry_hash]
 
         status, loaded, why = REG.load_document(
             document, entries_member="entries", trust_anchor=reference.estate_owner,
@@ -227,9 +225,9 @@ class RegistryAuthority:
         require(status == "verified" and loaded is not None, f"registry: section-13 refusal: {why}")
         ok, why = loaded._signer_acceptable(loaded.estate_owner, LIVE_UNTIL, match_key_aliases=True)
         require(ok, f"registry: current estate owner key is not live: {why}")
-        return loaded, tuple(reversed(lineage)), issued
+        return loaded, tuple(reversed(lineage))
 
-    def _index_succession(self, reference, lineage, issued, retained):
+    def _index_succession(self, reference, lineage, retained):
         entries = reference.entries
         lifecycle = {particle_hash(entry) for entry in entries if entry["type"] in LIFECYCLE_TYPES}
         if retained is None:
@@ -254,8 +252,9 @@ class RegistryAuthority:
                     require(any(entry["type"] == "tombstone" and entry["rappid"] == record["old_rappid"]
                                 and particle_hash(entry) in appended for entry in entries),
                             "registry: a compromise re-anchor and its tombstone must be registered in the same append")
-        times = [record["utc"] for record in reference.reanchors] + list(issued.values())
-        self.epoch = max(times) if times else None
+        # The current owner's tenure start: a current receipt naming this registry is signed inside it.
+        self.epoch = next((record["utc"] for record in reference.reanchors
+                           if record["new_rappid"] == reference.estate_owner), None)
         self._lifecycle = tuple(sorted(lifecycle))
         self.owner_lineage = lineage
         self._reference = reference
@@ -838,9 +837,9 @@ class HiveAcceptance:
             require(payload["status"] == "current", "projection: receipt is not current")
             require(payload["registry_seq"] == self.registry.sequence, "projection: authenticated registry sequence mismatch")
             if self.registry.succession is not None and self.registry.epoch is not None:
-                # A current receipt names its registry; it cannot predate that registry's latest lifecycle record.
+                # A current receipt names its registry; only that registry's current owner may sign it.
                 require(receipt["utc"] >= self.registry.epoch,
-                        "projection: receipt predates the latest succession or revocation in its registry")
+                        "projection: receipt predates the current estate owner's tenure in its registry")
             require(payload["frame_head"] == self._head["frame_hash"], "projection: actual Mother Hive head mismatch")
             require(payload["convergence_payload_hash"] == self._head["payload_hash"],
                     "projection: current convergence mismatch")
