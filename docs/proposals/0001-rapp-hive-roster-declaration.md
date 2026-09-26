@@ -342,8 +342,10 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 > retained frame, other than through a RAPP/1 §10 re-anchor, including when
 > its identity is removed: a verifier that cannot resolve that key cannot
 > re-verify the Mother history. Key compromise remains a RAPP/1 §10
-> tombstone; its cutoff must follow the G6 rule before this history is
-> extended.
+> tombstone; before this history is extended, its cutoff must be
+> later than every verified frame of that key that accepted Mother history
+> records or retains, and later than every accepted receipt or signed egg of
+> that key that the owner still trusts.
 
 ### 4.2 §3.1: key release uses the roster in effect
 
@@ -377,13 +379,17 @@ current text first. Nothing here is in `SPEC.md` on this branch.
 > anchored estate owner. Mother Hive `stream_id` is exactly `hive_rappid`."
 >
 > **PROPOSED item 2:** "The owner-signed declaration at the Mother's registered
-> creation genesis and every later declaration accepted on the Mother stream
-> (§3.2). `owner-signed` means the signer is the estate owner in effect at
-> the declaration's `utc` under the active RAPP/1 registry; in the
-> direct-owner profile that owner is the anchored estate owner. A successor
-> owner does not inherit declared membership unless a later declaration names
-> that successor as owner under §3.2. Mother Hive `stream_id` is exactly
-> `hive_rappid`."
+> creation genesis and, when later declarations are activated, every later
+> declaration accepted on the Mother stream (§3.2). The declaration owner is
+> the estate owner in effect at the declaration's `utc` under the active
+> RAPP/1 registry: in the direct-owner profile, the anchored estate owner;
+> under owner succession, the owner whose tenure contains that time.
+> Declarations, reconciliations, convergences, and projection receipts are
+> signed by the owner in effect at their own `utc`. A successor owner does not
+> inherit declared membership; after an owner rotation, roster changes require
+> a follow-up specification that changes §3.2 or a new Hive. A successor never
+> re-signs or invalidates history signed inside a predecessor's tenure. Mother
+> Hive `stream_id` is exactly `hive_rappid`."
 
 > **Current item 3:** "The locally accepted Mother frame head, last
 > convergence particle hash (or null immediately after the declaration), and
@@ -706,16 +712,18 @@ Confirmed by the default-mode vectors and the registry vector:
   declarations verify identically (§6).
 - **Activation order** (all owner actions, §12):
   1. Accept the text of §4.
-  2. Apply it to `protocols/rapp-hive/1/SPEC.md`.
-  3. Move every pin in one change: `protocols/index.json` `spec_sha256`,
+  2. Merge the draft implementation PR from
+     `experimental/gap-g1-roster-declaration` after its own review is clean.
+  3. Apply the accepted text to `protocols/rapp-hive/1/SPEC.md`.
+  4. Move every pin in one change: `protocols/index.json` `spec_sha256`,
      `src/rapp_work/data/profiles.json` (`rapp-hive/1` `spec_sha256`), the
      vendored `.github/skills/rapp-private-hive/vendor/hive/SPEC.md` and its
      `rapp/agent.lock.json` protocol and file hashes, and then
      `python3 tools/release_inventory.py --write`.
-  4. Re-sign `registry.json`: append the new `rapp-hive/1` `protocol` entry,
+  5. Re-sign `registry.json`: append the new `rapp-hive/1` `protocol` entry,
      mark the old one `deprecated:true`, and increment `registry_seq`.
-  5. Decide the default (§11 Q6).
-  6. Every adopting estate re-signs its own registry to the new pin, after its
+  6. Decide the default (§11 Q6).
+  7. Every adopting estate re-signs its own registry to the new pin, after its
      verifiers have been upgraded. An old verifier refuses the new registry,
      which fails closed.
 - **Operating a roster change after activation** (§3 item 13):
@@ -989,7 +997,9 @@ roster_declarations=False)`. The keyword is keyword-only and must be a real
 
 1. Accept, amend or refuse the §4 text.
 2. If accepted:
-   - Apply it to `protocols/rapp-hive/1/SPEC.md`.
+   - Review and merge the draft implementation PR from
+     `experimental/gap-g1-roster-declaration`.
+   - Apply the accepted text to `protocols/rapp-hive/1/SPEC.md`.
    - Move the pins listed in §8 in one change, and regenerate
      `RELEASE-INVENTORY.json`.
    - **Re-sign `registry.json`** with the owner key: a new `rapp-hive/1`
@@ -1018,7 +1028,7 @@ PR):
 > acceptance, then opens as a draft implementation PR. There is no SPEC, schema or registry change;
 > activation needs the owner to accept the text, merge the draft
 > implementation, and only then apply the SPEC text and re-sign the registry.
-> The implementation branch currently carries H23 vectors for default refusal,
+> The implementation branch currently carries H21 vectors for default refusal,
 > proposal positives and refusals, the registry side of roster changes, and a
 > replay of authenticated vectors in proposal mode.
 
@@ -1071,8 +1081,8 @@ second:
    after it. Owner changes through a later declaration stay future work (G6
    bullet above), so after an owner rotation in G6's succession mode, later
    declarations are refused until that follow-up lets one name the successor.
-2. Renumber G1's conformance check from H21 to H23, here, in the reference
-   README and in the CHANGELOG entry.
+2. If G6 has already claimed H21/H22 in the merged tree, renumber G1's
+   conformance check and update the reference README and CHANGELOG entry.
 3. Keep both README sections and both CHANGELOG entries.
 4. Re-mirror the merged reference into the vendored copy, regenerate the lock
    entries, choose one skill version for the combined bytes (§11 Q9), and run
