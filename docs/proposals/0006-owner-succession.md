@@ -1,5 +1,16 @@
 # Proposal 0006: owner succession in the Hive reference and the SDK
 
+## Proposal-only acceptance note
+
+Merging this proposal accepts the design only. It does **not** activate owner
+succession, change any signed `rapp-hive/1` SPEC byte, re-sign the registry,
+or ship the reference implementation. The reference implementation stays on
+`experimental/gap-g6-owner-succession` until the owner accepts this proposal;
+its implementation pull request is then opened as a draft and linked back here.
+The owner should apply SPEC text, re-sign, or bump the SDK only after that
+reference branch has merged and passed its own review.
+
+
 ## Status
 
 Draft, not accepted. Branch `experimental/gap-g6-owner-succession`, revised
@@ -23,7 +34,8 @@ no owner and are out of scope. G6 blocks the Private Hive part.
   its text is proposed here only.
 - `rapp-work-sdk/1` (`protocols/rapp-work-sdk/1/SPEC.md`) a new section 5.1
   and an inserted section 12 paragraph. That file is not registry-pinned; the
-  edit is on this branch with its profile pins refreshed.
+  edit is staged on the separate reference branch, not in this proposal-only
+  PR.
 
 ## Context: what is true today
 
@@ -315,12 +327,15 @@ with:
 
 with:
 
-> 2. The owner-signed declaration at the Mother's registered creation genesis.
->    The declaration owner is the estate owner in effect at the declaration's
->    `utc` (RAPP/1 section 13.2): in the direct-owner profile, the anchored
->    estate owner; under owner succession, the owner whose tenure contains that
->    time. Declarations, reconciliations, convergences, and projection
->    receipts are signed by the owner in effect at their own `utc`. A
+> 2. The owner-signed declaration at the Mother's registered creation genesis,
+>    and every later declaration accepted on the Mother stream once G1 is
+>    accepted and activated. The declaration owner is the estate owner in effect
+>    at the declaration's `utc` (RAPP/1 section 13.2): in the direct-owner
+>    profile, the anchored estate owner; under owner succession, the owner whose
+>    tenure contains that time. Declarations, reconciliations, convergences, and
+>    projection receipts are signed by the owner in effect at their own `utc`.
+>    A successor owner does not inherit declared membership unless a later
+>    declaration names that successor as owner under G1. A
 >    successor never re-signs or invalidates history signed inside a
 >    predecessor's tenure and does not inherit a predecessor's declared
 >    membership. Mother Hive `stream_id` is exactly `hive_rappid`.
@@ -982,7 +997,7 @@ keeps `3.2.0`, so a combined merge picks one version (open question 11).
 Recommended order: merge G6 first (the registry authority layer), then rebase
 G1 onto it as G1 describes, regenerating the vendored copy, the lock, and the
 inventory. For the SDK SPEC, the siblings' own recommendations agree on G6,
-G3, G7, G2, G4, then G17, with G11 whenever it is accepted; recompute the SDK
+G3, G7, G2, then G11 before G4, then G17; recompute the SDK
 SPEC pins and the inventory after each merge.
 
 ## Open questions for the owner
@@ -1014,8 +1029,11 @@ SPEC pins and the inventory after each merge.
    strictly later than its base head (RAPP/1 section 7.5 step 4 allows equal
    `utc`; G1 uses the same strict rule for later declarations). Keep it?
 6. Should a re-anchored member or owner inherit declared membership? This
-   proposal says no; with G1, a successor owner re-declares the roster (see
-   Related proposals).
+   proposal says no by default. With G1 as proposed today, the roster stays
+   frozen after an owner rotation until a G1 follow-up lets a later
+   declaration name the successor owner under the owner-in-effect rule;
+   otherwise the owner must start a new Hive for roster changes after
+   succession.
 7. Upstream (RAPP/1 section 13.3): `estate_owner` is "exactly one
    non-deprecated" but its member set has no `deprecated`, and the pinned
    reference accepts exactly one `estate_owner` entry. A successor registry
@@ -1052,9 +1070,11 @@ SPEC pins and the inventory after each merge.
 
 ## Owner actions needed
 
-1. Accept or refuse this proposal and the `rapp-work-sdk/1` insertions on the
-   branch.
-2. Accept the `rapp-hive/1` section 8.1, 9.1, and 14.2 text, then update
+1. Accept or refuse this proposal. Merging this proposal accepts the design,
+   not the staged code.
+2. If accepted, review the draft reference implementation PR on
+   `experimental/gap-g6-owner-succession`; only after it merges, apply the
+   `rapp-hive/1` section 8.1, 9.1, and 14.2 text, then update
    `protocols/rapp-hive/1/SPEC.md` and its pins (`protocols/index.json`,
    `src/rapp_work/data/profiles.json`, the legacy skill's `vendor/hive/SPEC.md`
    copy and lock `protocol.spec_sha256`) and re-sign `registry.json`.
