@@ -3,7 +3,7 @@ from: estate
 to: distributed-hive
 what: "The estate's pin of the Hive root: a `hives[]` entry in `estate.json` naming the public copy's commit and the hash of its `PUBLISHED.md`"
 authorized_by: "The estate owner's choice of commit. Hashes prove integrity; authenticity needs the estate owner's signed registry"
-home: "RAPP proposal 0020 (§§1, 3, 6), a draft; RAPP Constitution Article XLVI"
+home: "RAPP proposal 0020 (§§1, 3, 6), a draft (`kody-w/RAPP#133`); RAPP Constitution Article XLVI"
 health: candidate; `estate.json` is a placeholder today, and a draft entry pins the root
 arrow: out
 label: pins its root
