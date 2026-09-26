@@ -16,7 +16,7 @@ reference branch has merged and passed its own review.
 Draft, not accepted. Branch `experimental/gap-g6-owner-succession`, revised
 after independent review rounds 1, 2, and 3 (see Review disposition). The owner
 decides what moves. Intended release: `rapp-work` `1.1.0` (additive; the
-package version and `SDK_VERSION` are unchanged on this branch).
+package version and `SDK_VERSION` are unchanged on the reference branch).
 
 ## Gap
 
@@ -321,6 +321,12 @@ with:
 
 **Section 8.1 item 2.** Replace:
 
+> 2. The owner-signed declaration at the Mother's registered creation genesis.
+>    In the direct-owner profile, the declaration owner is the anchored estate
+>    owner. Mother Hive `stream_id` is exactly `hive_rappid`.
+
+with:
+
 > 2. The owner-signed declaration at the Mother's registered creation genesis
 >    and, when later declarations are activated, every later declaration
 >    accepted on the Mother stream. The declaration owner is the estate owner
@@ -462,7 +468,7 @@ Optional editorial change, section 8.2 second bullet: "registry SPKI/RAPPID
 binding, and time-scoped revocation" becomes "registry SPKI/RAPPID binding,
 and time-scoped supersession and revocation".
 
-### B. `rapp-work-sdk/1` normative text (staged on the reference branch after acceptance)
+### B. `rapp-work-sdk/1` normative text (staged on the reference branch; activated after acceptance)
 
 New section 5.1, inserted after section 5:
 
@@ -986,7 +992,7 @@ branch's `owner == owner_at(utc) == signer` check with its own invariants
 before it, and renumbers its own check from H21 to H23. It also notes that
 without succession a tombstoned owner key freezes the Mother stream; this
 branch's compromise re-anchor lets a successor continue it, within the limits
-of design decision 12. G1 moves the legacy skill lock to `3.2.1`; this branch
+of design decision 12. G1 moves the legacy skill lock to `3.2.1`; the reference branch
 keeps `3.2.0`, so a combined merge picks one version (open question 11).
 Recommended order: merge G6 first (the registry authority layer), then rebase
 G1 onto it as G1 describes, regenerating the vendored copy, the lock, and the
@@ -1085,7 +1091,7 @@ SPEC pins and the inventory after each merge.
    fetches only `hive_acceptance.py`, `rapp_hive.py`, `rapp.py`,
    `rapp_profile.py`, and the `rapp-hive/1` `SPEC.md`, and imports
    `hive_acceptance`. It keeps working at `29ead23`, and with the reference branch's
-   lazy import that five-file set also runs this branch's default gate. If the
+   lazy import that five-file set also runs the reference branch's default gate. If the
    kit adopts the reference branch it re-pins `hive_acceptance.py` (`e8488e2f…`) and the
    SDK SPEC (`19802755…`); it needs `rapp_registry.py` (`eec22844…`) only to
    enable succession.
