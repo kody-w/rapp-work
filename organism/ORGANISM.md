@@ -72,7 +72,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                   │ the accepted ┊                            │ Hives, by         │
                                   ▼ checkpoint   ▼                            │ agreement only    │
                               ┌────────────────────────────────────────────┐  │ rapp-federation/1 │
-                              │ 2 · ORGANIZATION           [4 to graduate] │  │ · Hive Hub cards  │
+                              │ 2 · ORGANIZATION           [5 to graduate] │  │ · Hive Hub cards  │
                               │ the accountable body                       │  │ [candidate]       │
                               │ One owner · one world · one policy · one   │  │ newest            │
                               │ release scope · exactly one Hive           │  └───────────────────┘
@@ -132,7 +132,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 | 5 | [Brainstem](layers/5-brainstem.md) | The one surface you talk to: your own AI. Frozen Grail kernel, hot-loaded agents (the Hive agent is one file), soul and memory | in force (G15) | 5 to graduate (G17, G19, G20, G23, RAR) |
 | 4 | [Your device](layers/4-your-device.md) | Your copy of each Hive, your read-only references and your private workspaces, with one key per device per Hive | experimental | 8 to graduate (G2, G3, G4, G7, G13, G14, G22, G24) |
 | 3 | [Hive](layers/3-hive.md) | Where the members share work: a `rapp-hive/1` Private Hive (in force, and the only kind of Hive an organization can bind), a folder Hive (experimental), or a distributed Hive of many repositories (experimental) | in force | 6 to graduate (G1, G6, G8, G9, G12, Public copy) |
-| 2 | [Organization](layers/2-organization.md) | The accountable body: one owner, one world, one policy, one release scope, and exactly one Hive. Its body stream holds its declaration, then catalogs, Hive vectors, migrations, receipts, observations and rollbacks | specified (G10, G16) | 4 to graduate (G5, G10, G11, G16) |
+| 2 | [Organization](layers/2-organization.md) | The accountable body: one owner, one world, one policy, one release scope, and exactly one Hive. Its body stream holds its declaration, then catalogs, Hive vectors, migrations, receipts, observations and rollbacks | specified (G10, G16) | 5 to graduate (G5, G10, G11, G16, Release rings) |
 | 1 | [Estate](layers/1-estate.md) | An owner's signed registry: who may sign as whom, which protocols are pinned, which Grail kernel each release scope pins (RAPP/1 §§11.1, 13.3) | in force (G15) | 2 to graduate (G15, Distributed Hive) |
 | 0 | [RAPP/1](layers/0-rapp1.md) | Bytes and identity: RAPPIDs, the eleven-key frame, hashes, signatures, eggs, registries | in force | in RAPP/1 |
 
@@ -150,7 +150,7 @@ health: [in force] [specified] [exp] [candidate] [own shape]
 | [Outside knowledge](parts/outside-knowledge.md) | in, beside 4 | Old Hives, second brains, Obsidian vaults, markdown wikis, docs folders, other AI tools' own workspaces | own shape | outside |
 | [Public copy](parts/public-copy.md) | out, beside 3 | A separate, reviewed repository holding exactly the approved files, plus `PUBLISHED.md` | experimental | newest |
 | [Hive Mind](parts/hive-mind.md) | across, beside 3 | The network of sovereign Hives: discovery through Hive Hub cards, and agreements between organizations | candidate (G12) | newest |
-| [Release rings](parts/release-rings.md) | out, beside 2 | Estate-named stages over `rapp-cicd/1` §3: here canary, nightly, alpha, beta, the Preprod gate, then the production ring (the grail) | specified (G16) | newest |
+| [Release rings](parts/release-rings.md) | out, beside 2 | Estate-named stages over `rapp-cicd/1` §3: here canary, nightly, alpha, beta, the Preprod gate, then the production ring (the grail) | specified | newest |
 | [Distributed Hive](parts/distributed-hive.md) | across, beside 1 | The RAPP/1 network as one Hive, found by raw URL: RAPP's seed → beacon → `estate.json` → Hive root → a pointer per repository → its `.rapp/member.md`, at its LTS commit | experimental | newest |
 
 ## Crossings

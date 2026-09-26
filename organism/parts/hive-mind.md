@@ -15,6 +15,6 @@ lines:
 ---
 The Hive Mind is the network of sovereign Hives. Each stays its own.
 
-- Hive Hub is a folder of markdown cards: one per protocol and one per Hive; organization cards are optional, and there are none yet. A seven-word chant finds a card; it is a locator, never a password.
+- On its experimental branch, Hive Hub is a folder of markdown cards: one per protocol and one per Hive; organization cards are optional, and there are none yet. A seven-word chant finds a card; it is a locator, never a password.
 - To join, you give a card to your own Brainstem. It checks every commit from the Hive's first commit, shows you the founder key to compare with the card, then sends one signed request.
 - Organizations work together only by signed agreement. Membership is never shared.

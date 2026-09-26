@@ -16,6 +16,6 @@ name: Words this map uses
 - **station, Hive root:** in a distributed Hive, a station is one public repository, with its member space in `.rapp/`; a Hive root is a Hive's public copy, which keeps one pointer per station (HIVE-MD, “Remote member spaces”, a draft).
 - **`release_scope`:** the release family an organization declares (`rapp-work/1` §2), and that an estate's Grail pin applies to (RAPP/1 §11.1).
 - **`previous:`:** the `HIVE.md` field that names old Hives whose signed join requests count as carried requests.
-- **LTS and newest kernels:** the Brainstem kernel has the same two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest is the newest `brainstem-v*` tag, which the installer's `main` ships, and nothing signed pins it yet (G15).
+- **LTS and newest kernels:** the Brainstem kernel has the same two channels, by design. RAPP pins the LTS kernel in `KERNEL_PIN.json`; the newest is the newest `brainstem-v*` tag of `kody-w/rapp-installer`, which its `main` ships, and nothing signed pins it yet (G15).
 - **Grail and grail:** the Grail is the Brainstem's frozen kernel. RAPP/1 identifies a Grail by its `grail_id`, never by a tag (§11.1), and none is declared yet (G15). Lowercase grail is this project's name for a track's production ring.
 - **organism:** RAPP/1 defines it as one running Brainstem with a lasting identity (RAPP/1 §3), though its introduction calls all of RAPP one organism. This map uses it for the whole ecosystem.

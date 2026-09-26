@@ -63,7 +63,7 @@ THE RAPP/1 ORGANISM  ·  read it top (6) to bottom (0)
                                   │ the accepted ┊                            │ Hives, by         │
                                   ▼ checkpoint   ▼                            │ agreement only    │
                               ┌────────────────────────────────────────────┐  │ rapp-federation/1 │
-                              │ 2 · ORGANIZATION           [4 to graduate] │  │ · Hive Hub cards  │
+                              │ 2 · ORGANIZATION           [5 to graduate] │  │ · Hive Hub cards  │
                               │ the accountable body                       │  │ [candidate]       │
                               │ One owner · one world · one policy · one   │  │ newest            │
                               │ release scope · exactly one Hive           │  └───────────────────┘

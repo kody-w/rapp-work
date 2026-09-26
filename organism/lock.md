@@ -29,7 +29,7 @@ steps:
   - "2: give rapp-model-hive's frames a trusted anchor (`kody-w/rapp-model-hive#2`, open; it needs the owner's registry entries)"
   - "2: re-sweep until every repo of the RAPP/1 stack is certified (the dogfood)"
   - "2: keep the default pull clean: default branches and the LTS install carry only in-force parts"
-  - "2: one front door keeps the network unified and tracked; pin the Windows LTS install (G23)"
+  - "2: one front door keeps the network unified and tracked; pin the Windows LTS install (G23, which only the owner merges)"
   - "3: RAPP/1 core additions land before the estate signs: rev-17, a draft on `kody-w/rapp-1` `experimental/rapp1-core-*`, adds release pins, lifecycle notices and stream signers"
   - "3: rapp-hive/1 (G1, G6)"
   - "3: rapp-work-sdk/1 (G2, G3, G4, G7, G11)"
