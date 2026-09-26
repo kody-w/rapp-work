@@ -859,6 +859,7 @@ def excalidraw(d):
 CSS = """@page { size: 11in 8.5in; margin: 0.25in; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+@media screen { body { padding: 0.25in; } }  /* on screen, the page keeps its print margin */
 body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: #111; font-size: 7.4pt; line-height: 1.2;
        -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .page { width: 10.5in; min-height: 7.96in; display: flex; flex-direction: column; gap: 0.06in; }
@@ -945,7 +946,7 @@ LOCK_CSS = """.chip.lock { background: #fff; border-color: #495057; border-radiu
 .decide ol { margin: 0; padding-left: 16px; font-size: 8.3pt; } .decide li { margin: 0; }
 .two { display: grid; grid-template-columns: 1.25fr 1fr; gap: 0.12in; }
 .two ul { margin: 0; padding-left: 13px; } .two li { margin: 0 0 2px 0; }
-.pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #862e9c; background: #f8f0fc;
+.pins { margin-top: 3px; } .pins .p { display: inline-block; border: 1px solid #495057; background: #fff;
         border-radius: 7px; padding: 0 3px; margin: 0 1px 2px 0; font-size: 6.8pt; line-height: 1.42; }
 .cite { margin-top: 1px; font-size: 7pt; color: #495057; }
 table.status { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
@@ -959,7 +960,7 @@ table.status td:first-child { width: 1.2in; white-space: nowrap; } table.status 
 li .g { margin: 0 1px; padding: 0 3px; line-height: 1.12; vertical-align: 0.4px; }  /* a gap chip inside a step keeps its line */
 .nw { white-space: nowrap; }
 .strip { border: 1.4px solid #adb5bd; border-radius: 8px; padding: 2px 8px 3px 8px; background: #fcfcfd; font-size: 7.4pt; }
-.strip .door { margin-top: 1px; } .strip .chip { font-size: 6.2pt; line-height: 1.25; }
+.strip .door { margin-top: 1px; } .strip .chip { font-size: 6.2pt; line-height: 1.25; } .strip code { white-space: nowrap; }
 .strip .m { display: inline-block; border: 1px solid #adb5bd; background: #f1f3f5; border-radius: 6px; padding: 0 4px;
             margin: 0 1px 1px 0; font-size: 7pt; line-height: 1.3; white-space: nowrap; }
 .register { display: grid; grid-template-columns: 1.12fr 1fr; column-gap: 0.25in; align-items: start; }
