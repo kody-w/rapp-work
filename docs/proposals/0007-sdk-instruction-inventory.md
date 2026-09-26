@@ -1,4 +1,20 @@
+For the owner
+- Decision: add instruction inventory, compatible now or strict later.
+- You approve: the rule only; no workspace is refused by this PR.
+- Recommended default: compatible 1.1, with strict opt-in until a later major release.
+- If approved: adopted records let the LTS lock see AI-instruction drift.
+- If held: instruction drift can still hide behind unchanged code.
+- Risk: strict-by-default needs migration work for older workspaces.
+
 # Proposal 0007: SDK instruction-file inventory
+
+## Proposal-only acceptance note
+
+Merging this proposal accepts the design only. It does **not** activate code,
+change SPEC bytes, move pins, or release a new SDK. The reference
+implementation stays on its experimental branch until the owner accepts this
+proposal; its implementation pull request is then draft-only until reviewed.
+
 
 - **Status:** draft, not accepted. The owner decides.
 - **Gap:** G7 — SDK verification accepts an edited instruction file. SDK
@@ -1012,8 +1028,8 @@ All commands ran in this branch's own clone or its scratch directory.
 1. Accept, amend, or reject the SPEC insertions in §4 of this proposal.
 2. Choose the release number and default (Open question 1).
 3. Choose the merge order with the sibling drafts (§14).
-4. If accepted: merge the branch, cut the release, and record the gap's status
-   change in the organism. This branch opens no pull request or issue.
+4. If accepted: review the draft implementation PR; after it merges, cut the release, and record the gap's status
+   change in the organism. The implementation branch opens only a draft pull request until this proposal is accepted or issue.
 
 Ready-to-file summary, if the owner wants a tracking issue: "G7:
 `rapp-work-sdk/1` verification inventories AI instruction files (proposal
@@ -1067,8 +1083,7 @@ read at their pushed heads; none was edited.
   `src/rapp_work/data/profiles.json`: merge one at a time, recompute the pins,
   and run `python3 tools/release_inventory.py --write`.
 
-Recommended merge order: G6, G3, **G7**, G2, G4, G17 (G11 whenever it is
-accepted). G7 before G2 lets the move protection import the instruction
+Recommended merge order: G6, G3, **G7**, G2, G11, G4, G17. G7 before G2 lets the move protection import the instruction
 classifier; G4 and G17 then consume the inventory and the new verify fields.
 
 ## 15. Disposition of the independent reviews
